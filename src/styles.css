@@ -404,6 +404,282 @@
   color: var(--color-dns-light, #AAD0D1);
 }
 
+.system-map-stage {
+  position: relative;
+  min-height: 698px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-dns-light, #AAD0D1) 14%, transparent) 0, transparent 34%),
+    var(--color-dns-bg, #F4F8F9);
+}
+
+.system-map-svg {
+  display: block;
+  width: min(100%, 820px);
+  height: 698px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.system-map-family path {
+  stroke: var(--color-dns-surface, #fff);
+  stroke-width: 4;
+  transition:
+    opacity var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease),
+    filter var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease);
+}
+
+.system-map-family.family-operations path {
+  fill: color-mix(in srgb, var(--color-dns-deep, #0D4D5E) 88%, white);
+}
+
+.system-map-family.family-communication path {
+  fill: color-mix(in srgb, var(--color-dns-mid, #417483) 82%, white);
+}
+
+.system-map-family.family-portal path {
+  fill: color-mix(in srgb, var(--color-dns-light, #AAD0D1) 82%, var(--color-dns-deep, #0D4D5E));
+}
+
+.system-map-family.family-legacy path {
+  fill: color-mix(in srgb, var(--color-dns-muted, #5A7F8A) 76%, white);
+}
+
+.system-map-family.is-family-dimmed {
+  opacity: .28;
+}
+
+.system-map-family-label {
+  fill: #fff;
+  font: 700 11px/1 var(--font-display, "Be Vietnam Pro", sans-serif);
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+
+.system-map-connections {
+  pointer-events: none;
+}
+
+.system-map-chord {
+  fill: none;
+  stroke: var(--color-dns-mid, #417483);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  opacity: .4;
+  vector-effect: non-scaling-stroke;
+}
+
+.system-map-tool {
+  cursor: pointer;
+  outline: none;
+}
+
+.system-map-tool-sector {
+  stroke: var(--color-dns-surface, #fff);
+  stroke-width: 3;
+  transition:
+    d var(--dns-motion-standard, 220ms) var(--dns-motion-easing, ease),
+    opacity var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease),
+    filter var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease);
+}
+
+.tool-group-operations .system-map-tool-sector {
+  fill: color-mix(in srgb, var(--color-dns-deep, #0D4D5E) 73%, white);
+}
+
+.tool-group-communication .system-map-tool-sector {
+  fill: color-mix(in srgb, var(--color-dns-mid, #417483) 66%, white);
+}
+
+.tool-group-portal .system-map-tool-sector {
+  fill: color-mix(in srgb, var(--color-dns-light, #AAD0D1) 72%, white);
+}
+
+.tool-group-legacy .system-map-tool-sector {
+  fill: color-mix(in srgb, var(--color-dns-muted, #5A7F8A) 54%, white);
+}
+
+.system-map-tool.is-hovered .system-map-tool-sector {
+  filter: drop-shadow(0 8px 12px rgba(13,77,94,.16));
+}
+
+.system-map-tool.is-selected .system-map-tool-sector {
+  fill: var(--color-dns-deep, #0D4D5E);
+  filter: drop-shadow(0 12px 18px rgba(13,77,94,.20));
+}
+
+.system-map-tool.is-connected:not(.is-selected) .system-map-tool-sector {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--color-dns-light, #AAD0D1) 70%, transparent));
+}
+
+.system-map-tool.is-dimmed {
+  opacity: .16;
+}
+
+.system-map-tool-label {
+  fill: var(--color-dns-deep, #0D4D5E);
+  font: 700 12px/1 var(--font-display, "Be Vietnam Pro", sans-serif);
+  pointer-events: none;
+  transition: fill var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease);
+}
+
+.system-map-tool-meta {
+  fill: var(--color-dns-muted, #5A7F8A);
+  font: 700 7px/1 var(--font-alt, Roboto, sans-serif);
+  letter-spacing: .06em;
+  pointer-events: none;
+  transition: fill var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease);
+}
+
+.system-map-tool.is-selected .system-map-tool-label {
+  fill: #fff;
+}
+
+.system-map-tool.is-selected .system-map-tool-meta {
+  fill: var(--color-dns-light, #AAD0D1);
+}
+
+.system-map-status-dot {
+  fill: var(--color-dns-positive, #0F6E56);
+  stroke: var(--color-dns-surface, #fff);
+  stroke-width: 3;
+  pointer-events: none;
+}
+
+.system-map-tool.is-development .system-map-status-dot {
+  fill: #9A6A16;
+}
+
+.system-map-tool.is-maintenance .system-map-status-dot {
+  fill: var(--color-dns-muted, #5A7F8A);
+}
+
+.system-map-core {
+  cursor: pointer;
+  outline: none;
+}
+
+.system-map-core-halo {
+  fill: color-mix(in srgb, var(--color-dns-light, #AAD0D1) 58%, transparent);
+}
+
+.system-map-core-disc {
+  fill: var(--color-dns-deep, #0D4D5E);
+  stroke: var(--color-dns-surface, #fff);
+  stroke-width: 4;
+  transition:
+    r var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease),
+    filter var(--dns-motion-fast, 160ms) var(--dns-motion-easing, ease);
+}
+
+.system-map-core:hover .system-map-core-disc,
+.system-map-core:focus-visible .system-map-core-disc {
+  filter: drop-shadow(0 8px 14px rgba(13,77,94,.18));
+}
+
+.system-map-core-kicker {
+  fill: var(--color-dns-light, #AAD0D1);
+  font: 700 8px/1 var(--font-alt, Roboto, sans-serif);
+  letter-spacing: .1em;
+}
+
+.system-map-core-title {
+  fill: #fff;
+  font: 700 25px/1 var(--font-display, "Be Vietnam Pro", sans-serif);
+  letter-spacing: .035em;
+}
+
+.system-map-core-shared {
+  fill: var(--color-dns-light, #AAD0D1);
+  font: 600 10px/1 var(--font-display, "Be Vietnam Pro", sans-serif);
+}
+
+.system-map-core-meta {
+  fill: rgba(255,255,255,.72);
+  font: 700 7px/1 var(--font-alt, Roboto, sans-serif);
+}
+
+.system-map-legend {
+  position: absolute;
+  left: 1rem;
+  bottom: .8rem;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem;
+  color: var(--color-dns-muted, #5A7F8A);
+  font: 600 8px/1 var(--font-alt, Roboto, sans-serif);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.system-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.legend-dot.is-production {
+  background: var(--color-dns-positive, #0F6E56);
+}
+
+.legend-dot.is-development {
+  background: #9A6A16;
+}
+
+.legend-dot.is-maintenance {
+  background: var(--color-dns-muted, #5A7F8A);
+}
+
+@media (max-width: 820px) {
+  .system-map-stage {
+    min-height: 590px;
+  }
+
+  .system-map-svg {
+    height: 590px;
+  }
+
+  .system-map-tool-label {
+    font-size: 11px;
+  }
+
+  .system-map-family-label {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 620px) {
+  .system-map-stage {
+    min-height: 540px;
+  }
+
+  .system-map-svg {
+    width: 680px;
+    max-width: none;
+    height: 540px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .system-map-tool-label {
+    font-size: 10px;
+  }
+
+  .system-map-tool-meta,
+  .system-map-legend {
+    display: none;
+  }
+}
+
 .tool-drawer {
   position: absolute;
   top: 49px;

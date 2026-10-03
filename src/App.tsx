@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RadialNavigator } from './components/RadialNavigator';
+import { SystemMapNavigator } from './components/SystemMapNavigator';
 import { ToolDrawer } from './components/ToolDrawer';
-import { WorkspaceHeader } from './components/WorkspaceHeader';
+import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeader';
 import {
   getDNSWorkspaceLanguage,
   setDNSWorkspaceLanguage,
@@ -34,6 +35,7 @@ export default function App() {
     getDNSWorkspaceLanguage(),
   );
   const [selectedTool, setSelectedTool] = useState<WorkspaceTool | null>(null);
+  const [activeView, setActiveView] = useState<WorkspaceView>('system-map');
 
   useEffect(() => subscribeDNSWorkspaceLanguage(setLanguage), []);
   useEffect(() => {
@@ -52,7 +54,12 @@ export default function App() {
     <div className="workspace-app">
       <WorkspaceHeader
         language={language}
+        activeView={activeView}
         onLanguageChange={setDNSWorkspaceLanguage}
+        onViewChange={(view) => {
+          setSelectedTool(null);
+          setActiveView(view);
+        }}
       />
 
       <main data-dns-shell-main className="workspace-main">
@@ -82,7 +89,9 @@ export default function App() {
         <div className={["radial-shell", "dns-card", selectedTool ? "has-selection" : ""].filter(Boolean).join(" ")}>
           <div className="radial-shell-head">
             <div>
-              <strong className="dns-section-title">RADIAL HUB</strong>
+              <strong className="dns-section-title">
+                {activeView === 'system-map' ? 'SYSTEM MAP' : 'ORBIT'}
+              </strong>
               <span>{text.hint}</span>
             </div>
             {selectedTool ? (
@@ -97,11 +106,19 @@ export default function App() {
             ) : null}
           </div>
 
-          <RadialNavigator
-            selectedTool={selectedTool}
-            onSelectTool={setSelectedTool}
-            onClearSelection={() => setSelectedTool(null)}
-          />
+          {activeView === 'system-map' ? (
+            <SystemMapNavigator
+              selectedTool={selectedTool}
+              onSelectTool={setSelectedTool}
+              onClearSelection={() => setSelectedTool(null)}
+            />
+          ) : (
+            <RadialNavigator
+              selectedTool={selectedTool}
+              onSelectTool={setSelectedTool}
+              onClearSelection={() => setSelectedTool(null)}
+            />
+          )}
 
           <ToolDrawer
             tool={selectedTool}
