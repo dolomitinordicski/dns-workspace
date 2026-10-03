@@ -79,7 +79,7 @@ export default function App() {
           </div>
         </section>
 
-        <div className="radial-shell dns-card">
+        <div className={["radial-shell", "dns-card", selectedTool ? "has-selection" : ""].filter(Boolean).join(" ")}>
           <div className="radial-shell-head">
             <div>
               <strong className="dns-section-title">RADIAL HUB</strong>
@@ -100,6 +100,7 @@ export default function App() {
           <RadialNavigator
             selectedTool={selectedTool}
             onSelectTool={setSelectedTool}
+            onClearSelection={() => setSelectedTool(null)}
           />
 
           <ToolDrawer
