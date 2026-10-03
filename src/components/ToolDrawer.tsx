@@ -24,10 +24,16 @@ export function ToolDrawer({ tool, language, onClose }: ToolDrawerProps) {
     <aside className="tool-drawer" aria-label={`${tool.label} details`}>
       <div className="tool-drawer-head">
         <div>
-          <span className="drawer-eyebrow">{lifecycleLabel(tool.lifecycle)}</span>
+          <span className="dns-kicker">{lifecycleLabel(tool.lifecycle)}</span>
           <h2>{tool.label}</h2>
         </div>
-        <button className="drawer-close" type="button" onClick={onClose} aria-label="Close">
+        <button
+          className="dns-button"
+          data-variant="icon"
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+        >
           ×
         </button>
       </div>
@@ -35,11 +41,14 @@ export function ToolDrawer({ tool, language, onClose }: ToolDrawerProps) {
       <p className="drawer-description">{tool.description[language]}</p>
 
       <div className="drawer-status-row">
-        <span className="runtime-pill is-active">WEB</span>
-        <span className={tool.backend.kind === 'none' ? 'runtime-pill' : 'runtime-pill is-active'}>
+        <span className="dns-status" data-status="live">WEB</span>
+        <span
+          className="dns-status"
+          data-status={tool.backend.kind === 'none' ? 'archived' : 'live'}
+        >
           FIREBASE
         </span>
-        <span className="runtime-pill is-active">FOUNDATION</span>
+        <span className="dns-status" data-status="synced">FOUNDATION</span>
       </div>
 
       <dl className="drawer-grid">
@@ -86,7 +95,8 @@ export function ToolDrawer({ tool, language, onClose }: ToolDrawerProps) {
       <div className="drawer-actions">
         {tool.url ? (
           <button
-            className="primary-action"
+            className="dns-button drawer-open-tool"
+            data-variant="primary"
             type="button"
             onClick={() => window.open(tool.url!, '_blank', 'noopener,noreferrer')}
           >
