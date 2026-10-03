@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import {
   getConnectedToolIds,
@@ -48,13 +48,16 @@ function distributeRing(definition: RingDefinition): PositionedTool[] {
   });
 }
 
-function buildLayout(tools: readonly WorkspaceTool[]): PositionedTool[] {
+function buildLayout(
+  tools: readonly WorkspaceTool[],
+  responsiveScale: number,
+): PositionedTool[] {
   if (tools.length <= 12) {
     return distributeRing({
       id: 'single',
       tools: [...tools],
-      radiusX: 39,
-      radiusY: 37,
+      radiusX: 34.5 * responsiveScale,
+      radiusY: 32.5 * responsiveScale,
       offset: -Math.PI / 2,
     });
   }
@@ -68,15 +71,15 @@ function buildLayout(tools: readonly WorkspaceTool[]): PositionedTool[] {
     ...distributeRing({
       id: 'outer',
       tools: outer,
-      radiusX: 42,
-      radiusY: 40,
+      radiusX: 38 * responsiveScale,
+      radiusY: 36 * responsiveScale,
       offset: -Math.PI / 2,
     }),
     ...distributeRing({
       id: 'inner',
       tools: inner,
-      radiusX: 27,
-      radiusY: 25,
+      radiusX: 24.5 * responsiveScale,
+      radiusY: 22.5 * responsiveScale,
       offset: -Math.PI / 2 + Math.PI / Math.max(inner.length, 1),
     }),
   ];
@@ -95,7 +98,42 @@ export function RadialNavigator({
   onSelectTool,
   onClearSelection,
 }: RadialNavigatorProps) {
-  const positioned = useMemo(() => buildLayout(workspaceTools), []);
+  const stageRef = useRef<HTMLElement | null>(null);
+  const [responsiveScale, setResponsiveScale] = useState(1);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || typeof ResizeObserver === 'undefined') return;
+
+    const updateScale = (width: number) => {
+      if (width < 560) {
+        setResponsiveScale(0.78);
+      } else if (width < 760) {
+        setResponsiveScale(0.84);
+      } else if (width < 980) {
+        setResponsiveScale(0.9);
+      } else if (width < 1180) {
+        setResponsiveScale(0.95);
+      } else {
+        setResponsiveScale(1);
+      }
+    };
+
+    updateScale(stage.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) updateScale(width);
+    });
+
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
+
+  const positioned = useMemo(
+    () => buildLayout(workspaceTools, responsiveScale),
+    [responsiveScale],
+  );
 
   const positions = useMemo(
     () => new Map(positioned.map((entry) => [entry.tool.id, entry])),
@@ -108,9 +146,19 @@ export function RadialNavigator({
 
   const selectedPosition = selectedTool ? positions.get(selectedTool.id) : undefined;
   const hasTwoRings = positioned.some((entry) => entry.ring !== 'single');
+  const singleRadiusX = 34.5 * responsiveScale;
+  const singleRadiusY = 32.5 * responsiveScale;
+  const outerRadiusX = 38 * responsiveScale;
+  const outerRadiusY = 36 * responsiveScale;
+  const innerRadiusX = 24.5 * responsiveScale;
+  const innerRadiusY = 22.5 * responsiveScale;
 
   return (
-    <section className="radial-stage" aria-label="DNS radial application navigator">
+    <section
+      ref={stageRef}
+      className="radial-stage"
+      aria-label="DNS radial application navigator"
+    >
       <svg
         className="radial-map"
         viewBox="0 0 100 100"
@@ -119,11 +167,11 @@ export function RadialNavigator({
       >
         {hasTwoRings ? (
           <>
-            <ellipse className="orbit-guide orbit-guide-outer" cx="50" cy="50" rx="42" ry="40" />
-            <ellipse className="orbit-guide orbit-guide-inner" cx="50" cy="50" rx="27" ry="25" />
+            <ellipse className="orbit-guide orbit-guide-outer" cx="50" cy="50" rx={outerRadiusX} ry={outerRadiusY} />
+            <ellipse className="orbit-guide orbit-guide-inner" cx="50" cy="50" rx={innerRadiusX} ry={innerRadiusY} />
           </>
         ) : (
-          <ellipse className="orbit-guide" cx="50" cy="50" rx="39" ry="37" />
+          <ellipse className="orbit-guide" cx="50" cy="50" rx={singleRadiusX} ry={singleRadiusY} />
         )}
 
         {selectedTool && selectedPosition ? (
