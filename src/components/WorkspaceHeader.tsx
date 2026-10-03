@@ -4,14 +4,20 @@ import {
   type DNSWorkspaceLanguage,
 } from '../services/foundation';
 
+export type WorkspaceView = 'system-map' | 'orbit';
+
 type WorkspaceHeaderProps = {
   language: DNSWorkspaceLanguage;
+  activeView: WorkspaceView;
   onLanguageChange: (language: DNSWorkspaceLanguage) => void;
+  onViewChange: (view: WorkspaceView) => void;
 };
 
 export function WorkspaceHeader({
   language,
+  activeView,
   onLanguageChange,
+  onViewChange,
 }: WorkspaceHeaderProps) {
   return (
     <>
@@ -77,13 +83,19 @@ export function WorkspaceHeader({
         <div className="dns-tab-nav-inner">
           <button
             type="button"
-            className="dns-tab dns-tab-active"
-            aria-current="page"
+            className={['dns-tab', activeView === 'system-map' ? 'dns-tab-active' : ''].filter(Boolean).join(' ')}
+            aria-current={activeView === 'system-map' ? 'page' : undefined}
+            onClick={() => onViewChange('system-map')}
           >
-            Radial Hub
+            System Map
           </button>
-          <button type="button" className="dns-tab" disabled>
-            Architecture
+          <button
+            type="button"
+            className={['dns-tab', activeView === 'orbit' ? 'dns-tab-active' : ''].filter(Boolean).join(' ')}
+            aria-current={activeView === 'orbit' ? 'page' : undefined}
+            onClick={() => onViewChange('orbit')}
+          >
+            Orbit
           </button>
           <button type="button" className="dns-tab" disabled>
             Registry
