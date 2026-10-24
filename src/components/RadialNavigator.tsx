@@ -11,6 +11,7 @@ type RadialNavigatorProps = {
   selectedTool: WorkspaceTool | null;
   onSelectTool: (tool: WorkspaceTool) => void;
   onClearSelection: () => void;
+  onOpenTool: (tool: WorkspaceTool) => void;
 };
 
 type RingId = 'single' | 'inner' | 'outer';
@@ -247,7 +248,7 @@ export function RadialNavigator({
             style={style}
             onClick={() => onSelectTool(tool)}
             onDoubleClick={() => {
-              if (tool.url) window.open(tool.url, '_blank', 'noopener,noreferrer');
+              if (tool.url) onOpenTool(tool);
             }}
             title={`${tool.label} · ${tool.lifecycle}`}
           >
