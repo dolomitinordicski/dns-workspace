@@ -5,13 +5,14 @@ type ToolDrawerProps = {
   tool: WorkspaceTool | null;
   language: 'de' | 'it';
   onClose: () => void;
+  onOpenTool: (tool: WorkspaceTool) => void;
 };
 
 function lifecycleLabel(value: WorkspaceTool['lifecycle']) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export function ToolDrawer({ tool, language, onClose }: ToolDrawerProps) {
+export function ToolDrawer({ tool, language, onClose, onOpenTool }: ToolDrawerProps) {
   if (!tool) return null;
 
   const dependencies = tool.dependencies
@@ -98,15 +99,15 @@ export function ToolDrawer({ tool, language, onClose }: ToolDrawerProps) {
             className="dns-button drawer-open-tool"
             data-variant="primary"
             type="button"
-            onClick={() => window.open(tool.url!, '_blank', 'noopener,noreferrer')}
+            onClick={() => onOpenTool(tool)}
           >
-            {language === 'de' ? 'Tool standalone öffnen' : 'Apri tool standalone'}
+            {language === 'de' ? 'Tool im Workspace öffnen' : 'Apri in Workspace'}
           </button>
         ) : null}
         <p>
           {language === 'de'
-            ? 'Doppelklick auf den Knoten öffnet das Tool direkt.'
-            : 'Doppio clic sul nodo apre direttamente il tool.'}
+            ? 'Doppelklick auf den Knoten öffnet das Tool im Workspace.'
+            : 'Doppio clic sul nodo apre il tool nel Workspace.'}
         </p>
       </div>
     </aside>
