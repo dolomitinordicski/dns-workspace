@@ -98,6 +98,7 @@ export function RadialNavigator({
   selectedTool,
   onSelectTool,
   onClearSelection,
+  onOpenTool,
 }: RadialNavigatorProps) {
   const stageRef = useRef<HTMLElement | null>(null);
   const [responsiveScale, setResponsiveScale] = useState(1);
