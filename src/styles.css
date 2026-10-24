@@ -925,3 +925,10 @@
     transition: none !important;
   }
 }
+
+/* Workspace W1: persistent shell and in-place application viewport. */
+.workspace-tool-view { display: flex; flex-direction: column; min-height: calc(100vh - 165px); background: #fff; border: 1px solid rgba(65,116,131,.20); }
+.workspace-tool-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid rgba(65,116,131,.20); }
+.workspace-tool-toolbar strong { flex: 1; font-size: 1rem; }
+.workspace-tool-frame { display: block; flex: 1; width: 100%; min-height: 72vh; border: 0; background: #fff; }
+.workspace-tool-note { margin: 0; padding: .4rem .8rem; color: #5A7F8A; font-size: 11px; border-top: 1px solid rgba(65,116,131,.12); }
