@@ -136,6 +136,7 @@ export default function App() {
             tool={selectedTool}
             language={language}
             onClose={() => setSelectedTool(null)}
+            onOpenTool={setOpenTool}
           />
         </div>
         </>}
