@@ -183,6 +183,7 @@ export function SystemMapNavigator({
   selectedTool,
   onSelectTool,
   onClearSelection,
+  onOpenTool,
 }: SystemMapNavigatorProps) {
   const [hoveredToolId, setHoveredToolId] = useState<string | null>(null);
   const families = useMemo(() => buildFamilies(), []);
