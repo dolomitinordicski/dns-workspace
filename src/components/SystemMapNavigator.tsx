@@ -10,6 +10,7 @@ type SystemMapNavigatorProps = {
   selectedTool: WorkspaceTool | null;
   onSelectTool: (tool: WorkspaceTool) => void;
   onClearSelection: () => void;
+  onOpenTool: (tool: WorkspaceTool) => void;
 };
 
 type ToolSector = {
@@ -301,7 +302,7 @@ export function SystemMapNavigator({
                 onClick={() => onSelectTool(sector.tool)}
                 onDoubleClick={() => {
                   if (sector.tool.url) {
-                    window.open(sector.tool.url, '_blank', 'noopener,noreferrer');
+                    onOpenTool(sector.tool);
                   }
                 }}
                 role="button"
