@@ -35,6 +35,7 @@ export default function App() {
     getDNSWorkspaceLanguage(),
   );
   const [selectedTool, setSelectedTool] = useState<WorkspaceTool | null>(null);
+  const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>('system-map');
 
   useEffect(() => subscribeDNSWorkspaceLanguage(setLanguage), []);
@@ -63,6 +64,15 @@ export default function App() {
       />
 
       <main data-dns-shell-main className="workspace-main">
+        {openTool ? <section className="workspace-tool-view" aria-label={openTool.label}>
+          <div className="workspace-tool-toolbar">
+            <button type="button" className="dns-button" data-variant="secondary" onClick={() => setOpenTool(null)}>{language === 'de' ? '← Zurück zum Workspace' : '← Torna al Workspace'}</button>
+            <strong>{openTool.label}</strong>
+            <a className="dns-button" data-variant="secondary" href={openTool.url || '#'} target="_blank" rel="noopener noreferrer">{language === 'de' ? 'Standalone (Fallback)' : 'Standalone (emergenza)'}</a>
+          </div>
+          <iframe className="workspace-tool-frame" title={openTool.label} src={openTool.url || 'about:blank'} referrerPolicy="strict-origin-when-cross-origin" />
+          <p className="workspace-tool-note">{language === 'de' ? 'Wenn ein Tool Einbettung blockiert, bleibt der Standalone-Zugang verfügbar. Authentifizierung wird nicht umgangen.' : 'Se un tool blocca l’incorporamento, rimane disponibile l’accesso standalone. L’autenticazione non viene aggirata.'}</p>
+        </section> : <>
         <section className="workspace-intro">
           <div>
             <span className="dns-kicker">{text.kicker}</span>
@@ -111,6 +121,7 @@ export default function App() {
               selectedTool={selectedTool}
               onSelectTool={setSelectedTool}
               onClearSelection={() => setSelectedTool(null)}
+              onOpenTool={setOpenTool}
             />
           ) : (
             <RadialNavigator
@@ -126,6 +137,7 @@ export default function App() {
             onClose={() => setSelectedTool(null)}
           />
         </div>
+        </>}
       </main>
     </div>
   );
