@@ -128,6 +128,7 @@ export default function App() {
               selectedTool={selectedTool}
               onSelectTool={setSelectedTool}
               onClearSelection={() => setSelectedTool(null)}
+              onOpenTool={setOpenTool}
             />
           )}
 
