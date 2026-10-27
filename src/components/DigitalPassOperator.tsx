@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import './DigitalPassOperator.css';
+import { passAuth, onAuthStateChanged, operatorSignIn, signOut, passRequest, passApiConfigured } from '../services/digitalPassApi';
 
-type Prepared = { physicalPassId: string; code: string; expiresAt: number };
+type Prepared = { physicalPassId: string; preparationId: string; code: string; expiresAt: number };
 type Props = { language: DNSWorkspaceLanguage; onClose: () => void };
 const t = {
   de: { title: 'DNS Saisonkarte aktivieren', intro: 'Kartennummer eingeben, kurzen Code mitteilen und den Verkauf bestätigen.',
@@ -21,42 +22,53 @@ const t = {
     note: 'Nessuna vendita e nessun QR vengono attivati senza conferma autorizzata del server.',
   },
 };
-const apiBase = (import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE || '').replace(/\/$/, '');
+
 
 export function DigitalPassOperator({ language, onClose }: Props) {
   const c = t[language];
+  const [user, setUser] = useState(passAuth.currentUser);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  useEffect(() => onAuthStateChanged(passAuth, value => { setUser(value); setPrepared(null); setStatus('idle'); }), []);
+  async function login(event: FormEvent) { event.preventDefault(); setStatus('busy'); try { await operatorSignIn(email, password); setPassword(''); setStatus('idle'); } catch { setError(c.error); setStatus('error'); } }
   const [number, setNumber] = useState('');
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [status, setStatus] = useState<'idle'|'busy'|'confirmed'|'error'>('idle');
   const [error, setError] = useState('');
-  const hasBackend = Boolean(apiBase);
+  const hasBackend = passApiConfigured && Boolean(user);
   async function prepare(event: FormEvent) {
     event.preventDefault();
     if (!hasBackend || !/^\d{1,12}$/.test(number.trim()) || status === 'busy') return;
     setStatus('busy'); setError(''); setPrepared(null);
     try {
-      // No anonymous/unauthenticated requests: this screen must obtain an operator
-      // identity assertion via the canonical DNS Core auth integration first.
-      // Until the bridge exists, fail closed rather than impersonating a seller.
-      throw new Error('OPERATOR_AUTH_NOT_WIRED');
+      const result = await passRequest<Prepared>('/v1/pass-activations/prepare', { passNumber: number.trim() });
+      if (!result.physicalPassId || !result.preparationId || !/^[A-HJ-NP-Z2-9]{6}$/.test(result.code) || result.expiresAt <= Date.now()) throw new Error('INVALID_RESPONSE');
+      setPrepared(result); setStatus('idle');
     } catch {
       setError(c.unavailable); setStatus('error');
     }
   }
   async function validate() {
     if (!hasBackend || !prepared || status === 'busy') return;
-    setError(c.unavailable); setStatus('error');
+    setStatus('busy'); setError('');
+    try {
+      const result = await passRequest<{ status: string }>('/v1/pass-activations/validate', { physicalPassId: prepared.physicalPassId, preparationId: prepared.preparationId });
+      if (result.status !== 'SOLD_ATTESTED') throw new Error('INVALID_RESPONSE');
+      setPrepared(null); setStatus('confirmed');
+    } catch { setError(c.error); setStatus('error'); }
   }
   return <section className="dns-pass-operator dns-card" aria-label={c.title}>
     <div className="dns-pass-head">
       <div><span className="dns-kicker">DNS WORKSPACE / DIGITAL PASS</span><h2>{c.title}</h2><p>{c.intro}</p></div>
       <button type="button" className="dns-button" data-variant="secondary" onClick={onClose}>{c.close}</button>
     </div>
+    {!user && <form onSubmit={login} className="dns-pass-form"><label>Email<input type="email" required autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} /></label><label>Password<input type="password" required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} /></label><button type="submit" className="dns-button" disabled={status === 'busy'}>{language === 'it' ? 'Accedi' : 'Anmelden'}</button></form>}
+    {user && <button className="dns-button" onClick={() => { void signOut(passAuth); }}>{language === 'it' ? 'Esci' : 'Abmelden'}</button>}
     <form onSubmit={prepare} className="dns-pass-form">
       <label htmlFor="dns-pass-number">{c.number}</label>
       <input id="dns-pass-number" inputMode="numeric" autoComplete="off" value={number}
         onChange={e => { setNumber(e.target.value); setPrepared(null); setStatus('idle'); setError(''); }}
-        placeholder="000123" maxLength={12} />
+        placeholder="000123" maxLength={12} disabled={status === 'busy'} />
       <button className="dns-button" type="submit" disabled={!hasBackend || !/^\d{1,12}$/.test(number.trim()) || status === 'busy'}>{status==='busy'?c.busy:c.prepare}</button>
     </form>
     {prepared && <div className="dns-pass-secret"><small>{c.code}</small><strong>{prepared.code}</strong><p>{c.read}</p>

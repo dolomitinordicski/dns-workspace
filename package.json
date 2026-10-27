@@ -12,7 +12,8 @@
   "dependencies": {
     "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#foundation-v1.3.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "firebase": "^12.3.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",

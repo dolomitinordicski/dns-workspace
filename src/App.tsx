@@ -103,7 +103,7 @@ export default function App() {
           <p>{language === 'de' ? 'Saisonkarten-Aktivierung (noch nicht live)' : 'Attivazione stagionali (non ancora operativa)'}</p>
           <button type="button" className="dns-button" data-variant="secondary" onClick={() => setDigitalPassOpen(true)}>{language === 'de' ? 'Oberfläche öffnen' : 'Apri interfaccia'}</button>
         </div>
-        <div className={["radial-shell"', "dns-card", selectedTool ? "has-selection" : ""].filter(Boolean).join(" ")}>
+        <div className={["radial-shell", "dns-card", selectedTool ? "has-selection" : ""].filter(Boolean).join(" ")}>
           <div className="radial-shell-head">
             <div>
               <strong className="dns-section-title">
