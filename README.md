@@ -39,3 +39,17 @@ DNS Workspace
 ```
 
 Standalone tool URLs remain available for debugging, emergency access and gradual migration.
+
+## DNS Digital Pass — deployment gate (pilot 2026/27)
+
+The customer UI is **not live** on this branch. Firebase email-link sign-in is enabled in project `dns-core`, and the approved GitHub Pages redirect host is `dolomitinordicski.github.io`; the customer return route must be `https://dolomitinordicski.github.io/dns-workspace/#digital-pass`.
+
+Before enabling the customer flow:
+
+1. Merge and validate the upstream Digital Pass backend PRs, verify Firestore backup, inventory revision, privacy notice, authorized origins, HMAC secret, runtime identity and permissions, and deploy `digitalPassApi` to `europe-west8` only after review.
+2. Set build-time `VITE_DNS_DIGITAL_PASS_API_BASE` to the **actual deployed HTTPS endpoint**, not a guessed Cloud Functions URL. Confirm that the function accepts POST routes including `/v1/pass-registrations/complete` and `/v1/me/digital-pass`. Configure backend `DNS_PASS_ALLOWED_ORIGINS` to allow the exact Workspace origin `https://dolomitinordicski.github.io`.
+3. Set `VITE_DNS_DIGITAL_PASS_PRIVACY_URL` to the approved published DNS privacy notice. Confirm all three languages and consent recording. A configured backend alone does not authorize a public pilot.
+4. Test email-link authentication (same-device and cross-device), pass registration, QR visibility, scanner authorization and revocation with disposable pilot assignments; then explicitly approve the production launch.
+5. Keep Brevo marketing DOI disabled independently until its template/API flow is proven. Firebase service-login email is **not** Brevo marketing consent.
+
+The app intentionally disables the registration form when the API base variable is missing. Never place server credentials or Firebase HMAC secrets in `VITE_*` variables, which are bundled into public JavaScript.
