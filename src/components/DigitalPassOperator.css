@@ -3,6 +3,7 @@
 .dns-pass-head h2 { margin: 8px 0; }
 .dns-pass-form { display: grid; gap: 12px; max-width: 360px; margin: 22px 0; }
 .dns-pass-form input { width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #82969a; border-radius: 8px; background: var(--dns-surface, #fff); color: inherit; font: inherit; }
+.dns-pass-form input[type="checkbox"] { width: auto; min-height: auto; margin-right: 8px; }
 .dns-pass-form .dns-button:disabled, .dns-pass-secret .dns-button:disabled { opacity: .5; cursor: not-allowed; }
 .dns-pass-secret { padding: 20px; border: 1px solid #aad0d1; border-radius: 12px; display: grid; gap: 10px; justify-items: start; }
 .dns-pass-secret strong { font-size: 2rem; letter-spacing: .13em; font-variant-numeric: tabular-nums; }
