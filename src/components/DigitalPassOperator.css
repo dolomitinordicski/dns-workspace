@@ -1,0 +1,11 @@
+.dns-pass-operator { max-width: 760px; margin: 24px auto; padding: 28px; }
+.dns-pass-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.dns-pass-head h2 { margin: 8px 0; }
+.dns-pass-form { display: grid; gap: 12px; max-width: 360px; margin: 22px 0; }
+.dns-pass-form input { width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #82969a; border-radius: 8px; background: var(--dns-surface, #fff); color: inherit; font: inherit; }
+.dns-pass-form .dns-button:disabled, .dns-pass-secret .dns-button:disabled { opacity: .5; cursor: not-allowed; }
+.dns-pass-secret { padding: 20px; border: 1px solid #aad0d1; border-radius: 12px; display: grid; gap: 10px; justify-items: start; }
+.dns-pass-secret strong { font-size: 2rem; letter-spacing: .13em; font-variant-numeric: tabular-nums; }
+.dns-pass-warning { padding: 14px; border: 1px solid #c8b58c; border-radius: 8px; }
+.dns-pass-note { opacity: .75; font-size: .85rem; }
+@media(max-width:600px) { .dns-pass-operator { padding: 16px; } .dns-pass-head { flex-direction: column; } }
