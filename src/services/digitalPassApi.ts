@@ -24,6 +24,11 @@ export function digitalPassReturnUrl(currentHref: string): string {
       (current.protocol !== 'https:' && current.hostname !== 'localhost')) {
     throw new Error('DIGITAL_PASS_AUTH_DOMAIN_NOT_APPROVED');
   }
+  // Only use the real Workspace route on GitHub Pages, not another repo's page.
+  if (current.hostname === 'dolomitinordicski.github.io' &&
+      current.pathname !== '/dns-workspace/' && current.pathname !== '/dns-workspace/index.html') {
+    throw new Error('DIGITAL_PASS_AUTH_ROUTE_NOT_APPROVED');
+  }
   // Preserve GitHub Pages base path while excluding query tokens.
   return current.origin + current.pathname + '#digital-pass';
 }
