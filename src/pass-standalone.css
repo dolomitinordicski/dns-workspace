@@ -75,3 +75,11 @@ main,.dns-card,#login,#registration,#activation,#ticket{min-width:0;max-width:10
   .pass-hero{padding:23px 16px}
   .pass-benefits span{font-size:11px}
 }
+
+/* Hide decorative tilted pass on phones: no overflow and full-width message. */
+@media (max-width: 600px) {
+  .pass-hero { grid-template-columns: minmax(0, 1fr); }
+  .pass-hero-copy { min-width: 0; width: 100%; }
+  .pass-preview { display: none !important; }
+  .pass-hero h1, .pass-hero p { max-width: 100%; }
+}
