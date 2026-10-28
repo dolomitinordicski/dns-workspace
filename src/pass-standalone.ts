@@ -11,7 +11,13 @@ const translations={
 };
 let lang:Lang='it',pass:Pass|null=null,loading=false;
 const setText=(id:string,value:string)=>{$(id).textContent=value;};
-function translate(){const t=translations[lang];document.documentElement.lang=lang;
+const marketing={
+ it:{hero:'Le tue piste. Il tuo pass. Sempre con te.',subtitle:'Porta lo stagionale sul telefono, in modo semplice e volontario.',action:'Attiva il Digital Pass ↓',one:'✓ Nessuna app da scaricare',two:'✓ Attivazione facoltativa',three:'✓ Tessera fisica sempre valida',step:'01 — ATTIVAZIONE',ticket:'IL TUO DIGITAL PASS'},
+ de:{hero:'Deine Loipen. Dein Pass. Immer dabei.',subtitle:'Nimm deine Saisonkarte ganz einfach digital mit – freiwillig und unkompliziert.',action:'Digital Pass aktivieren ↓',one:'✓ Keine App erforderlich',two:'✓ Freiwillige Aktivierung',three:'✓ Physische Karte bleibt gültig',step:'01 — AKTIVIERUNG',ticket:'DEIN DIGITAL PASS'},
+ en:{hero:'Your trails. Your pass. Always with you.',subtitle:'Carry your season pass on your phone. Simple, convenient and optional.',action:'Activate Digital Pass ↓',one:'✓ No app download',two:'✓ Optional activation',three:'✓ Physical pass stays valid',step:'01 — ACTIVATION',ticket:'YOUR DIGITAL PASS'}
+};
+function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
+ for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
  for(const [id,key] of Object.entries({'heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot'}))setText(id,t[key as keyof typeof t]);
 }
 function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
