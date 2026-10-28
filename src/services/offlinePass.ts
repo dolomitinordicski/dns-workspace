@@ -17,7 +17,7 @@ export async function saveOfflinePass(pass:StoredPass){
 export async function readOfflinePass():Promise<StoredPass|null>{
  try{const key=await get<CryptoKey>('key');const data=await get<{iv:Uint8Array;ciphertext:ArrayBuffer}>('pass');
  if(!key||!data)return null;
- const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:data.iv},key,data.ciphertext);
+ const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(new Uint8Array(data.iv).buffer as ArrayBuffer)},key,data.ciphertext);
  const pass=JSON.parse(new TextDecoder().decode(raw)) as StoredPass;
  return pass.status==='ACTIVE'&&/^dns-pass:v1:[A-Za-z0-9_-]{43}$/.test(pass.qrPayload)?pass:null;
  }catch{return null}
