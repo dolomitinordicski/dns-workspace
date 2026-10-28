@@ -1,0 +1,19 @@
+{
+  "name": "Dolomiti NordicSki Digital Pass",
+  "short_name": "DNS Pass",
+  "description": "Accesso facoltativo alla tessera digitale Dolomiti NordicSki.",
+  "id": "/dns-workspace/pass.html",
+  "start_url": "/dns-workspace/pass.html",
+  "scope": "/dns-workspace/",
+  "display": "standalone",
+  "background_color": "#f4f7f7",
+  "theme_color": "#0D4D5E",
+  "icons": [
+    {
+      "src": "/dns-workspace/digital-pass-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
