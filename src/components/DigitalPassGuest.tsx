@@ -23,7 +23,7 @@ export function DigitalPassGuest({ onClose }: { onClose: () => void }) {
       if (result.registrationIds.length) { const value=await passRequest<Pass>('/v1/me/digital-pass',{physicalPassId:result.registrationIds[0]}); if(!cancelled)setPass(value); }
     }).catch(()=>{if(!cancelled)setMessage(c.error);}); return ()=>{cancelled=true;};
   },[user,enabled,c.error]);
-  useEffect(()=>{let cancelled=false;setQr('');if(pass?.status==='ACTIVE')void QRCode.toDataURL(pass.qrPayload,{width:320,margin:3,errorCorrectionLevel:'M'}).then(value=>{if(!cancelled)setQr(value);});return()=>{cancelled=true;};},[pass]);
+  useEffect(()=>{let cancelled=false;setQr('');if(pass?.status==='ACTIVE' && /^dns-pass:v1:[A-Za-z0-9_-]{43}$/.test(pass.qrPayload) && passApiConfigured)void QRCode.toDataURL(`${(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE as string).replace(/\/$/,'')}/v/${pass.qrPayload.slice('dns-pass:v1:'.length)}`,{width:320,margin:3,errorCorrectionLevel:'M'}).then(value=>{if(!cancelled)setQr(value);});return()=>{cancelled=true;};},[pass]);
   async function emailAction(event:FormEvent) {event.preventDefault();setBusy(true);setMessage('');try {if(hasEmailLink()) await finishEmailLink(email); else {await requestEmailLink(email);setMessage(c.sent);}}catch{setMessage(c.error);}finally{setBusy(false);}}
   async function register(event:FormEvent) {event.preventDefault();if(!accepted)return;setBusy(true);setMessage('');try{
     const result=await passRequest<{registrationId:string}>('/v1/pass-registrations/complete',{passNumber:number.trim(),code:code.trim().toUpperCase(),givenName,familyName,language});
