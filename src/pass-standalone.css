@@ -48,3 +48,6 @@ a{color:var(--color-dns-deep)}.dns-note{color:var(--color-dns-muted);font:12px/1
 @media(max-width:600px){.pass-hero{min-height:340px;grid-template-columns:minmax(0,1fr) 104px;gap:6px;padding:25px 20px}.pass-hero h1{font-size:clamp(28px,8vw,38px)}.pass-hero p{font-size:13px}.pass-preview{height:176px;width:130px;padding:12px;transform:rotate(9deg) translateX(12px)}.pass-preview-head{font-size:6px}.pass-preview-head span:first-child{font-size:17px}.pass-preview-mountain{font-size:43px}.pass-preview>strong{font-size:19px}.pass-preview-foot{font-size:7px}.pass-benefits{grid-template-columns:1fr;gap:7px}.pass-benefits span{padding:9px 13px}.dns-card{padding:22px 17px}#activation{border-radius:12px}}
 @media(max-width:380px){.pass-hero{grid-template-columns:1fr}.pass-preview{display:none}}
 @media(prefers-reduced-motion:reduce){.pass-hero-link{scroll-behavior:auto}}
+
+#pass-number{font:800 clamp(23px,6vw,34px)/1.2 var(--font-display);letter-spacing:.015em;color:var(--color-dns-deep);overflow-wrap:anywhere}
+#save-offline{display:block;margin:18px auto 8px}
