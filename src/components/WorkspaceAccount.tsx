@@ -5,7 +5,7 @@ import type { DNSWorkspaceLanguage } from '../services/foundation';
 type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity };
 const translations = {
   it: {
-    title: 'Accesso unico DNS', google: 'Accedi con Google', alternative: 'Oppure con account DNS',
+    title: 'Accesso DNS', google: 'Usa un account Google collegato',
     email: 'Email', password: 'Password', enter: 'Accedi', exit: 'Esci',
     waiting: 'Verifica identità DNS…', unavailable: 'Non riesco a leggere i permessi di DNS Core.',
     missing: 'L’account è autenticato ma non ancora abilitato in DNS Core.',
@@ -15,7 +15,7 @@ const translations = {
     notice: 'La sessione è condivisa con le applicazioni che usano DNS Core. Polls richiede ancora un collegamento sicuro separato.',
   },
   de: {
-    title: 'Einheitlicher DNS-Zugang', google: 'Mit Google anmelden', alternative: 'Oder mit DNS-Konto',
+    title: 'DNS-Zugang', google: 'Mit verknüpftem Google-Konto anmelden',
     email: 'E-Mail', password: 'Passwort', enter: 'Anmelden', exit: 'Abmelden',
     waiting: 'DNS-Identität wird geprüft…', unavailable: 'DNS Core-Berechtigungen nicht verfügbar.',
     missing: 'Authentifiziert, aber noch nicht in DNS Core freigeschaltet.',
@@ -28,7 +28,6 @@ const translations = {
 
 export function WorkspaceAccount({ language, identity }: Props) {
   const c = translations[language];
-  const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -73,26 +72,23 @@ export function WorkspaceAccount({ language, identity }: Props) {
           {identity.state === 'active' || identity.state === 'inactive' || identity.state === 'error' ? (
             <button type="button" className="dns-button" data-variant="secondary"
               onClick={() => void signOutDNS()}>{c.exit}</button>
-          ) : identity.state === 'signed-out' ? (
-            <>
-              <button disabled={busy} type="button" className="dns-button" data-variant="primary"
-                onClick={() => void runLogin(signInDNSGoogle)}>{c.google}</button>
-              <button type="button" className="dns-button" data-variant="secondary"
-                onClick={() => setShowEmail(value => !value)}>{c.alternative}</button>
-            </>
           ) : null}
         </div>
       </div>
       {identity.state === 'active' &&
         <p className="text-xs mt-2">{c.access}: {identity.memberships.length} / {identity.grants.length}.</p>}
-      {showEmail && identity.state === 'signed-out' && (
+      {identity.state === 'signed-out' && (
         <form className="flex flex-wrap items-end gap-2 mt-3" onSubmit={emailLogin}>
           <label>{c.email}<input className="dns-input w-full" type="email" autoComplete="username"
             required value={email} onChange={e => setEmail(e.target.value)} /></label>
           <label>{c.password}<input className="dns-input w-full" type="password" autoComplete="current-password"
             required value={password} onChange={e => setPassword(e.target.value)} /></label>
-          <button className="dns-button" type="submit" disabled={busy}>{c.enter}</button>
+          <button className="dns-button" data-variant="primary" type="submit" disabled={busy}>{c.enter}</button>
         </form>
+      )}
+      {identity.state === 'signed-out' && (
+        <button disabled={busy} type="button" className="dns-button mt-3" data-variant="secondary"
+          onClick={() => void runLogin(signInDNSGoogle)}>{c.google}</button>
       )}
       {error && <p className="text-sm mt-2" role="alert">{error}</p>}
     </section>
