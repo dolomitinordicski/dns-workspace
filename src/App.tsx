@@ -153,6 +153,7 @@ export default function App() {
         </div>
         </>}
       </main>
+      <footer data-dns-tool-footer><div className="dns-tool-footer-shell"><span className="dns-tool-footer-primary">Dolomiti NordicSki</span><span className="dns-tool-footer-meta">DNS Workspace · Digital Platform</span></div></footer>
     </div>
   );
 }
