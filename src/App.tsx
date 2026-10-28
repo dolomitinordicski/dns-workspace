@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DigitalPassOperator } from './components/DigitalPassOperator';
+import { WorkspaceAccount } from './components/WorkspaceAccount';
+import { watchDNSIdentity, type DNSIdentity } from './services/dnsIdentity';
 import { RadialNavigator } from './components/RadialNavigator';
 import { SystemMapNavigator } from './components/SystemMapNavigator';
 import { ToolDrawer } from './components/ToolDrawer';
@@ -39,8 +41,10 @@ export default function App() {
   const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>('system-map');
   const [digitalPassOpen, setDigitalPassOpen] = useState(false);
+  const [identity, setIdentity] = useState<DNSIdentity>({ state: 'loading' });
 
   useEffect(() => subscribeDNSWorkspaceLanguage(setLanguage), []);
+  useEffect(() => watchDNSIdentity(setIdentity), []);
   useEffect(() => {
     document.documentElement.dataset.workspaceLanguage = language;
   }, [language]);
@@ -66,6 +70,7 @@ export default function App() {
       />
 
       <main data-dns-shell-main className="workspace-main">
+        <WorkspaceAccount language={language} identity={identity} />
         {digitalPassOpen ? <DigitalPassOperator language={language} onClose={() => setDigitalPassOpen(false)} /> : openTool ? <section className="workspace-tool-view" aria-label={openTool.label}>
           <div className="workspace-tool-toolbar">
             <button type="button" className="dns-button" data-variant="secondary" onClick={() => setOpenTool(null)}>{language === 'de' ? '← Zurück zum Workspace' : '← Torna al Workspace'}</button>
