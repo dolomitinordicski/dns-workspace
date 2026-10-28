@@ -26,7 +26,9 @@ function translate(){const t=translations[lang];const m=marketing[lang];document
 function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
  $('unavailable').classList.toggle('hide',passActivationEnabled);
  $('login').classList.toggle('hide',authorized);
- $('registration').classList.toggle('hide',!passActivationEnabled||!authorized||!!pass);
+ const registrationVisible=passActivationEnabled&&authorized&&!pass;
+ $('registration').classList.toggle('hide',!registrationVisible);
+ ($('registration') as HTMLFormElement).hidden=!registrationVisible;
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
  $('save-offline').classList.toggle('hide',!pass||offline);
@@ -63,4 +65,4 @@ $('logout').addEventListener('click',()=>{pass=null;offline=false;void clearOffl
 onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(!navigator.onLine)void restoreOffline();else void loadPass()});
 translate();render();
 
-if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/'}).catch(()=>{})});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/',updateViaCache:'none'}).catch(()=>{})});
