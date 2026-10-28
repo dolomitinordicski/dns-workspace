@@ -4,6 +4,8 @@ import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finis
 
 type Lang='it'|'de'|'en';
 type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string};
+// Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
+const passActivationEnabled = passApiConfigured && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
 const $=(id:string)=>document.getElementById(id)!;
 const translations={
  it:{heading:'Il tuo Digital Pass DNS',intro:'La registrazione digitale è facoltativa. La tessera fisica rimane valida.',email:'Email',send:'Invia link di accesso',confirm:'Conferma email',number:'Numero tessera',code:'Codice di attivazione',given:'Nome',family:'Cognome',privacy:'Ho letto l’informativa privacy',register:'Attiva Digital Pass',logout:'Esci',unavailable:'Attivazione temporaneamente non disponibile: servizio di attivazione tessere non ancora disponibile. La tessera cartacea resta valida.',home:'Dal menu del browser puoi aggiungere questa pagina alla schermata Home.',foot:'La registrazione non modifica la validità della tessera cartacea.',sent:'Controlla la tua email. Se hai aperto il link su un altro dispositivo, inserisci qui lo stesso indirizzo.',error:'Operazione non completata. Verifica dati e connessione.',offline:'COPIA OFFLINE · Stato non aggiornato',online:'TESSERA SALVATA · Verifica online possibile',save:'Salva sul dispositivo per uso offline',saved:'Copia offline salvata su questo dispositivo.',authenticated:'Email verificata. Accesso riuscito! L’attivazione delle tessere non è ancora disponibile.'},
@@ -22,15 +24,15 @@ function translate(){const t=translations[lang];const m=marketing[lang];document
  for(const [id,key] of Object.entries({'heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save'}))setText(id,t[key as keyof typeof t]);
 }
 function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
- $('unavailable').classList.toggle('hide',passApiConfigured);
+ $('unavailable').classList.toggle('hide',passActivationEnabled);
  $('login').classList.toggle('hide',authorized);
- $('registration').classList.toggle('hide',!passApiConfigured||!authorized||!!pass);
+ $('registration').classList.toggle('hide',!passActivationEnabled||!authorized||!!pass);
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
  $('save-offline').classList.toggle('hide',!pass||offline);
  $('logout').classList.toggle('hide',!authorized);
  ($('login-button') as HTMLButtonElement).disabled=loading;
- ($('register-button') as HTMLButtonElement).disabled=loading||!passApiConfigured;
+ ($('register-button') as HTMLButtonElement).disabled=loading||!passActivationEnabled;
  ($('logout') as HTMLButtonElement).disabled=loading;
 }
 async function loadPass(){if(!passApiConfigured||!passAuth.currentUser?.emailVerified)return;
@@ -50,6 +52,7 @@ $('login').addEventListener('submit',async(e)=>{e.preventDefault();loading=true;
  if(hasEmailLink()){await finishEmailLink(email);if(!passApiConfigured)setText('status',translations[lang].authenticated);}else{await requestEmailLink(email);setText('status',translations[lang].sent);}
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loading=true;render();setText('status','');try{
+ if(!passActivationEnabled)throw new Error('PASS_ACTIVATION_DISABLED');
  const result=await passRequest<{registrationId:string}>('/v1/pass-registrations/complete',{
  passNumber:($('number') as HTMLInputElement).value.trim(),code:($('code') as HTMLInputElement).value.trim().toUpperCase(),
  givenName:($('given') as HTMLInputElement).value.trim(),familyName:($('family') as HTMLInputElement).value.trim(),language:lang});
@@ -57,7 +60,7 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  pass=await passRequest<Pass>('/v1/me/digital-pass',{physicalPassId:result.registrationId});await showPass();
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('logout').addEventListener('click',()=>{pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
-onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;render();if(user?.emailVerified&&!passApiConfigured)setText('status',translations[lang].authenticated);if(!navigator.onLine)void restoreOffline();else void loadPass()});
+onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(!navigator.onLine)void restoreOffline();else void loadPass()});
 translate();render();
 
 if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/'}).catch(()=>{})});
