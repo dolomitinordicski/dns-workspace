@@ -6,9 +6,9 @@ const app=readFileSync('src/App.tsx','utf8');
 const stylesheet=readFileSync('src/pass-standalone.css','utf8');
 const config=readFileSync('vite.config.ts','utf8');
 assert.match(config,/digitalPass:.*pass\.html/, 'Vite must generate a separate standalone entry');
-assert.match(html,/data-dns-tool-header/);
+assert.doesNotMatch(html,/data-dns-tool-header/, 'Public page deliberately has no app header');
 assert.match(html,/data-dns-tool-footer/);
-assert.match(html,/dns-tool-header-logo/);
+
 assert.match(html,/pass-standalone\.css/);
 assert.doesNotMatch(html,/<style[ >]/, 'Styles must not live inline in HTML');
 assert.match(stylesheet,/--color-dns-deep/);
