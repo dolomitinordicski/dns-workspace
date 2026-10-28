@@ -26,7 +26,7 @@ export function digitalPassReturnUrl(currentHref: string): string {
   }
   // Only use the real Workspace route on GitHub Pages, not another repo's page.
   if (current.hostname === 'dolomitinordicski.github.io' &&
-      current.pathname !== '/dns-workspace/' && current.pathname !== '/dns-workspace/index.html') {
+      current.pathname !== '/dns-workspace/' && current.pathname !== '/dns-workspace/index.html' && current.pathname !== '/dns-workspace/pass.html') {
     throw new Error('DIGITAL_PASS_AUTH_ROUTE_NOT_APPROVED');
   }
   // Preserve GitHub Pages base path while excluding query tokens.
