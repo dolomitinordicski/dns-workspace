@@ -72,6 +72,13 @@ export default function App() {
           <WorkspaceNavigator language={language} view={activeView}
             onOpenTool={openAllowedTool} />
         )}
+        {authorized && !openTool && (
+          <p className="text-xs py-3">
+            <a href="/dns-workspace/pass.html" className="dns-button" data-variant="secondary">
+              Digital Pass · {language === 'de' ? 'Öffentliche Registrierung' : 'Registrazione pubblica'}
+            </a>
+          </p>
+        )}
       </main>
       <footer data-dns-tool-footer>
         <div className="dns-tool-footer-shell">
