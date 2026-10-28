@@ -20,7 +20,7 @@ export function initDNSWorkspaceFoundation(language?: DNSWorkspaceLanguage) {
       language,
       shellProfile: 'operational',
       print: false,
-      footer: false,
+      footer: true,
       capabilities: [],
       accessibility: {
         enabled: true,

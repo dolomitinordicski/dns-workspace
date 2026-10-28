@@ -1,7 +1,7 @@
 name: Digital Pass customer UI
 on:
   pull_request:
-    branches: ['feat/digital-pass-operator-screen']
+    branches: ['main', 'feat/digital-pass-operator-screen']
 permissions:
   contents: read
 jobs:
@@ -14,3 +14,4 @@ jobs:
           node-version: '22'
       - run: npm install
       - run: npm run build
+      - run: node scripts/check-digital-pass-standalone.mjs

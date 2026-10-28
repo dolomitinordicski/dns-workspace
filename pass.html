@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0D4D5E"><meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="/dns-workspace/digital-pass.webmanifest"><title>DNS Digital Pass · Registrazione</title>
+<link rel="stylesheet" href="/src/pass-standalone.css"></head><body><header class="dns-tool-header" data-dns-tool-header><div class="dns-tool-header-shell"><div class="dns-tool-header-brand"><img class="dns-tool-header-logo" src="https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/foundation-v1.3.0/brand/logo-web.png" alt="Dolomiti NordicSki"><div class="dns-tool-header-identity"><div class="dns-tool-header-title"><strong>DNS</strong> <span>DIGITAL PASS</span></div><div class="dns-tool-header-subtitle">Saisonkarte · Tessera stagionale</div></div></div></div></header>
+<main><article class="dns-card"><label for="lang">Language / Sprache / Lingua</label><select id="lang"><option value="it">Italiano</option><option value="de">Deutsch</option><option value="en">English</option></select>
+<h1 id="heading">Il tuo Digital Pass DNS</h1><p id="intro">La registrazione digitale è facoltativa. La tessera fisica rimane valida.</p>
+<p id="unavailable" class="dns-note hide">Servizio non ancora disponibile.</p>
+<form id="login"><label id="email-label" for="email">Email</label><input id="email" type="email" autocomplete="email" required><button class="dns-button" type="submit" id="login-button">Invia link di accesso</button></form>
+<form id="registration" class="hide">
+<label for="number" id="number-label">Numero tessera</label><input id="number" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" required>
+<label for="code" id="code-label">Codice di attivazione</label><input id="code" maxlength="6" minlength="6" autocomplete="off" required>
+<label for="given" id="given-label">Nome</label><input id="given" autocomplete="given-name" required maxlength="100">
+<label for="family" id="family-label">Cognome</label><input id="family" autocomplete="family-name" required maxlength="100">
+<label><input id="privacy" type="checkbox" required><a target="_blank" rel="noopener noreferrer" href="https://www.dolomitinordicski.com/de/privacy" id="privacy-label">Ho letto l'informativa privacy</a></label>
+<button class="dns-button" type="submit" id="register-button">Attiva Digital Pass</button></form>
+<section id="ticket" class="hide" aria-label="DNS Digital Pass"><h2>DNS Saisonkarte 2026/27</h2><strong id="holder"></strong><p id="pass-number"></p><img id="qr" alt="QR Digital Pass"><p class="dns-note" id="home-tip">Dal menu del browser puoi aggiungere questa pagina alla schermata Home.</p></section>
+<p id="status" role="status" aria-live="polite"></p><button class="dns-button" id="logout" class="hide" type="button">Esci</button>
+</article><p class="muted" id="foot">La registrazione non modifica la validità della tessera cartacea.</p></main><footer class="dns-tool-footer" data-dns-tool-footer><div class="dns-tool-footer-shell"><span class="dns-tool-footer-primary">Dolomiti NordicSki</span><span class="dns-tool-footer-meta">Digital Pass · 2026/27</span></div><img class="dns-footer-graphic" src="https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/foundation-v1.3.0/graphics/swoosh.svg" alt="" aria-hidden="true"></footer><script type="module" src="/src/pass-standalone.ts"></script></body></html>
