@@ -9,3 +9,42 @@ main{flex:1;width:min(100%,720px);margin:0 auto;padding:var(--dns-page-y,2rem) 2
 a{color:var(--color-dns-deep)}.dns-note{color:var(--color-dns-muted);font:12px/1.5 var(--font-alt)}.hide{display:none!important}#qr{max-width:100%;display:block;margin:16px auto}#status{margin-top:18px}#ticket{text-align:center;border-top:1px solid var(--color-dns-border);margin-top:25px;padding-top:20px}
 .dns-tool-footer{position:relative;overflow:hidden;background:var(--color-dns-deep);color:#fff;min-height:64px}.dns-tool-footer-shell{max-width:1440px;margin:auto;padding:20px 32px;display:flex;justify-content:space-between;gap:16px;align-items:center;min-height:64px}.dns-tool-footer-primary{font:600 11px var(--font-display);letter-spacing:.05em;text-transform:uppercase}.dns-tool-footer-meta{font:10px var(--font-alt);opacity:.68;letter-spacing:.04em;text-transform:uppercase}.dns-footer-graphic{position:absolute;right:-18px;top:50%;width:min(190px,38vw);transform:translateY(-50%);pointer-events:none}
 @media(max-width:600px){.dns-tool-header-shell{padding:16px}.dns-tool-header-logo{height:36px}.dns-tool-footer-shell{padding:18px 16px;flex-direction:column;align-items:flex-start}main{padding:20px 14px 40px}}
+
+/* Digital Pass editorial layer: all brand colors and font families use Foundation variables. */
+.pass-hero{position:relative;isolation:isolate;min-height:290px;display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:18px;align-items:center;padding:30px 28px;margin-bottom:15px;border-radius:var(--dns-card-radius);overflow:hidden;color:#fff;background:linear-gradient(130deg,var(--color-dns-deep) 25%,var(--color-dns-mid));}
+.pass-hero:before{content:"";position:absolute;z-index:-1;width:470px;height:470px;border:70px solid var(--color-dns-light);border-radius:50%;opacity:.12;left:40%;top:-240px}
+.pass-eyebrow{display:block;color:var(--color-dns-light);font:700 10px/1.4 var(--font-alt);letter-spacing:.13em}
+.pass-hero h1{font:700 clamp(29px,4.8vw,43px)/1.06 var(--font-display);letter-spacing:-.035em;margin:16px 0;max-width:450px}
+.pass-hero p{font:400 14px/1.6 var(--font-alt);color:#e1f1f1;max-width:340px}
+.pass-hero-link{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;background:var(--color-dns-light);color:var(--color-dns-deep);border-radius:var(--dns-control-radius);padding:12px 16px;text-decoration:none;font:700 12px var(--font-display)}
+.pass-hero-link:focus-visible{outline:3px solid white;outline-offset:3px}
+.pass-preview{height:230px;padding:17px;display:flex;flex-direction:column;justify-content:space-between;transform:rotate(7deg);border-radius:16px;background:linear-gradient(150deg,#fff,#deeff0);color:var(--color-dns-deep);box-shadow:0 18px 35px #09293455}
+.pass-preview-head,.pass-wallet-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font:700 9px var(--font-alt);letter-spacing:.08em}
+.pass-preview-head span:first-child{font:800 22px var(--font-display)}
+.pass-preview-mountain{text-align:center;font-size:59px;color:var(--color-dns-mid);line-height:1}
+.pass-preview>strong{font-size:25px;letter-spacing:-.03em}
+.pass-preview-foot{font:700 9px var(--font-alt);letter-spacing:.08em}
+.pass-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.pass-benefits span{border:1px solid var(--color-dns-border);background:var(--color-dns-surface);padding:13px 12px;border-radius:var(--dns-control-radius);font:600 11px/1.4 var(--font-alt)}
+.pass-step{display:flex;align-items:center;gap:12px;color:var(--color-dns-mid);font:700 10px var(--font-alt);letter-spacing:.1em}
+.pass-step-line{height:1px;background:var(--color-dns-border);flex:1}
+#activation{scroll-margin-top:20px}
+#activation>h1{font-size:clamp(23px,4vw,30px);margin:15px 0 8px}
+#activation>p:first-of-type{color:var(--color-dns-muted);font:14px/1.6 var(--font-alt)}
+#login .dns-button,#registration .dns-button{width:100%;min-height:52px;margin-top:23px}
+#ticket{border-top:none;margin-top:20px;padding-top:0}
+.pass-wallet-card{max-width:390px;margin:0 auto 16px;overflow:hidden;background:#fff;border-radius:18px;box-shadow:0 14px 45px #123c4930;text-align:left}
+.pass-wallet-top{padding:18px;background:var(--color-dns-deep);color:white}
+.pass-wallet-landscape{display:flex;align-items:flex-end;justify-content:flex-start;min-height:130px;padding:18px;color:white;background:linear-gradient(160deg,var(--color-dns-mid),var(--color-dns-deep));position:relative;overflow:hidden}
+.pass-wallet-landscape:after{content:"";position:absolute;width:200%;height:130px;border-radius:50%;background:var(--color-dns-light);opacity:.4;transform:rotate(-12deg);top:65px;left:-20%}
+.pass-wallet-landscape span{font:800 32px var(--font-display);position:relative;z-index:1}
+.pass-wallet-body{padding:22px;text-align:center}
+.pass-ticket-label{font:700 10px var(--font-alt);letter-spacing:.1em;color:var(--color-dns-mid)}
+.pass-wallet-body h2{font-size:24px;line-height:1.2;margin:10px 0 4px}
+.pass-wallet-body p{font:13px var(--font-alt);color:var(--color-dns-muted)}
+.pass-qr-wrap{display:inline-flex;padding:10px;border:1px solid var(--color-dns-border);border-radius:12px;margin:10px auto}
+.pass-qr-wrap img{width:min(230px,62vw);height:auto;margin:0!important}
+.pass-status{display:block;font:700 10px var(--font-alt);color:var(--color-dns-mid);letter-spacing:.08em}
+@media(max-width:600px){.pass-hero{min-height:340px;grid-template-columns:minmax(0,1fr) 104px;gap:6px;padding:25px 20px}.pass-hero h1{font-size:clamp(28px,8vw,38px)}.pass-hero p{font-size:13px}.pass-preview{height:176px;width:130px;padding:12px;transform:rotate(9deg) translateX(12px)}.pass-preview-head{font-size:6px}.pass-preview-head span:first-child{font-size:17px}.pass-preview-mountain{font-size:43px}.pass-preview>strong{font-size:19px}.pass-preview-foot{font-size:7px}.pass-benefits{grid-template-columns:1fr;gap:7px}.pass-benefits span{padding:9px 13px}.dns-card{padding:22px 17px}#activation{border-radius:12px}}
+@media(max-width:380px){.pass-hero{grid-template-columns:1fr}.pass-preview{display:none}}
+@media(prefers-reduced-motion:reduce){.pass-hero-link{scroll-behavior:auto}}
