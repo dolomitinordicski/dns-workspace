@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DigitalPassOperator } from './components/DigitalPassOperator';
 import { RadialNavigator } from './components/RadialNavigator';
 import { SystemMapNavigator } from './components/SystemMapNavigator';
 import { ToolDrawer } from './components/ToolDrawer';
@@ -37,6 +38,7 @@ export default function App() {
   const [selectedTool, setSelectedTool] = useState<WorkspaceTool | null>(null);
   const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>('system-map');
+  const [digitalPassOpen, setDigitalPassOpen] = useState(false);
 
   useEffect(() => subscribeDNSWorkspaceLanguage(setLanguage), []);
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function App() {
       />
 
       <main data-dns-shell-main className="workspace-main">
-        {openTool ? <section className="workspace-tool-view" aria-label={openTool.label}>
+        {digitalPassOpen ? <DigitalPassOperator language={language} onClose={() => setDigitalPassOpen(false)} /> : openTool ? <section className="workspace-tool-view" aria-label={openTool.label}>
           <div className="workspace-tool-toolbar">
             <button type="button" className="dns-button" data-variant="secondary" onClick={() => setOpenTool(null)}>{language === 'de' ? '← Zurück zum Workspace' : '← Torna al Workspace'}</button>
             <strong>{openTool.label}</strong>
@@ -96,6 +98,11 @@ export default function App() {
           </div>
         </section>
 
+        <div className="dns-card" style={{padding: '16px', marginBottom: '16px'}}>
+          <strong>DNS Digital Pass · Pilot 2026/27</strong>
+          <p>{language === 'de' ? 'Saisonkarten-Aktivierung (noch nicht live)' : 'Attivazione stagionali (non ancora operativa)'}</p>
+          <button type="button" className="dns-button" data-variant="secondary" onClick={() => setDigitalPassOpen(true)}>{language === 'de' ? 'Oberfläche öffnen' : 'Apri interfaccia'}</button>
+        </div>
         <div className={["radial-shell", "dns-card", selectedTool ? "has-selection" : ""].filter(Boolean).join(" ")}>
           <div className="radial-shell-head">
             <div>
