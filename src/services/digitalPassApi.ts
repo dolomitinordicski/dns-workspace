@@ -11,9 +11,32 @@ export const passApiConfigured = Boolean(import.meta.env.VITE_DNS_DIGITAL_PASS_A
 export async function operatorSignIn(email: string, password: string) {
   return signInWithEmailAndPassword(passAuth, email.trim(), password);
 }
+export function digitalPassReturnUrl(currentHref: string): string {
+  const current = new URL(currentHref);
+  // Never redirect authentication to unapproved previews, forks or custom hosts.
+  const approvedHosts = new Set([
+    'dolomitinordicski.github.io',
+    'dns-core.firebaseapp.com',
+    'dns-core.web.app',
+    'localhost',
+  ]);
+  if (!approvedHosts.has(current.hostname) ||
+      (current.protocol !== 'https:' && current.hostname !== 'localhost')) {
+    throw new Error('DIGITAL_PASS_AUTH_DOMAIN_NOT_APPROVED');
+  }
+  // Only use the real Workspace route on GitHub Pages, not another repo's page.
+  if (current.hostname === 'dolomitinordicski.github.io' &&
+      current.pathname !== '/dns-workspace/' && current.pathname !== '/dns-workspace/index.html') {
+    throw new Error('DIGITAL_PASS_AUTH_ROUTE_NOT_APPROVED');
+  }
+  // Preserve GitHub Pages base path while excluding query tokens.
+  return current.origin + current.pathname + '#digital-pass';
+}
 export async function requestEmailLink(email: string) {
-  const url = new URL(location.href); url.search = ''; url.hash = 'digital-pass';
-  await sendSignInLinkToEmail(passAuth, email.trim(), { url: url.toString(), handleCodeInApp: true });
+  await sendSignInLinkToEmail(passAuth, email.trim(), {
+    url: digitalPassReturnUrl(location.href),
+    handleCodeInApp: true,
+  });
 }
 export async function finishEmailLink(email: string) {
   if (!isSignInWithEmailLink(passAuth, location.href)) throw new Error('INVALID_EMAIL_LINK');

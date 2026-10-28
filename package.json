@@ -13,7 +13,9 @@
     "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#foundation-v1.3.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "firebase": "^12.3.0"
+    "firebase": "^12.3.0",
+    "qrcode": "^1.5.4",
+    "@zxing/browser": "^0.1.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
@@ -22,6 +24,7 @@
     "@vitejs/plugin-react": "^5.0.2",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "@types/qrcode": "^1.5.5"
   }
 }
