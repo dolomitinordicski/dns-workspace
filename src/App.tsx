@@ -1,6 +1,3 @@
-import { hasEmailLink } from './services/digitalPassApi';
-import { DigitalPassGuest } from './components/DigitalPassGuest';
-import { DigitalPassScanner } from './components/DigitalPassScanner';
 import { useEffect, useMemo, useState } from 'react';
 import { DigitalPassOperator } from './components/DigitalPassOperator';
 import { RadialNavigator } from './components/RadialNavigator';
@@ -41,7 +38,6 @@ export default function App() {
   const [selectedTool, setSelectedTool] = useState<WorkspaceTool | null>(null);
   const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
   const [activeView, setActiveView] = useState<WorkspaceView>('system-map');
-  const [passView,setPassView] = useState(location.hash === '#digital-pass' || hasEmailLink() ? 'guest' : '');
   const [digitalPassOpen, setDigitalPassOpen] = useState(false);
 
   useEffect(() => subscribeDNSWorkspaceLanguage(setLanguage), []);
@@ -70,7 +66,7 @@ export default function App() {
       />
 
       <main data-dns-shell-main className="workspace-main">
-        {passView === 'guest' ? <DigitalPassGuest onClose={() => { setPassView(''); history.replaceState(null,'',location.pathname); }} /> : passView === 'scanner' ? <DigitalPassScanner onClose={() => setPassView('')} /> : digitalPassOpen ? <DigitalPassOperator language={language} onClose={() => setDigitalPassOpen(false)} /> : openTool ? <section className="workspace-tool-view" aria-label={openTool.label}>
+        {digitalPassOpen ? <DigitalPassOperator language={language} onClose={() => setDigitalPassOpen(false)} /> : openTool ? <section className="workspace-tool-view" aria-label={openTool.label}>
           <div className="workspace-tool-toolbar">
             <button type="button" className="dns-button" data-variant="secondary" onClick={() => setOpenTool(null)}>{language === 'de' ? '← Zurück zum Workspace' : '← Torna al Workspace'}</button>
             <strong>{openTool.label}</strong>
@@ -107,7 +103,7 @@ export default function App() {
           <p>{language === 'de' ? 'Saisonkarten-Aktivierung (noch nicht live)' : 'Attivazione stagionali (non ancora operativa)'}</p>
           <button type="button" className="dns-button" data-variant="secondary" onClick={() => setDigitalPassOpen(true)}>{language === 'de' ? 'Oberfläche öffnen' : 'Apri interfaccia'}</button>
         </div>
-        <div className="dns-card" style={{padding:16,marginBottom:16}}><button className="dns-button" onClick={() => setPassView('guest')}>Digital Pass</button> <button className="dns-button" onClick={() => setPassView('scanner')}>Scanner</button></div>
+        <div className="dns-card" style={{padding:16,marginBottom:16}}><a className="dns-button" href="/dns-workspace/pass.html">Digital Pass · Registrazione pubblica</a></div>
         <div className={["radial-shell", "dns-card", selectedTool ? "has-selection" : ""].filter(Boolean).join(" ")}>
           <div className="radial-shell-head">
             <div>
