@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0D4D5E"><meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="/dns-workspace/digital-pass.webmanifest"><title>DNS Digital Pass · Registrazione</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#16353e;background:#f3f8f8}*{box-sizing:border-box}body{margin:0}
+header{background:#0d4d5e;color:white;padding:24px max(18px,calc((100% - 490px)/2))}header strong{font-size:21px;letter-spacing:.04em}
+main{max-width:530px;margin:32px auto;padding:0 18px 44px}.card{background:white;padding:28px;border-radius:18px;box-shadow:0 10px 35px #183f4c13}
+h1{font-size:27px;margin-top:0}p{line-height:1.55}label{display:block;font-weight:600;margin-top:16px}input,select{width:100%;padding:13px;border:1px solid #aec5c7;border-radius:9px;font:inherit;margin-top:7px}
+input[type=checkbox]{width:auto;margin-right:8px}button{background:#0d4d5e;color:white;border:0;border-radius:9px;padding:14px 19px;font:inherit;font-weight:700;cursor:pointer;margin-top:18px}button:disabled{opacity:.5;cursor:not-allowed}
+a{color:#0d4d5e}.muted{color:#4d656b;font-size:14px}.hide{display:none}#qr{max-width:100%;display:block;margin:16px auto}#status{margin-top:18px}#ticket{text-align:center;border-top:1px solid #e1eded;margin-top:25px;padding-top:20px}
+</style></head><body><header><strong>DOLOMITI NORDICSKI</strong></header>
+<main><article class="card"><label for="lang">Language / Sprache / Lingua</label><select id="lang"><option value="it">Italiano</option><option value="de">Deutsch</option><option value="en">English</option></select>
+<h1 id="heading">Il tuo Digital Pass DNS</h1><p id="intro">La registrazione digitale è facoltativa. La tessera fisica rimane valida.</p>
+<p id="unavailable" class="muted hide">Servizio non ancora disponibile.</p>
+<form id="login"><label id="email-label" for="email">Email</label><input id="email" type="email" autocomplete="email" required><button type="submit" id="login-button">Invia link di accesso</button></form>
+<form id="registration" class="hide">
+<label for="number" id="number-label">Numero tessera</label><input id="number" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" required>
+<label for="code" id="code-label">Codice di attivazione</label><input id="code" maxlength="6" minlength="6" autocomplete="off" required>
+<label for="given" id="given-label">Nome</label><input id="given" autocomplete="given-name" required maxlength="100">
+<label for="family" id="family-label">Cognome</label><input id="family" autocomplete="family-name" required maxlength="100">
+<label><input id="privacy" type="checkbox" required><a target="_blank" rel="noopener noreferrer" href="https://www.dolomitinordicski.com/de/privacy" id="privacy-label">Ho letto l'informativa privacy</a></label>
+<button type="submit" id="register-button">Attiva Digital Pass</button></form>
+<section id="ticket" class="hide" aria-label="DNS Digital Pass"><h2>DNS Saisonkarte 2026/27</h2><strong id="holder"></strong><p id="pass-number"></p><img id="qr" alt="QR Digital Pass"><p class="muted" id="home-tip">Dal menu del browser puoi aggiungere questa pagina alla schermata Home.</p></section>
+<p id="status" role="status" aria-live="polite"></p><button id="logout" class="hide" type="button">Esci</button>
+</article><p class="muted" id="foot">La registrazione non modifica la validità della tessera cartacea.</p></main><script type="module" src="/src/pass-standalone.ts"></script></body></html>
