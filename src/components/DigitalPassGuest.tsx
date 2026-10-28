@@ -17,6 +17,13 @@ export function DigitalPassGuest({ onClose }: { onClose: () => void }) {
   const [pass,setPass]=useState<Pass|null>(null); const [qr,setQr]=useState('');
   const privacyUrl=(import.meta.env.VITE_DNS_DIGITAL_PASS_PRIVACY_URL || 'https://www.dolomitinordicski.com/de/privacy') as string;
   const enabled=passApiConfigured && Boolean(privacyUrl);
+  useEffect(() => {
+    const manifest = document.createElement('link');
+    manifest.rel = 'manifest';
+    manifest.href = '/dns-workspace/digital-pass.webmanifest';
+    document.head.appendChild(manifest);
+    return () => { manifest.remove(); };
+  }, []);
   useEffect(()=>onAuthStateChanged(passAuth,value=>{setUser(value);setPass(null);setQr('');}),[]);
   useEffect(()=>{ let cancelled=false; if (!user?.emailVerified || !enabled) return;
     void passRequest<{ registrationIds: string[] }>('/v1/me/digital-passes',{}).then(async result=>{
@@ -41,6 +48,7 @@ export function DigitalPassGuest({ onClose }: { onClose: () => void }) {
       <label>{c.family}<input required autoComplete="family-name" maxLength={100} value={familyName} onChange={e=>setFamilyName(e.target.value)} /></label>
       {privacyUrl && <label><input type="checkbox" required checked={accepted} onChange={e=>setAccepted(e.target.checked)} /><a href={privacyUrl} target="_blank" rel="noopener noreferrer">{c.privacy}</a></label>}
       <button className="dns-button" disabled={!enabled||busy||!accepted}>{c.register}</button></form>}</>}
+    {pass && <p role="note">{language === 'de' ? 'Tipp: Über das Browsermenü Zum Home-Bildschirm hinzufügen. Die Web-App ist optional.' : language === 'it' ? 'Suggerimento: dal menu del browser scegli Aggiungi alla schermata Home. La Web App è facoltativa.' : 'Tip: use the browser menu to Add to Home Screen. The Web App is optional.'}</p>}
     {pass && <article aria-label="Digital Pass"><strong>Dolomiti NordicSki</strong><h2>{pass.holderName}</h2><p>{pass.printedNumber} · DNS Saisonkarte · {pass.seasonId}</p><p>{new Date(pass.validFrom).toLocaleDateString(language)} – {new Date(pass.validUntil - 1).toLocaleDateString(language)}</p><p>{pass.status}</p>{qr && <img width="320" height="320" style={{maxWidth:'100%',height:'auto'}} src={qr} alt="DNS Digital Pass QR" />}</article>}
     {message && <p role="status">{message}</p>}
   </section>;
