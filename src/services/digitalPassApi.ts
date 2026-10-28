@@ -1,7 +1,9 @@
 import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 // Same public Firebase application configuration already used by DNS Data Entry.
-const app = getApps().find(a => a.options.projectId === 'dns-core') ?? initializeApp({
+// Stable Firebase Auth app name shared with DNS Polls on the same browser origin.
+// Never adopt an arbitrary dns-core app: Firebase Auth persistence keys include app name.
+const app = getApps().find(a => a.name === 'dns-digital-pass') ?? initializeApp({
   apiKey: 'AIzaSyAgxv6Z45-AfrusbFnCSyvYChRUBu6-vXc', authDomain: 'dns-core.firebaseapp.com',
   projectId: 'dns-core', appId: '1:387653285986:web:27ad6f2e9a41ea1aebb93b',
 }, 'dns-digital-pass');
