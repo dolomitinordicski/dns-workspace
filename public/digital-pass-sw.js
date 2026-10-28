@@ -1,5 +1,5 @@
 /* Cache only public app-shell assets; never cache Firebase API responses or holder records. */
-const CACHE='dns-pass-shell-v2';
+const CACHE='dns-pass-shell-v3';
 const ROOT='/dns-workspace/';
 self.addEventListener('install',event=>{event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
@@ -24,9 +24,9 @@ self.addEventListener('fetch',event=>{
    if(saved)return saved;
    return Response.error();
  }
+ // Prefer fresh versioned JS/CSS assets while connected. A stale asset can keep an old registration form enabled.
+ try {const fresh=await fetch(req,{cache:'no-store'});if(fresh.ok){await cache.put(req,fresh.clone());return fresh}}catch{}
  if(saved)return saved;
- const response=await fetch(req);
- if(response.ok)await cache.put(req,response.clone());
- return response;
+ return Response.error();
  })());
 });
