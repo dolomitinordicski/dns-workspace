@@ -4,13 +4,15 @@ import {
   type DNSWorkspaceLanguage,
 } from '../services/foundation';
 
-export type WorkspaceView = 'system-map' | 'orbit';
+export type WorkspaceView = 'cockpit' | 'system-map' | 'orbit';
 
 type WorkspaceHeaderProps = {
   language: DNSWorkspaceLanguage;
   activeView: WorkspaceView;
   onLanguageChange: (language: DNSWorkspaceLanguage) => void;
   onViewChange: (view: WorkspaceView) => void;
+  showNavigation: boolean;
+  adminNavigation: boolean;
 };
 
 export function WorkspaceHeader({
@@ -18,6 +20,8 @@ export function WorkspaceHeader({
   activeView,
   onLanguageChange,
   onViewChange,
+  showNavigation,
+  adminNavigation,
 }: WorkspaceHeaderProps) {
   return (
     <>
@@ -79,8 +83,12 @@ export function WorkspaceHeader({
         </div>
       </header>
 
-      <nav data-dns-tool-nav className="dns-tab-nav workspace-view-nav" aria-label="DNS Workspace">
+      {showNavigation && <nav data-dns-tool-nav className="dns-tab-nav workspace-view-nav" aria-label="DNS Workspace">
         <div className="dns-tab-nav-inner">
+          <button type="button" className={['dns-tab', activeView === 'cockpit' ? 'dns-tab-active' : ''].filter(Boolean).join(' ')}
+            aria-current={activeView === 'cockpit' ? 'page' : undefined}
+            onClick={() => onViewChange('cockpit')}>Cockpit</button>
+          {adminNavigation && (<>
           <button
             type="button"
             className={['dns-tab', activeView === 'system-map' ? 'dns-tab-active' : ''].filter(Boolean).join(' ')}
@@ -97,11 +105,9 @@ export function WorkspaceHeader({
           >
             Orbit
           </button>
-          <button type="button" className="dns-tab" disabled>
-            Registry
-          </button>
+          </>)}
         </div>
-      </nav>
+      </nav>}
     </>
   );
 }
