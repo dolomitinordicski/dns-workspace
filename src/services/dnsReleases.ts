@@ -19,7 +19,7 @@ export async function loadDNSReleases(isAdmin: boolean, allowedToolIds: string[]
   const base = collection(db, 'systemReleases');
   const snapshots = await Promise.all(
     (isAdmin ? ['dns', 'area'] : ['area']).map(audience =>
-      getDocs(query(base, where('published', '==', true), where('audience', '==', audience)))
+      getDocs(query(base, where('published', '==', true), where('audience', '==', audience), where('type', 'in', isAdmin ? ['technical', 'feature', 'urgent'] : ['feature', 'urgent'])))
     )
   );
   return snapshots.flatMap(snapshot => snapshot.docs.map(item => ({ ...item.data(), id: item.id } as DNSRelease)))
