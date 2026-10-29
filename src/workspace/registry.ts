@@ -14,12 +14,33 @@ const ACTIVE_TOOL_IDS = new Set([ 'dns-core', 'shared-data', 'hub', 'workspace',
 
 const activeRegistry: WorkspaceTool[] = DNS_TOOL_REGISTRY.filter((tool) => ACTIVE_TOOL_IDS.has(tool.id));
 
+
+// Foundation v1.3.0 predates Partner Hub; include it in the offline fallback.
+const partnerHubFallback: WorkspaceTool = {
+  id: 'partner-hub',
+  label: 'DNS Partner Hub',
+  shortLabel: 'Partner Hub',
+  description: {
+    de: 'Zentraler Partnerzugang und Verwaltung der DNS Partnerbetriebe.',
+    it: 'Accesso centrale e gestione delle strutture partner DNS.',
+  },
+  url: 'https://dolomitinordicski.github.io/dns-partner-hub/',
+  repo: 'dolomitinordicski/dns-partner-hub',
+  lifecycle: 'development',
+  group: 'portal',
+  backend: { kind: 'dns-core', label: 'Firebase · dns-core' },
+  dependencies: ['dns-core', 'shared-data'],
+  order: 30,
+  visible: true,
+};
+if (!activeRegistry.some(tool => tool.id === 'partner-hub')) activeRegistry.push(partnerHubFallback);
+
 export const platformTools = activeRegistry.filter(
   (tool) => tool.visible && tool.group === 'platform',
 );
 
 export const workspaceTools = activeRegistry.filter(
-  (tool) => tool.visible && tool.group !== 'platform',
+  (tool) => tool.visible && (tool.group !== 'platform' || tool.id === 'hub'),
 );
 
 export function getTool(id: string): WorkspaceTool | undefined {
@@ -86,7 +107,7 @@ export async function refreshToolRegistry(): Promise<void> {
     platformTools.splice(0, platformTools.length,
       ...validated.filter(tool => tool.visible && tool.group === 'platform'));
     workspaceTools.splice(0, workspaceTools.length,
-      ...validated.filter(tool => tool.visible && tool.group !== 'platform'));
+      ...validated.filter(tool => tool.visible && (tool.group !== 'platform' || tool.id === 'hub')));
     revision++;
     listeners.forEach(listener => listener());
   } catch (error) {
