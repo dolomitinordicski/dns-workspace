@@ -64,12 +64,7 @@ const VISUAL_WEIGHT: Record<string, number> = {
   faktura: 4.5,
   polls: 2.5,
   'flyer-studio': 3,
-  strategy: 2,
-  qr: 1.5,
-  ar360: 1.5,
-  'portal-v2': 2.5,
-  smartslopes: 1,
-  partnerportal: 1.5,
+  'partner-hub': 2.5,
 };
 
 function weightFor(tool: WorkspaceTool) {
