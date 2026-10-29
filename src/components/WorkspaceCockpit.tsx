@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { loadDNSReleases, type DNSRelease } from '../services/dnsReleases';
 import type { DNSIdentity } from '../services/dnsIdentity';
 import { organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import { signOutDNS } from '../services/dnsIdentity';
@@ -13,9 +14,21 @@ type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
 
 export function WorkspaceCockpit(props: Props) {
   const { language, identity, organization, organizations, tools, onOrganizationChange, onOpenTool } = props;
-  if (identity.state !== 'active') return null;
-  const isAdmin = identity.profile.globalRoles.includes('dns-admin');
+  const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
   const [showAllNews, setShowAllNews] = useState(false);
+  const [releases, setReleases] = useState<DNSRelease[]>([]);
+  const [newsError, setNewsError] = useState(false);
+  const allowedIds = tools.map(tool => tool.id).join(',');
+  useEffect(() => {
+    if (identity.state !== 'active') return;
+    let active = true;
+    setNewsError(false);
+    loadDNSReleases(isAdmin, tools.map(tool => tool.id))
+      .then(items => { if (active) setReleases(items); })
+      .catch(() => { if (active) setNewsError(true); });
+    return () => { active = false; };
+  }, [identity.state, isAdmin, allowedIds]);
+  if (identity.state !== 'active') return null;
   const eligible = organizations.filter(org => canUseOrganization(identity, org));
   const c = language === 'de' ? {
     title: 'Mein DNS Cockpit', subtitle: 'Ihre digitale Arbeitsumgebung',
@@ -63,16 +76,14 @@ export function WorkspaceCockpit(props: Props) {
             {showAllNews ? (language === 'de' ? 'Schließen' : 'Chiudi') : (language === 'de' ? 'Alle anzeigen' : 'Vedi tutte')}
           </button>
         </div>
-        <p className="text-sm text-dns-muted" role="status">
-          {language === 'de'
-            ? 'Noch keine veröffentlichten Neuigkeiten.'
-            : 'Nessuna novità pubblicata al momento.'}
-        </p>
-        {showAllNews && <p className="text-xs text-dns-muted">
-          {isAdmin
-            ? (language === 'de' ? 'Technische Releases, neue Funktionen und wichtige Hinweise.' : 'Release tecniche, nuove funzionalità e comunicazioni urgenti.')
-            : (language === 'de' ? 'Neue Funktionen, Updates und wichtige Hinweise.' : 'Nuove funzionalità, aggiornamenti e comunicazioni urgenti.')}
-        </p>}
+        {newsError ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Neuigkeiten derzeit nicht verfügbar.' : 'Novità temporaneamente non disponibili.'}</p>
+          : releases.length === 0 ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Noch keine veröffentlichten Neuigkeiten.' : 'Nessuna novità pubblicata al momento.'}</p>
+          : <div className="space-y-3">{(showAllNews ? releases : releases.slice(0, 3)).map(item =>
+            <article key={item.id} className="space-y-1 border-b pb-2">
+              <div className="dns-kicker">{item.toolId} · {item.version} · {item.type === 'urgent' ? (language === 'de' ? 'Wichtig' : 'Urgente') : item.type === 'technical' ? (language === 'de' ? 'Technisch' : 'Tecnica') : (language === 'de' ? 'Neu' : 'Novità')}</div>
+              <h3 className="font-semibold">{item.title[language]}</h3>
+              <p className="text-sm text-dns-muted">{item.description[language]}</p>
+            </article>)}</div>}
       </section>
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
