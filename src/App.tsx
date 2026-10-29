@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { WorkspaceAccount } from './components/WorkspaceAccount';
 import { WorkspaceCockpit } from './components/WorkspaceCockpit';
 import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeader';
@@ -9,9 +9,11 @@ import { getDNSWorkspaceOrganizations, type DNSWorkspaceOrganization } from './s
 import { getDNSWorkspaceLanguage, setDNSWorkspaceLanguage, subscribeDNSWorkspaceLanguage,
   type DNSWorkspaceLanguage } from './services/foundation';
 import { canUseOrganization, toolsForOrganization } from './workspace/access';
-import { workspaceTools, type WorkspaceTool } from './workspace/registry';
+import { workspaceTools, refreshToolRegistry, subscribeToolRegistry, getToolRegistryRevision, type WorkspaceTool } from './workspace/registry';
 
 export default function App() {
+  const registryRevision = useSyncExternalStore(subscribeToolRegistry, getToolRegistryRevision);
+  useEffect(() => { void refreshToolRegistry(); }, []);
   const [language, setLanguage] = useState<DNSWorkspaceLanguage>(getDNSWorkspaceLanguage);
   const [identity, setIdentity] = useState<DNSIdentity>({ state: 'loading' });
   const [organizations, setOrganizations] = useState<DNSWorkspaceOrganization[]>([]);
@@ -69,7 +71,7 @@ export default function App() {
             tools={availableTools} onOrganizationChange={changeOrganization}
             onOpenTool={openAllowedTool} />
         ) : (
-          <WorkspaceNavigator language={language} view={activeView}
+          <WorkspaceNavigator key={registryRevision} language={language} view={activeView}
             onOpenTool={openAllowedTool} />
         )}
         {authorized && !openTool && (
