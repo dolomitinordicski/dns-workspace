@@ -16,9 +16,12 @@ export function WorkspaceCockpit(props: Props) {
   const { language, identity, organization, organizations, tools, onOrganizationChange, onOpenTool } = props;
   const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
   const [showAllNews, setShowAllNews] = useState(false);
+  const [showTechnical, setShowTechnical] = useState(false);
   const [releases, setReleases] = useState<DNSRelease[]>([]);
   const [newsError, setNewsError] = useState(false);
   const allowedIds = tools.map(tool => tool.id).join(',');
+  const news = releases.filter(item => item.type !== 'technical');
+  const technical = isAdmin ? releases.filter(item => item.type === 'technical') : [];
   useEffect(() => {
     if (identity.state !== 'active') return;
     let active = true;
@@ -77,14 +80,35 @@ export function WorkspaceCockpit(props: Props) {
           </button>
         </div>
         {newsError ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Neuigkeiten derzeit nicht verfügbar.' : 'Novità temporaneamente non disponibili.'}</p>
-          : releases.length === 0 ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Noch keine veröffentlichten Neuigkeiten.' : 'Nessuna novità pubblicata al momento.'}</p>
-          : <div className="space-y-3">{(showAllNews ? releases : releases.slice(0, 3)).map(item =>
+          : news.length === 0 ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Noch keine veröffentlichten Neuigkeiten.' : 'Nessuna novità pubblicata al momento.'}</p>
+          : <div className="space-y-3">{(showAllNews ? news : news.slice(0, 3)).map(item =>
             <article key={item.id} className="space-y-1 border-b pb-2">
               <div className="dns-kicker">{item.toolId} · {item.version} · {item.type === 'urgent' ? (language === 'de' ? 'Wichtig' : 'Urgente') : item.type === 'technical' ? (language === 'de' ? 'Technisch' : 'Tecnica') : (language === 'de' ? 'Neu' : 'Novità')}</div>
               <h3 className="font-semibold">{item.title[language]}</h3>
               <p className="text-sm text-dns-muted">{item.description[language]}</p>
             </article>)}</div>}
       </section>
+      {isAdmin && <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-technical-title">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="dns-kicker">{language === 'de' ? 'Nur DNS Admin' : 'Solo DNS Admin'}</div>
+            <h2 id="workspace-technical-title" className="dns-section-title">{language === 'de' ? 'Technisches Änderungsprotokoll' : 'Registro tecnico'}</h2>
+          </div>
+          <button type="button" className="dns-button" data-variant="secondary"
+            aria-expanded={showTechnical} onClick={() => setShowTechnical(value => !value)}>
+            {showTechnical ? (language === 'de' ? 'Schließen' : 'Chiudi') : (language === 'de' ? 'Anzeigen' : 'Visualizza')}
+          </button>
+        </div>
+        {showTechnical && (newsError
+          ? <p role="status">{language === 'de' ? 'Technisches Protokoll derzeit nicht verfügbar.' : 'Registro tecnico temporaneamente non disponibile.'}</p>
+          : technical.length === 0
+          ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Noch keine technischen Einträge.' : 'Nessuna voce tecnica pubblicata.'}</p>
+          : <div className="space-y-3">{technical.map(item => <article key={item.id} className="border-b pb-2 space-y-1">
+              <div className="dns-kicker">{item.toolId} · {item.version} · {item.publishedAt}</div>
+              <h3 className="font-semibold">{item.title[language]}</h3>
+              <p className="text-sm text-dns-muted">{item.description[language]}</p>
+            </article>)}</div>)}
+      </section>}
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="dns-section-title">{c.tools} · {organizationName(organization, language)}</h2>
