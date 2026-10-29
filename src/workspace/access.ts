@@ -32,8 +32,7 @@ export function toolsForOrganization(
     g.scopeType === 'reportingArea' && org.reportingAreaIds.includes(g.scopeId))
     .flatMap(g => g.permissions));
   return tools.filter(tool => {
-    if (tool.id === 'portal-v2') return identity.memberships.some(m => m.organizationId === org.id);
-    if (tool.id === 'qr') return true;
+    if (tool.id === 'partner-hub') return identity.memberships.some(m => m.organizationId === org.id);
     const needed = TOOL_PERMISSIONS[tool.id];
     return Boolean(needed?.some(permission => granted.has(permission as never)));
   });
