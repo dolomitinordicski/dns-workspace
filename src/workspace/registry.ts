@@ -19,7 +19,7 @@ export const platformTools = activeRegistry.filter(
 );
 
 export const workspaceTools = activeRegistry.filter(
-  (tool) => tool.visible && tool.group !== 'platform',
+  (tool) => tool.visible && (tool.group !== 'platform' || tool.id === 'hub'),
 );
 
 export function getTool(id: string): WorkspaceTool | undefined {
@@ -86,7 +86,7 @@ export async function refreshToolRegistry(): Promise<void> {
     platformTools.splice(0, platformTools.length,
       ...validated.filter(tool => tool.visible && tool.group === 'platform'));
     workspaceTools.splice(0, workspaceTools.length,
-      ...validated.filter(tool => tool.visible && tool.group !== 'platform'));
+      ...validated.filter(tool => tool.visible && (tool.group !== 'platform' || tool.id === 'hub')));
     revision++;
     listeners.forEach(listener => listener());
   } catch (error) {
