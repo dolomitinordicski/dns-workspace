@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { DNSIdentity } from '../services/dnsIdentity';
 import { organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import { signOutDNS } from '../services/dnsIdentity';
@@ -14,6 +15,7 @@ export function WorkspaceCockpit(props: Props) {
   const { language, identity, organization, organizations, tools, onOrganizationChange, onOpenTool } = props;
   if (identity.state !== 'active') return null;
   const isAdmin = identity.profile.globalRoles.includes('dns-admin');
+  const [showAllNews, setShowAllNews] = useState(false);
   const eligible = organizations.filter(org => canUseOrganization(identity, org));
   const c = language === 'de' ? {
     title: 'Mein DNS Cockpit', subtitle: 'Ihre digitale Arbeitsumgebung',
@@ -49,6 +51,28 @@ export function WorkspaceCockpit(props: Props) {
           <button className="dns-button" data-variant="secondary" type="button"
             onClick={() => void signOutDNS()}>{c.signOut}</button>
         </div>
+      </section>
+      <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-news-title">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="dns-kicker">{language === 'de' ? 'Aktuelles' : 'Aggiornamenti'}</div>
+            <h2 id="workspace-news-title" className="dns-section-title">{language === 'de' ? 'Neuigkeiten' : 'Novità'}</h2>
+          </div>
+          <button type="button" className="dns-button" data-variant="secondary"
+            aria-expanded={showAllNews} onClick={() => setShowAllNews(value => !value)}>
+            {showAllNews ? (language === 'de' ? 'Schließen' : 'Chiudi') : (language === 'de' ? 'Alle anzeigen' : 'Vedi tutte')}
+          </button>
+        </div>
+        <p className="text-sm text-dns-muted" role="status">
+          {language === 'de'
+            ? 'Noch keine veröffentlichten Neuigkeiten.'
+            : 'Nessuna novità pubblicata al momento.'}
+        </p>
+        {showAllNews && <p className="text-xs text-dns-muted">
+          {isAdmin
+            ? (language === 'de' ? 'Technische Releases, neue Funktionen und wichtige Hinweise.' : 'Release tecniche, nuove funzionalità e comunicazioni urgenti.')
+            : (language === 'de' ? 'Neue Funktionen, Updates und wichtige Hinweise.' : 'Nuove funzionalità, aggiornamenti e comunicazioni urgenti.')}
+        </p>}
       </section>
       <section className="space-y-3">
         <div className="flex items-baseline justify-between gap-3">
