@@ -28,7 +28,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
   const [draftOrg, setDraftOrg] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
   const [draftArea, setDraftArea] = useState('');
-  const [matrixDraft, setMatrixDraft] = useState<Record<string, boolean>>({});
+  const [matrixDraft, setMatrixDraft] = useState<Record<string, 'none' | 'read' | 'write'>>({});
   if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin')) return null;
   const de = language === 'de';
   const tabs: { id: AdminTab; label: string }[] = [
@@ -98,8 +98,8 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
       </div>}
       {tab === 'permissions' && <div className="space-y-3">
         <p className="text-sm text-dns-muted">{de
-          ? 'Matrix zur Vorbereitung der Zugänge. Häkchen sind Entwürfe, keine aktiven Berechtigungen; Speichern ist noch nicht freigeschaltet.'
-          : 'Matrice per preparare gli accessi. Le spunte sono bozze, non permessi attivi; il salvataggio non è ancora abilitato.'}</p>
+          ? 'Matrix zur Vorbereitung der Zugänge. W = Schreiben (inkl. Lesen), R = Lesen, – = kein Zugriff. Entwurf, noch nicht gespeichert.'
+          : 'Matrice per preparare gli accessi. W = scrittura (include lettura), R = lettura, – = nessun accesso. Bozza non ancora salvata.'}</p>
         <div className="overflow-x-auto" role="region" tabIndex={0}
           aria-label={de ? 'Tool-Zugänge nach Organisation' : 'Accessi ai tool per organizzazione'}>
           <table className="w-full text-sm border-collapse" style={{ minWidth: 720 }}>
@@ -115,10 +115,16 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
                 {organizations.filter(o => o.organizationType === 'tourism-organisation').map(org => {
                   const key = org.id + ':' + tool.id;
                   return <td key={key} className="p-3 border-b text-center">
-                    <input type="checkbox" className="h-5 w-5 cursor-pointer"
-                      checked={Boolean(matrixDraft[key])}
-                      onChange={event => setMatrixDraft(previous => ({ ...previous, [key]: event.target.checked }))}
-                      aria-label={tool.name + ' · ' + organizationName(org, language) + (de ? ' (Entwurf)' : ' (bozza)')} />
+                    <button type="button"
+                      className="inline-flex min-w-10 items-center justify-center rounded-md px-3 py-2 text-sm font-bold border"
+                      style={{ backgroundColor: matrixDraft[key] === 'write' ? '#166534' : matrixDraft[key] === 'read' ? '#d97706' : '#7f1d1d', color: '#ffffff', borderColor: 'transparent' }}
+                      onClick={() => setMatrixDraft(previous => ({
+                        ...previous, [key]: previous[key] === 'none' || !previous[key] ? 'read' : previous[key] === 'read' ? 'write' : 'none',
+                      }))}
+                      aria-label={tool.name + ' · ' + organizationName(org, language) + ' · ' + (matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno') + (de ? ' (Entwurf)' : ' (bozza)')}
+                      title={matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno'}>
+                      {matrixDraft[key] === 'write' ? 'W' : matrixDraft[key] === 'read' ? 'R' : '–'}
+                    </button>
                   </td>;
                 })}
               </tr>)}</tbody>
