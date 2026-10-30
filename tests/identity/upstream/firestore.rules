@@ -1,0 +1,1226 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function activeUser() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+
+    function isAdmin() {
+      return activeUser()
+        && 'dns-admin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.globalRoles;
+    }
+
+    function hasGrant(scopeType, scopeId, permission) {
+      let grantId = request.auth.uid + "__" + scopeType + "__" + scopeId;
+      let grantPath = /databases/$(database)/documents/accessGrants/$(grantId);
+      return activeUser()
+        && scopeId != ''
+        && exists(grantPath)
+        && get(grantPath).data.active == true
+        && permission in get(grantPath).data.permissions;
+    }
+
+    function hasAnyGrantForScope(scopeType, scopeId) {
+      let grantId = request.auth.uid + "__" + scopeType + "__" + scopeId;
+      let grantPath = /databases/$(database)/documents/accessGrants/$(grantId);
+      return activeUser()
+        && scopeId != ''
+        && exists(grantPath)
+        && get(grantPath).data.active == true;
+    }
+
+    function canOwnFlyerScope(data) {
+      return isAdmin()
+        || (data.scopeType == 'network'
+            && hasAnyGrantForScope('network', 'dolomiti-nordicski'))
+        || (data.scopeType == 'reportingArea'
+            && hasAnyGrantForScope('reportingArea', data.scopeId))
+        || (data.scopeType == 'organization'
+            && hasAnyGrantForScope('organization', data.scopeId));
+    }
+
+    function dataAreaId(data) {
+      return data.keys().hasAny(['reportingAreaId'])
+        ? data.reportingAreaId
+        : '';
+    }
+
+    function validFlyerScope(data) {
+      return data.scopeType in ['network', 'reportingArea', 'organization']
+        && data.scopeId is string
+        && data.scopeId.size() > 0
+        && (data.scopeType != 'network' || data.scopeId == 'dolomiti-nordicski')
+        && (data.scopeType != 'reportingArea'
+            || exists(/databases/$(database)/documents/reportingAreas/$(data.scopeId)))
+        && (data.scopeType != 'organization'
+            || exists(/databases/$(database)/documents/organizations/$(data.scopeId)));
+    }
+
+    function hasFlyerPermission(permission, data) {
+      return isAdmin()
+        || hasGrant('network', 'dolomiti-nordicski', permission)
+        || (data.scopeType == 'reportingArea'
+            && hasGrant('reportingArea', data.scopeId, permission))
+        || (data.scopeType == 'organization'
+            && hasGrant('organization', data.scopeId, permission));
+    }
+
+    function validFlyerDocument(data) {
+      return validFlyerScope(data)
+        && data.schema == 'dns.flyer-document'
+        && data.version == 1
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.status in ['draft', 'ready', 'archived']
+        && data.ownerUserId is string
+        && data.ownerUserId.size() > 0
+        && data.document is map
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    function validFlyerPublication(data) {
+      return validFlyerScope(data)
+        && data.schema == 'dns.flyer-publication'
+        && data.version == 1
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.flyerDocumentId is string
+        && data.flyerDocumentId.size() > 0
+        && data.snapshot is map
+        && data.publishedBy == request.auth.uid
+        && data.publishedAt == request.time;
+    }
+
+    function validFlyerTemplate(data) {
+      return validFlyerScope(data)
+        && data.schema == 'dns.flyer-template'
+        && data.version == 1
+        && data.name is string
+        && data.name.size() > 0
+        && data.blockStack is list
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    function validFlyerAsset(data) {
+      return validFlyerScope(data)
+        && data.schema == 'dns.flyer-asset'
+        && data.version == 1
+        && data.assetType in ['image', 'logo', 'icon', 'document']
+        && data.storagePath is string
+        && data.storagePath.size() > 0
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    // Matrix is an additional restriction, never a source of privileges.
+    // Missing policy keeps existing grants working during staged rollout.
+    function dataEntryMatrixAllows(orgId, write) {
+      let policyPath = /databases/$(database)/documents/organizationToolAccess/$(orgId);
+      let memberPath = /databases/$(database)/documents/memberships/$(request.auth.uid + '__' + orgId);
+      // Reuse snapshots and avoid a member lookup during legacy policy rollout.
+      let policy = exists(policyPath) ? get(policyPath) : null;
+      let member = policy == null ? null : get(memberPath);
+      return policy == null
+        || (member != null
+          && member.data.active == true
+          && (policy.data.tools.get('data-entry', 'none') == 'write'
+            || (!write && policy.data.tools.get('data-entry', 'none') == 'read')));
+    }
+
+    function hasOrderPermission(permission, data) {
+      return isAdmin()
+        || ((!data.keys().hasAny(['organizationId']) || dataEntryMatrixAllows(data.organizationId,
+              permission in ['ticketOrders.write', 'ticketSales.write', 'kp.write', 'pricing.manage']))
+          && (hasGrant('network', 'dolomiti-nordicski', permission)
+            || hasGrant('organization', data.organizationId, permission)
+            || hasGrant('reportingArea', dataAreaId(data), permission)));
+    }
+
+    // A missing deadline retains existing behaviour during staged rollout.
+    // Once configured, non-admin contributors cannot mutate orders after cutoff.
+    // Admins can correct an order, but historical locks remain in force.
+    function orderEntryOpen(data) {
+      let deadlinePath = /databases/$(database)/documents/orderDeadlines/$(data.seasonId);
+      return isAdmin()
+        || (!exists(deadlinePath))
+        || (get(deadlinePath).data.enabled == true
+          && get(deadlinePath).data.deadlineAt is timestamp
+          && request.time <= get(deadlinePath).data.deadlineAt);
+    }
+
+    function historicalLocked(data) {
+      return data.seasonId in ['2024-25', '2025-26'];
+    }
+
+    function validOrder(data) {
+      return !historicalLocked(data) && data.seasonId is string
+        && data.organizationId is string
+        && data.category in ['ticket', 'wristband', 'pocketfolder']
+        && data.status in ['draft', 'submitted', 'confirmed', 'fulfilled', 'cancelled'];
+    }
+
+    function validOrderLine(data) {
+      return !historicalLocked(data) && data.seasonId is string
+        && data.organizationId is string
+        && data.ticketOrderId is string
+        && data.catalogItemId is string
+        && data.quantity is int
+        && data.quantity >= 0;
+    }
+
+    function lineMatchesOrder(data) {
+      let orderPath = /databases/$(database)/documents/ticketOrders/$(data.ticketOrderId);
+      let order = getAfter(orderPath);
+      return order.data.organizationId == data.organizationId
+        && order.data.seasonId == data.seasonId;
+    }
+
+    function canVerifyOrder(data) {
+      return isAdmin() || hasOrderPermission('ticketOrders.verify', data);
+    }
+
+    function contributorOrderTransitionAllowed(before, after) {
+      return before.status == 'draft'
+        && after.status in ['draft', 'submitted'];
+    }
+
+    function parentOrderEditableForLine(data) {
+      let orderPath = /databases/$(database)/documents/ticketOrders/$(data.ticketOrderId);
+      let order = getAfter(orderPath).data;
+      return order.status == 'draft' || canVerifyOrder(order);
+    }
+
+    function billingSnapshotTypeAllowed(data) {
+      return !data.keys().hasAny(['snapshotType'])
+        || data.snapshotType in ['orders', 'unified'];
+    }
+
+    function billingReadyAllowed(data) {
+      return data.status != 'ready'
+        || (
+          data.unpricedQuantity == 0
+          && (
+            !data.keys().hasAny(['snapshotType'])
+            || data.snapshotType != 'unified'
+            || (
+              data.sourceState == 'complete'
+              && data.sourceBlockingReasons is list
+              && data.sourceBlockingReasons.size() == 0
+              && 'fair-membership' in data.sourceTypes
+              && 'idm-premium-partner' in data.sourceTypes
+              && 'order' in data.sourceTypes
+              && 'seasonal-extra' in data.sourceTypes
+            )
+          )
+        );
+    }
+
+    function validBillingLineSource(data) {
+      return data.source is map
+        && data.source.type in ['fair-membership', 'idm-premium-partner', 'order', 'seasonal-extra']
+        && data.source.sourceId is string
+        && data.source.sourceId.size() > 0
+        && data.source.sourceLabel is string
+        && data.source.sourceLabel.size() > 0
+        && (
+          (
+            data.source.type == 'order'
+            && data.catalogItemId is string
+            && data.rateId is string
+            && data.rateRevision is int
+            && data.rateRevision >= 1
+            && data.sourceDocumentLabel is string
+            && data.sourceDocumentLabel.size() > 0
+          )
+          || (
+            data.source.type == 'fair-membership'
+          )
+          || (
+            data.source.type == 'idm-premium-partner'
+            && data.source.sourceRevision is int
+            && data.source.sourceRevision >= 1
+          )
+          || (
+            data.source.type == 'seasonal-extra'
+            && data.source.sourceRevision is int
+            && data.source.sourceRevision >= 1
+            && data.sourceDocumentLabel is string
+            && data.sourceDocumentLabel.size() > 0
+          )
+        );
+    }
+
+    // Public canonical master data.
+    match /reportingAreas/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /destinations/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /organizations/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /organizationRelationships/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /seasons/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /designSystem/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Shared season-scoped allocation keys. These are canonical reference data
+    // consumed by FAIR, Faktura and future DNS tools.
+    match /areaAllocationKeys/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Immutable/read-only Analytics audit copies used only for zero-loss parity checks.
+    match /analyticsAuditSnapshots/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Published aggregate Analytics read model. Exact-document reads only:
+    // no collection listing, no client writes, no raw operational rows.
+    match /analyticsPublicSnapshots/{seasonId} {
+      allow get: if resource.data.id == seasonId
+                 && resource.data.seasonId == seasonId
+                 && resource.data.publicationStatus == 'published';
+      allow list, write: if false;
+    }
+
+    // Public widget snapshot: exact-document reads only.
+    match /widgetPublicSnapshots/{documentId} {
+      allow get: if resource.data.publicationStatus == 'published'
+                 && resource.data.documentId == documentId
+                 && resource.data.snapshot.schemaVersion == 1;
+      allow list, write: if false;
+    }
+
+    // DNS Admin-managed organization tool access matrix.
+    // This is an administrative policy record; existing tool security rules
+    // must additionally enforce it before it can replace scoped grants.
+    function validOrganizationToolAccess(orgId) {
+      return request.resource.data.keys().hasOnly([
+          'organizationId', 'tools', 'updatedBy', 'updatedAt'
+        ])
+        && request.resource.data.organizationId == orgId
+        && exists(/databases/$(database)/documents/organizations/$(orgId))
+        && request.resource.data.tools is map
+        && request.resource.data.tools.keys().hasOnly([
+          'data-entry','analytics','flyer-studio','fair','faktura','polls','partner-hub'
+        ])
+        && request.resource.data.tools.keys().size() <= 7
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /organizationToolAccess/{orgId} {
+      allow get: if isAdmin() || (activeUser()
+        && exists(/databases/$(database)/documents/memberships/$(request.auth.uid + '__' + orgId))
+        && get(/databases/$(database)/documents/memberships/$(request.auth.uid + '__' + orgId)).data.active == true);
+      allow list: if isAdmin();
+      allow create, update: if isAdmin()
+        && validOrganizationToolAccess(orgId)
+        && (!exists(/databases/$(database)/documents/organizationToolAccess/$(orgId))
+            || resource.data.organizationId == request.resource.data.organizationId);
+      allow delete: if false;
+    }
+
+    // Private authorization metadata.
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /memberships/{document} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /accessGrants/{document} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Seasonal order catalogue/configuration is available to active DNS users.
+    // Only DNS administrators can alter the catalogue itself.
+    match /orderCatalogItems/{document} {
+      allow read: if activeUser();
+      allow write: if isAdmin();
+    }
+
+    match /orderFormConfigs/{document} {
+      allow read: if activeUser();
+      allow write: if isAdmin();
+    }
+
+    match /deliveryLocations/{document} {
+      allow read: if activeUser();
+      allow write: if false;
+    }
+
+    match /pocketfolderSetupImports/{document} {
+      allow read, write: if false;
+    }
+
+    match /pocketfolderSourceRows/{document} {
+      allow read: if activeUser();
+      allow write: if false;
+    }
+
+    // DNS Admin manages seasonal order deadline; users can read it.
+    match /orderDeadlines/{seasonId} {
+      allow read: if activeUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Operational order headers.
+    match /ticketOrders/{document} {
+      allow read: if hasOrderPermission('ticketOrders.read', resource.data);
+
+      allow create: if validOrder(request.resource.data)
+        && orderEntryOpen(request.resource.data)
+        && hasOrderPermission('ticketOrders.write', request.resource.data);
+
+      allow update: if validOrder(request.resource.data)
+        && orderEntryOpen(request.resource.data)
+        && resource.data.organizationId == request.resource.data.organizationId
+        && resource.data.seasonId == request.resource.data.seasonId
+        && resource.data.category == request.resource.data.category
+        && (
+          canVerifyOrder(request.resource.data)
+          || (
+            hasOrderPermission('ticketOrders.write', request.resource.data)
+            && contributorOrderTransitionAllowed(resource.data, request.resource.data)
+          )
+        );
+
+      // Order headers are retained for audit; normal contributors do not delete them.
+      allow delete: if isAdmin() && !historicalLocked(resource.data);
+    }
+
+    // Operational order matrix cells.
+    match /ticketOrderLines/{document} {
+      allow read: if hasOrderPermission('ticketOrders.read', resource.data);
+
+      allow create: if validOrderLine(request.resource.data)
+        && orderEntryOpen(request.resource.data)
+        && (hasOrderPermission('ticketOrders.write', request.resource.data) || canVerifyOrder(request.resource.data))
+        && lineMatchesOrder(request.resource.data)
+        && parentOrderEditableForLine(request.resource.data);
+
+      allow update: if validOrderLine(request.resource.data)
+        && orderEntryOpen(request.resource.data)
+        && resource.data.organizationId == request.resource.data.organizationId
+        && resource.data.seasonId == request.resource.data.seasonId
+        && resource.data.ticketOrderId == request.resource.data.ticketOrderId
+        && resource.data.catalogItemId == request.resource.data.catalogItemId
+        && (hasOrderPermission('ticketOrders.write', request.resource.data) || canVerifyOrder(request.resource.data))
+        && lineMatchesOrder(request.resource.data)
+        && parentOrderEditableForLine(request.resource.data);
+
+      // Clearing a matrix cell deletes only that organization's own line.
+      allow delete: if !historicalLocked(resource.data)
+        && orderEntryOpen(resource.data)
+        && (hasOrderPermission('ticketOrders.write', resource.data) || canVerifyOrder(resource.data))
+        && parentOrderEditableForLine(resource.data);
+    }
+
+    // Public supplier snapshots. Public clients can fetch one exact document
+    // by its unguessable ID, but cannot list/search the collection.
+    match /publicOrderShares/{shareId} {
+      allow get: if resource.data.active == true
+                 && (!resource.data.keys().hasAny(['expiresAt'])
+                     || request.time < resource.data.expiresAt);
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // One-time import markers are trusted-backend only.
+    match /orderSetupImports/{document} {
+      allow read, write: if false;
+    }
+
+    function validPricing(data) {
+      return data.keys().hasOnly(['id','seasonId','scopeType','scopeId','productCode','salesChannel','salesPeriod','unitPrice','settlementUnitPrice','currency','active','validFrom','validTo','notes','revision','provenance','updatedBy','updatedAt'])
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.scopeType in ['network','reportingArea','organization']
+        && (data.scopeType != 'network' || data.scopeId == 'dolomiti-nordicski')
+        && (data.scopeType != 'reportingArea' || exists(/databases/$(database)/documents/reportingAreas/$(data.scopeId)))
+        && (data.scopeType != 'organization' || exists(/databases/$(database)/documents/organizations/$(data.scopeId)))
+        && data.productCode in ['day','wk-area','wk-dns','sk-area','sk-dns','sk-instructor']
+        && data.salesChannel in ['official','online','track','press','complimentary']
+        && data.salesPeriod in ['regular','presale']
+        && data.unitPrice is number && data.unitPrice >= 0
+        && data.settlementUnitPrice is number && data.settlementUnitPrice >= 0
+        && data.currency == 'EUR' && data.active == true
+        && data.revision is int && data.revision >= 1
+        && data.provenance.sourceSystem == 'manual-data-entry'
+        && data.provenance.methodVersion == 1 && data.provenance.dataStatus == 'draft'
+        && data.updatedBy == request.auth.uid && data.updatedAt == request.time;
+    }
+
+    function managePricing(data) {
+      return isAdmin() || hasGrant('network','dolomiti-nordicski','pricing.manage')
+        || hasGrant(data.scopeType,data.scopeId,'pricing.manage');
+    }
+
+    function validSales(data) {
+      return data.keys().hasOnly(['id','draftKey','seasonId','organizationId','reportingAreaId','productCode','salesChannel','salesPeriod','quantity','amountOverride','amountOverrideReason','pricing','calculatedAmount','revision','provenance','updatedBy','updatedAt'])
+        && data.id == data.seasonId + '__' + data.organizationId + '__' + data.reportingAreaId + '__' + data.productCode + '__' + data.salesChannel + '__' + data.salesPeriod
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.reportingAreaId in get(/databases/$(database)/documents/organizations/$(data.organizationId)).data.reportingAreaIds
+        && data.quantity is int && data.quantity >= 0 && data.quantity <= 9007199254740991
+        && data.productCode in ['day','wk-area','wk-dns','sk-area','sk-dns','sk-instructor']
+        && data.salesChannel in ['official','online','track','press','complimentary']
+        && data.salesPeriod in ['regular','presale']
+        && data.pricing.currency == 'EUR'
+        && data.pricing.unitPrice is number && data.pricing.unitPrice >= 0
+        && data.pricing.settlementUnitPrice is number && data.pricing.settlementUnitPrice >= 0
+        && data.calculatedAmount is number && data.calculatedAmount >= 0
+        && data.calculatedAmount - data.quantity * data.pricing.unitPrice < 0.011
+        && data.quantity * data.pricing.unitPrice - data.calculatedAmount < 0.011
+        && (data.amountOverride == null || (data.amountOverride is number && data.amountOverride >= 0 && data.amountOverrideReason is string && data.amountOverrideReason.size() > 0))
+        && data.revision is int && data.revision >= 1
+        && data.provenance.sourceSystem == 'manual-data-entry'
+        && data.provenance.methodVersion == 1 && data.provenance.dataStatus == 'draft'
+        && data.updatedBy == request.auth.uid && data.updatedAt == request.time;
+    }
+
+    function salesPricingMatches(data) {
+      let config = get(/databases/$(database)/documents/ticketPricingConfigs/$(data.pricing.pricingConfigId)).data;
+      return config.active == true && config.seasonId == data.seasonId
+        && config.productCode == data.productCode && config.salesChannel == data.salesChannel && config.salesPeriod == data.salesPeriod
+        && config.unitPrice == data.pricing.unitPrice && config.settlementUnitPrice == data.pricing.settlementUnitPrice
+        && ((config.scopeType == 'network' && config.scopeId == 'dolomiti-nordicski')
+          || (config.scopeType == 'reportingArea' && config.scopeId == data.reportingAreaId)
+          || (config.scopeType == 'organization' && config.scopeId == data.organizationId));
+    }
+
+    function archived(collectionName, document) {
+      let revisionId = string(resource.data.revision);
+      return getAfter(/databases/$(database)/documents/$(collectionName)/$(document)/revisions/$(revisionId)).data == resource.data;
+    }
+
+    match /ticketPricingConfigs/{document} {
+      allow read: if activeUser();
+      allow create: if !historicalLocked(request.resource.data) && validPricing(request.resource.data) && managePricing(request.resource.data)
+        && request.resource.data.id == document && request.resource.data.revision == 1;
+      allow update: if !historicalLocked(request.resource.data) && validPricing(request.resource.data) && managePricing(resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.scopeType == resource.data.scopeType && request.resource.data.scopeId == resource.data.scopeId
+        && request.resource.data.productCode == resource.data.productCode
+        && request.resource.data.salesChannel == resource.data.salesChannel && request.resource.data.salesPeriod == resource.data.salesPeriod
+        && resource.data.provenance.dataStatus == 'draft'
+        && request.resource.data.revision == resource.data.revision + 1 && archived('ticketPricingConfigs',document);
+      allow delete: if false;
+      match /revisions/{revision} {
+        allow read: if activeUser();
+        allow create: if managePricing(get(/databases/$(database)/documents/ticketPricingConfigs/$(document)).data)
+          && request.resource.data == get(/databases/$(database)/documents/ticketPricingConfigs/$(document)).data
+          && getAfter(/databases/$(database)/documents/ticketPricingConfigs/$(document)).data.revision == request.resource.data.revision + 1;
+        allow update, delete: if false;
+      }
+    }
+
+    function canReadNewSalesDocument(document) {
+      let parts = document.split('__');
+      return isAdmin() || (parts.size() == 6 && (
+        hasGrant('network','dolomiti-nordicski','ticketSales.read')
+        || hasGrant('organization',parts[1],'ticketSales.read')
+        || hasGrant('reportingArea',parts[2],'ticketSales.read')));
+    }
+
+    // DNS Faktura commercial rates. Rates are internal DNS Commercial
+    // configuration and always require a human-readable source document label.
+    match /billingRateConfigs/{document} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && request.resource.data.seasonId is string
+        && request.resource.data.sourceType == 'order'
+        && request.resource.data.catalogItemId is string
+        && request.resource.data.billingUnitPrice is number
+        && request.resource.data.billingUnitPrice >= 0
+        && request.resource.data.currency == 'EUR'
+        && request.resource.data.source is map
+        && request.resource.data.source.documentLabel is string
+        && request.resource.data.source.documentLabel.size() > 0
+        && request.resource.data.active is bool
+        && request.resource.data.revision == 1;
+
+      allow update: if isAdmin()
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.sourceType == resource.data.sourceType
+        && request.resource.data.catalogItemId == resource.data.catalogItemId
+        && request.resource.data.billingUnitPrice is number
+        && request.resource.data.billingUnitPrice >= 0
+        && request.resource.data.currency == 'EUR'
+        && request.resource.data.source is map
+        && request.resource.data.source.documentLabel is string
+        && request.resource.data.source.documentLabel.size() > 0
+        && request.resource.data.active is bool
+        && request.resource.data.revision == resource.data.revision + 1;
+
+      allow delete: if false;
+    }
+
+    // DNS Faktura seasonal extras. These are sourced, admin-managed
+    // commercial items such as seasonal clothing or one-off supplies.
+    match /billingSeasonalExtras/{document} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && request.resource.data.id == document
+        && request.resource.data.seasonId is string
+        && request.resource.data.sourceType == 'seasonal-extra'
+        && request.resource.data.organizationId is string
+        && request.resource.data.reportingAreaId is string
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.quantity is number
+        && request.resource.data.quantity >= 0
+        && request.resource.data.unitAmount is number
+        && request.resource.data.unitAmount >= 0
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 0
+        && request.resource.data.currency == 'EUR'
+        && request.resource.data.source is map
+        && request.resource.data.source.documentLabel is string
+        && request.resource.data.source.documentLabel.size() > 0
+        && request.resource.data.active is bool
+        && request.resource.data.revision == 1;
+
+      allow update: if isAdmin()
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.sourceType == resource.data.sourceType
+        && request.resource.data.organizationId == resource.data.organizationId
+        && request.resource.data.reportingAreaId == resource.data.reportingAreaId
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.quantity is number
+        && request.resource.data.quantity >= 0
+        && request.resource.data.unitAmount is number
+        && request.resource.data.unitAmount >= 0
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 0
+        && request.resource.data.currency == 'EUR'
+        && request.resource.data.source is map
+        && request.resource.data.source.documentLabel is string
+        && request.resource.data.source.documentLabel.size() > 0
+        && request.resource.data.active is bool
+        && request.resource.data.revision == resource.data.revision + 1;
+
+      allow delete: if false;
+    }
+
+    // DNS Faktura billing snapshots. A run may be revised while draft.
+    // READY snapshots are immutable; line snapshots are append-only.
+    match /billingRuns/{document} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && request.resource.data.id == document
+        && request.resource.data.seasonId is string
+        && request.resource.data.organizationId is string
+        && request.resource.data.reportingAreaId is string
+        && (request.resource.data.status == 'draft' || request.resource.data.status == 'ready')
+        && request.resource.data.revision == 1
+        && billingSnapshotTypeAllowed(request.resource.data)
+        && (
+          !request.resource.data.keys().hasAny(['snapshotType'])
+          || request.resource.data.snapshotType != 'unified'
+          || (
+            request.resource.data.sourceState in ['complete', 'incomplete']
+            && request.resource.data.sourceBlockingReasons is list
+          )
+        )
+        && request.resource.data.sourceTypes is list
+        && request.resource.data.sourceOrderStatuses is list
+        && request.resource.data.lineCount is int
+        && request.resource.data.lineCount >= 0
+        && request.resource.data.billedQuantity is number
+        && request.resource.data.billedQuantity >= 0
+        && request.resource.data.unpricedQuantity is number
+        && request.resource.data.unpricedQuantity >= 0
+        && request.resource.data.totalAmount is number
+        && request.resource.data.totalAmount >= 0
+        && request.resource.data.generatedBy is string
+        && request.resource.data.generatedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && billingReadyAllowed(request.resource.data);
+
+      allow update: if isAdmin()
+        && resource.data.status == 'draft'
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.organizationId == resource.data.organizationId
+        && request.resource.data.reportingAreaId == resource.data.reportingAreaId
+        && (request.resource.data.status == 'draft' || request.resource.data.status == 'ready')
+        && request.resource.data.revision == resource.data.revision + 1
+        && billingSnapshotTypeAllowed(request.resource.data)
+        && (
+          !request.resource.data.keys().hasAny(['snapshotType'])
+          || request.resource.data.snapshotType != 'unified'
+          || (
+            request.resource.data.sourceState in ['complete', 'incomplete']
+            && request.resource.data.sourceBlockingReasons is list
+          )
+        )
+        && request.resource.data.sourceTypes is list
+        && request.resource.data.sourceOrderStatuses is list
+        && request.resource.data.lineCount is int
+        && request.resource.data.lineCount >= 0
+        && request.resource.data.billedQuantity is number
+        && request.resource.data.billedQuantity >= 0
+        && request.resource.data.unpricedQuantity is number
+        && request.resource.data.unpricedQuantity >= 0
+        && request.resource.data.totalAmount is number
+        && request.resource.data.totalAmount >= 0
+        && request.resource.data.generatedBy is string
+        && request.resource.data.generatedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && billingReadyAllowed(request.resource.data);
+
+      allow delete: if false;
+    }
+
+    match /billingLines/{document} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && request.resource.data.id == document
+        && request.resource.data.runId is string
+        && request.resource.data.runRevision is int
+        && request.resource.data.runRevision >= 1
+        && request.resource.data.seasonId is string
+        && request.resource.data.organizationId is string
+        && request.resource.data.reportingAreaId is string
+        && validBillingLineSource(request.resource.data)
+        && request.resource.data.description is string
+        && request.resource.data.quantity is number
+        && request.resource.data.quantity >= 0
+        && request.resource.data.unitAmount is number
+        && request.resource.data.unitAmount >= 0
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 0
+        && request.resource.data.included is bool
+        && request.resource.data.createdBy is string
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/billingRuns/$(request.resource.data.runId)).data.revision == request.resource.data.runRevision
+        && getAfter(/databases/$(database)/documents/billingRuns/$(request.resource.data.runId)).data.seasonId == request.resource.data.seasonId
+        && getAfter(/databases/$(database)/documents/billingRuns/$(request.resource.data.runId)).data.organizationId == request.resource.data.organizationId
+        && getAfter(/databases/$(database)/documents/billingRuns/$(request.resource.data.runId)).data.reportingAreaId == request.resource.data.reportingAreaId
+        && getAfter(/databases/$(database)/documents/billingRuns/$(request.resource.data.runId)).data.updatedAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /ticketSales/{document} {
+      allow get: if (resource == null && canReadNewSalesDocument(document))
+        || (resource != null && hasOrderPermission('ticketSales.read',resource.data));
+      allow list: if hasOrderPermission('ticketSales.read',resource.data);
+      allow create: if !historicalLocked(request.resource.data) && validSales(request.resource.data) && salesPricingMatches(request.resource.data)
+        && hasOrderPermission('ticketSales.write',request.resource.data)
+        && request.resource.data.id == document && request.resource.data.revision == 1;
+      allow update: if !historicalLocked(request.resource.data) && validSales(request.resource.data) && salesPricingMatches(request.resource.data)
+        && hasOrderPermission('ticketSales.write',resource.data)
+        && request.resource.data.id == resource.data.id && request.resource.data.draftKey == resource.data.draftKey
+        && request.resource.data.organizationId == resource.data.organizationId && request.resource.data.reportingAreaId == resource.data.reportingAreaId
+        && request.resource.data.seasonId == resource.data.seasonId && request.resource.data.productCode == resource.data.productCode
+        && request.resource.data.salesChannel == resource.data.salesChannel && request.resource.data.salesPeriod == resource.data.salesPeriod
+        && resource.data.provenance.dataStatus == 'draft'
+        && request.resource.data.revision == resource.data.revision + 1 && archived('ticketSales',document);
+      allow delete: if false;
+      match /revisions/{revision} {
+        allow read: if hasOrderPermission('ticketSales.read',get(/databases/$(database)/documents/ticketSales/$(document)).data);
+        allow create: if hasOrderPermission('ticketSales.write',get(/databases/$(database)/documents/ticketSales/$(document)).data)
+          && request.resource.data == get(/databases/$(database)/documents/ticketSales/$(document)).data
+          && getAfter(/databases/$(database)/documents/ticketSales/$(document)).data.revision == request.resource.data.revision + 1;
+        allow update, delete: if false;
+      }
+    }
+
+    function manageKpMilestones() {
+      return isAdmin() || hasGrant('network','dolomiti-nordicski','kp.write');
+    }
+
+    function hasKpPermission(permission, data) {
+      return isAdmin()
+        || (data.entityType == 'organization' && hasGrant('organization',data.entityId,permission))
+        || hasGrant('reportingArea',data.reportingAreaId,permission)
+        || hasGrant('network','dolomiti-nordicski',permission);
+    }
+
+    function validKpMilestone(data) {
+      return data.keys().hasOnly(['id','seasonId','date','label','order','updatedBy','updatedAt'])
+        && !historicalLocked(data)
+        && data.id is string
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.date is string && data.date.size() == 10
+        && data.label is string
+        && data.order is int && data.order >= 1 && data.order <= 3
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    function validKpMilestoneValue(value, seasonId) {
+      let snowTotal = value.naturalSnowKm + value.artificialSnowKm;
+      return value.keys().hasOnly(['milestoneId','openedKm','naturalSnowKm','artificialSnowKm'])
+        && value.milestoneId is string
+        && get(/databases/$(database)/documents/kpMilestones/$(value.milestoneId)).data.seasonId == seasonId
+        && value.openedKm is number && value.openedKm >= 0
+        && value.naturalSnowKm is number && value.naturalSnowKm >= 0
+        && value.artificialSnowKm is number && value.artificialSnowKm >= 0
+        && value.artificialSnowKm <= value.openedKm
+        && snowTotal - value.openedKm < 0.011
+        && value.openedKm - snowTotal < 0.011;
+    }
+
+    function validKpEntry(data) {
+      return data.keys().hasOnly(['id','seasonId','entityType','entityId','reportingAreaId','referenceKm','milestones','includeInKp','exclusionReason','provenance','notes','revision','updatedBy','updatedAt'])
+        && !historicalLocked(data)
+        && data.id == data.seasonId + '__' + data.entityId
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.entityType == 'organization'
+        && data.entityId is string
+        && exists(/databases/$(database)/documents/organizations/$(data.entityId))
+        && data.reportingAreaId in get(/databases/$(database)/documents/organizations/$(data.entityId)).data.reportingAreaIds
+        && data.referenceKm.keys().hasOnly(['uniqueNetworkKm','potentialOperationalKm'])
+        && data.referenceKm.uniqueNetworkKm is number && data.referenceKm.uniqueNetworkKm >= 0
+        && data.referenceKm.potentialOperationalKm is number && data.referenceKm.potentialOperationalKm >= 0
+        && data.milestones is list && data.milestones.size() <= 3
+        && (data.milestones.size() < 1 || validKpMilestoneValue(data.milestones[0],data.seasonId))
+        && (data.milestones.size() < 2 || validKpMilestoneValue(data.milestones[1],data.seasonId))
+        && (data.milestones.size() < 3 || validKpMilestoneValue(data.milestones[2],data.seasonId))
+        && data.includeInKp is bool
+        && data.exclusionReason is string
+        && data.provenance.sourceSystem == 'manual-data-entry'
+        && data.provenance.methodVersion == 1
+        && data.provenance.dataStatus == 'draft'
+        && data.notes is string
+        && data.revision is int && data.revision >= 1
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    match /kpMilestones/{document} {
+      allow read: if activeUser();
+      allow create: if validKpMilestone(request.resource.data)
+        && request.resource.data.id == document
+        && manageKpMilestones();
+      allow update: if validKpMilestone(request.resource.data)
+        && resource.data.id == request.resource.data.id
+        && resource.data.seasonId == request.resource.data.seasonId
+        && manageKpMilestones();
+      allow delete: if false;
+    }
+
+    function hasKpAreaPermission(permission, data) {
+      return isAdmin()
+        || hasGrant('reportingArea',data.reportingAreaId,permission)
+        || hasGrant('network','dolomiti-nordicski',permission);
+    }
+
+    function validKpFairValidation(data) {
+      let snowTotal = data.naturalSnowKm + data.artificialSnowKm;
+      return data.keys().hasOnly(['id','seasonId','reportingAreaId','milestoneId','potentialOperationalKm','openedKm','naturalSnowKm','artificialSnowKm','revision','validatedBy','validatedAt'])
+        && !historicalLocked(data)
+        && data.id == data.seasonId + '__' + data.reportingAreaId + '__' + data.milestoneId
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.reportingAreaId is string
+        && exists(/databases/$(database)/documents/reportingAreas/$(data.reportingAreaId))
+        && data.milestoneId is string
+        && get(/databases/$(database)/documents/kpMilestones/$(data.milestoneId)).data.seasonId == data.seasonId
+        && data.potentialOperationalKm is number && data.potentialOperationalKm >= 0
+        && data.openedKm is number && data.openedKm >= 0
+        && data.naturalSnowKm is number && data.naturalSnowKm >= 0
+        && data.artificialSnowKm is number && data.artificialSnowKm >= 0
+        && data.artificialSnowKm <= data.openedKm
+        && snowTotal - data.openedKm < 0.011
+        && data.openedKm - snowTotal < 0.011
+        && data.revision is int && data.revision >= 1
+        && data.validatedBy == request.auth.uid
+        && data.validatedAt == request.time;
+    }
+
+    match /kpFairValidations/{document} {
+      allow read: if hasKpAreaPermission('kp.read',resource.data);
+      allow create: if validKpFairValidation(request.resource.data)
+        && hasKpAreaPermission('kp.verify',request.resource.data)
+        && request.resource.data.id == document
+        && request.resource.data.revision == 1;
+      allow update: if validKpFairValidation(request.resource.data)
+        && hasKpAreaPermission('kp.verify',resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.reportingAreaId == resource.data.reportingAreaId
+        && request.resource.data.milestoneId == resource.data.milestoneId
+        && request.resource.data.revision == resource.data.revision + 1
+        && archived('kpFairValidations',document);
+      allow delete: if false;
+
+      match /revisions/{revision} {
+        allow read: if hasKpAreaPermission('kp.read',get(/databases/$(database)/documents/kpFairValidations/$(document)).data);
+        allow create: if hasKpAreaPermission('kp.verify',get(/databases/$(database)/documents/kpFairValidations/$(document)).data)
+          && request.resource.data == get(/databases/$(database)/documents/kpFairValidations/$(document)).data
+          && getAfter(/databases/$(database)/documents/kpFairValidations/$(document)).data.revision == request.resource.data.revision + 1;
+        allow update, delete: if false;
+      }
+    }
+
+    match /kpEntries/{document} {
+      allow read: if hasKpPermission('kp.read',resource.data);
+      allow create: if validKpEntry(request.resource.data)
+        && hasKpPermission('kp.write',request.resource.data)
+        && request.resource.data.id == document
+        && request.resource.data.revision == 1;
+      allow update: if validKpEntry(request.resource.data)
+        && hasKpPermission('kp.write',resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.entityType == resource.data.entityType
+        && request.resource.data.entityId == resource.data.entityId
+        && request.resource.data.reportingAreaId == resource.data.reportingAreaId
+        && resource.data.provenance.dataStatus == 'draft'
+        && request.resource.data.revision == resource.data.revision + 1
+        && archived('kpEntries',document);
+      allow delete: if false;
+
+      match /revisions/{revision} {
+        allow read: if hasKpPermission('kp.read',get(/databases/$(database)/documents/kpEntries/$(document)).data);
+        allow create: if hasKpPermission('kp.write',get(/databases/$(database)/documents/kpEntries/$(document)).data)
+          && request.resource.data == get(/databases/$(database)/documents/kpEntries/$(document)).data
+          && getAfter(/databases/$(database)/documents/kpEntries/$(document)).data.revision == request.resource.data.revision + 1;
+        allow update, delete: if false;
+      }
+    }
+
+    match /kpSetupImports/{document} {
+      allow read, write: if false;
+    }
+
+    // Trusted Admin import only. Historical sources and facts are immutable to all app clients.
+    match /historicalSeasonRecords/{document} {
+      allow read: if activeUser() && (isAdmin()
+        || (resource.data.domain == 'pricing')
+        || (resource.data.domain == 'sales' && hasOrderPermission('ticketSales.read',resource.data))
+        || (resource.data.domain == 'orders' && hasOrderPermission('ticketOrders.read',resource.data))
+        || (resource.data.domain == 'kp' && hasOrderPermission('kp.read',resource.data))
+        || (resource.data.domain in ['snow','costs'] && hasOrderPermission('kp.read',resource.data)));
+      allow write: if false;
+    }
+    match /historicalSeasonImports/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /historicalSeasonSources/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // DNS Flyer Studio working documents.
+    match /flyerDocuments/{document} {
+      allow read: if activeUser() && (
+        (resource.data.ownerUserId == request.auth.uid
+          && canOwnFlyerScope(resource.data))
+        || hasFlyerPermission('flyer.read', resource.data)
+      );
+
+      allow create: if activeUser()
+        && validFlyerDocument(request.resource.data)
+        && request.resource.data.id == document
+        && request.resource.data.ownerUserId == request.auth.uid
+        && canOwnFlyerScope(request.resource.data);
+
+      allow update: if activeUser()
+        && validFlyerDocument(request.resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.scopeType == resource.data.scopeType
+        && request.resource.data.scopeId == resource.data.scopeId
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.ownerUserId == resource.data.ownerUserId
+        && (
+          (resource.data.ownerUserId == request.auth.uid
+            && canOwnFlyerScope(resource.data))
+          || hasFlyerPermission('flyer.write', resource.data)
+        );
+
+      allow delete: if isAdmin()
+        || (activeUser()
+          && resource.data.ownerUserId == request.auth.uid
+          && canOwnFlyerScope(resource.data));
+    }
+
+    // Immutable publication snapshots. Published records are append-only.
+    match /flyerPublications/{document} {
+      allow read: if hasFlyerPermission('flyer.read', resource.data);
+
+      allow create: if activeUser()
+        && validFlyerPublication(request.resource.data)
+        && request.resource.data.id == document
+        && hasFlyerPermission('flyer.publish', request.resource.data);
+
+      allow update, delete: if false;
+    }
+
+    // Reusable organization/network Flyer templates.
+    match /flyerTemplates/{document} {
+      allow read: if hasFlyerPermission('flyer.read', resource.data);
+
+      allow create, update: if activeUser()
+        && validFlyerTemplate(request.resource.data)
+        && request.resource.data.id == document
+        && hasFlyerPermission('flyer.templates.manage', request.resource.data);
+
+      allow delete: if isAdmin();
+    }
+
+    // Asset metadata only. Binary files live in Storage, not Firestore.
+    match /flyerAssets/{document} {
+      allow read: if hasFlyerPermission('flyer.read', resource.data);
+
+      allow create, update: if activeUser()
+        && validFlyerAsset(request.resource.data)
+        && request.resource.data.id == document
+        && hasFlyerPermission('flyer.assets.manage', request.resource.data);
+
+      allow delete: if isAdmin();
+    }
+
+    // Public, non-sensitive operational registry used by DNS Hub.
+    // Metadata and health are written only by trusted Admin SDK automation.
+    match /toolRegistryPublic/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Canonical season-scoped IDM Premium Partner program configuration.
+    // Client applications may read it when signed in and active; writes are
+    // performed only by governed Admin SDK seed tooling.
+    match /idmPremiumPrograms/{document} {
+      allow read: if activeUser();
+      allow write: if false;
+    }
+
+    // DNS Faktura v2 internal operational state.
+    //
+    // Public confirmation never reads/writes these collections directly.
+    // Public token resolution/submission is handled only by the Faktura
+    // server-side Firebase Functions boundary using the Admin SDK.
+    //
+    // Client-side access is restricted to active DNS administrators until
+    // a narrower Faktura operator grant model is introduced.
+    match /fakturaConfirmations/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /fakturaBillingSheets/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /fakturaPayments/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /fakturaDeliveries/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /fakturaManualSources/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Token documents contain only hashes, but remain strictly internal.
+    // Anonymous/signed-in non-admin clients may not get, list or query them.
+    match /fakturaConfirmationTokens/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Quantity-consumption ledger is trusted operational state.
+    match /fakturaConfirmationLedgers/{document} {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Audit log is append-only from DNS admin clients. Server-side Admin SDK
+    // writes are not governed by client rules.
+    match /fakturaEvents/{document} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Collective procurement v0.1: conservative, admin-only staging rules.
+    // Ticket order matrices and Faktura collections are deliberately untouched.
+    // Partner scope access is denied until allocation-specific emulator tests
+    // and canonical organization mapping have been approved.
+    function validCollectiveHeader(data, document) {
+      return data.keys().hasOnly([
+          'id','seasonId','title','supplierId','status','sourceRevision',
+          'supplierDocumentIds','updatedBy','updatedAt'
+        ])
+        && data.id == document
+        && data.seasonId is string
+        && exists(/databases/$(database)/documents/seasons/$(data.seasonId))
+        && data.title is string && data.title.size() > 0
+        && data.supplierId is string && data.supplierId.size() > 0
+        && data.status in ['draft','reviewed','confirmed','closed']
+        && data.sourceRevision is int && data.sourceRevision >= 1
+        && data.supplierDocumentIds is list
+        && data.supplierDocumentIds.size() > 0
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    match /collectiveOrders/{document} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && validCollectiveHeader(request.resource.data, document)
+        && request.resource.data.status == 'draft';
+      allow update: if isAdmin()
+        && validCollectiveHeader(request.resource.data, document)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.seasonId == resource.data.seasonId
+        && request.resource.data.sourceRevision == resource.data.sourceRevision + 1
+        && resource.data.status != 'closed'
+        && (
+          (resource.data.status == 'draft' && request.resource.data.status in ['draft','reviewed'])
+          || (resource.data.status == 'reviewed' && request.resource.data.status in ['reviewed','confirmed'])
+          || (resource.data.status == 'confirmed' && request.resource.data.status == 'closed')
+        );
+      allow delete: if false;
+
+      // Neither allocations nor supplier costs can be accessed by app clients
+      // until dedicated rules, identity checks and emulator cases are in place.
+      match /allocations/{allocationId} {
+        allow read, write: if false;
+      }
+      match /supplierCosts/{costId} {
+        allow read, write: if false;
+      }
+    }
+
+
+    // DNS Design Control v1. Private reader index is maintained by trusted
+    // backend tooling only; it selects a canonical grant, never grants access.
+    function indexedFlyerPolicyReader() {
+      let readerPath = /databases/$(database)/documents/flyerPolicyReaders/$(request.auth.uid);
+      let reader = get(readerPath).data;
+      return exists(readerPath)
+        && reader.keys().hasOnly(['scopeType', 'scopeId'])
+        && reader.scopeType in ['reportingArea', 'organization']
+        && reader.scopeId is string
+        && reader.scopeId.size() > 0 && reader.scopeId.size() <= 128
+        && hasGrant(reader.scopeType, reader.scopeId, 'flyer.read');
+    }
+
+    function canReadFlyerDesignPolicy() {
+      return activeUser() && (
+        isAdmin()
+        || hasGrant('network', 'dolomiti-nordicski', 'flyer.read')
+        || indexedFlyerPolicyReader()
+      );
+    }
+
+    function validFlyerDesignOverride(value) {
+      return value is map
+        && value.keys().hasOnly(['corners', 'pills', 'heroFade'])
+        && (!('corners' in value) || value.corners in ['square', 'soft', 'round'])
+        && (!('pills' in value) || value.pills in ['square', 'soft', 'pill'])
+        && (!('heroFade' in value) || value.heroFade in ['none', 'top', 'right', 'bottom', 'left']);
+    }
+
+    function validFlyerDesignPolicy(data) {
+      return data.keys().hasAll(['schemaVersion', 'global', 'perFlyer', 'updatedAt', 'updatedBy'])
+        && data.keys().hasOnly(['schemaVersion', 'global', 'perFlyer', 'updatedAt', 'updatedBy'])
+        && data.schemaVersion is int && data.schemaVersion == 1
+        && validFlyerDesignOverride(data.global)
+        && data.global.keys().hasAll(['corners', 'pills', 'heroFade'])
+        && data.perFlyer is map
+        && data.perFlyer.keys().hasOnly(['official_price_list', 'regional_price_list', 'ticket_online_weekly_dns', 'ticket_online_weekly_area', 'ticket_online_daily', 'hotel_skipass_package', 'gift_voucher', 'service_voucher', 'hotel_manifesto'])
+        && (!('official_price_list' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['official_price_list']))
+        && (!('regional_price_list' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['regional_price_list']))
+        && (!('ticket_online_weekly_dns' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['ticket_online_weekly_dns']))
+        && (!('ticket_online_weekly_area' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['ticket_online_weekly_area']))
+        && (!('ticket_online_daily' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['ticket_online_daily']))
+        && (!('hotel_skipass_package' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['hotel_skipass_package']))
+        && (!('gift_voucher' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['gift_voucher']))
+        && (!('service_voucher' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['service_voucher']))
+        && (!('hotel_manifesto' in data.perFlyer) || validFlyerDesignOverride(data.perFlyer['hotel_manifesto']))
+        && data.updatedBy == request.auth.uid
+        // Repository writes an ISO string, not serverTimestamp().
+        && data.updatedAt is string && data.updatedAt.size() == 24
+        && data.updatedAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$');
+    }
+
+    match /flyerDesignPolicies/{policyId} {
+      allow get: if policyId == 'dns-global' && canReadFlyerDesignPolicy();
+      allow list: if false;
+      allow create, update: if policyId == 'dns-global'
+        && isAdmin() && validFlyerDesignPolicy(request.resource.data);
+      allow delete: if policyId == 'dns-global' && isAdmin();
+    }
+
+    match /flyerPolicyReaders/{userId} {
+      allow read, write: if false;
+    }
+
+    // Release notes: only active DNS users; technical reports are DNS-admin only.
+    // Writes are restricted to trusted backend automation (Admin SDK).
+    match /systemReleases/{releaseId} {
+      allow get, list: if activeUser()
+        && resource.data.published == true
+        && (
+          isAdmin()
+          || (
+            resource.data.audience == 'area'
+            && resource.data.type in ['feature', 'urgent']
+          )
+        );
+      allow create, update, delete: if false;
+    }
+
+    // Everything else remains closed until its domain rules are implemented.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
