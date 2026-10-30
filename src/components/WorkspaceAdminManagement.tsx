@@ -1,0 +1,79 @@
+import { useState } from 'react';
+import type { DNSWorkspaceLanguage } from '../services/foundation';
+import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
+import { organizationName } from '../services/dnsOrganizations';
+import type { DNSIdentity } from '../services/dnsIdentity';
+
+type AdminTab = 'organizations' | 'users' | 'permissions' | 'usage';
+type Props = {
+  language: DNSWorkspaceLanguage;
+  identity: DNSIdentity;
+  organizations: DNSWorkspaceOrganization[];
+};
+
+/** Admin-only presentation. Does not provision accounts, change grants or write analytics. */
+export function WorkspaceAdminManagement({ language, identity, organizations }: Props) {
+  const [tab, setTab] = useState<AdminTab>('organizations');
+  const [filter, setFilter] = useState('');
+  if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin')) return null;
+  const de = language === 'de';
+  const tabs: { id: AdminTab; label: string }[] = [
+    { id: 'organizations', label: de ? 'Organisationen' : 'Organizzazioni' },
+    { id: 'users', label: de ? 'Benutzer' : 'Utenti' },
+    { id: 'permissions', label: de ? 'Berechtigungen' : 'Permessi' },
+    { id: 'usage', label: de ? 'Aktivität & Nutzung' : 'Attività & Utilizzo' },
+  ];
+  const filtered = organizations.filter(org =>
+    `${org.canonicalName} ${org.id} ${org.reportingAreaIds.join(' ')}`
+      .toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
+  return <section className="dns-card p-5 space-y-4" aria-label={de ? 'Organisations- und Zugangsverwaltung' : 'Gestione organizzazioni e accessi'}>
+    <div>
+      <div className="dns-kicker">{de ? 'Nur DNS Admin' : 'Solo DNS Admin'}</div>
+      <h2 className="dns-section-title">{de ? 'Organisationen & Zugänge' : 'Organizzazioni & Accessi'}</h2>
+      <p className="text-sm text-dns-muted">{de
+        ? 'Verwaltungsübersicht. Änderungen an Benutzerkonten und Berechtigungen sind noch nicht aktiviert.'
+        : 'Vista amministrativa. Le modifiche agli account e ai permessi non sono ancora abilitate.'}</p>
+    </div>
+    <div role="tablist" aria-label={de ? 'Verwaltungsbereiche' : 'Sezioni amministrative'} className="flex flex-wrap gap-2">
+      {tabs.map(item => <button key={item.id} type="button" role="tab"
+        aria-selected={tab === item.id} onClick={() => setTab(item.id)}
+        className="dns-button" data-variant={tab === item.id ? 'primary' : 'secondary'}>{item.label}</button>)}
+    </div>
+    <div role="tabpanel" className="space-y-3">
+      {tab === 'organizations' && <>
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">{de ? 'Organisation suchen' : 'Cerca organizzazione'}</span>
+          <input className="dns-input w-full" value={filter} onChange={event => setFilter(event.target.value)}
+            placeholder={de ? 'Name oder Gebiet' : 'Nome o area'} />
+        </label>
+        <p className="text-sm text-dns-muted">{filtered.length} {de ? 'Organisationen aus DNS Core' : 'organizzazioni da DNS Core'}</p>
+        {filtered.map(org => <article key={org.id} className="border-b py-2">
+          <h3 className="font-semibold">{organizationName(org, language)}</h3>
+          <p className="text-sm text-dns-muted">{org.id} · {org.reportingAreaIds.join(', ') || 'DNS'}</p>
+        </article>)}
+        {!filtered.length && <p role="status">{de ? 'Keine Organisation gefunden.' : 'Nessuna organizzazione trovata.'}</p>}
+      </>}
+      {tab === 'users' && <p role="status" className="text-sm">
+        {de ? 'Benutzerverwaltung ist in Vorbereitung. Neue Einladungen erfordern einen gesicherten Verwaltungsdienst.'
+          : 'Gestione utenti in preparazione. Gli inviti richiedono un servizio amministrativo protetto.'}
+      </p>}
+      {tab === 'permissions' && <div className="space-y-2">
+        <p className="text-sm text-dns-muted">{de ? 'Geplantes Standardprofil für Gebietsadministratoren (noch keine Berechtigungsänderung).' : 'Profilo Area Admin previsto (nessuna modifica ai permessi).'}</p>
+        {[
+          ['DNS Data Entry', de ? 'Lesen und Schreiben, eigenes Gebiet' : 'Lettura e scrittura, propria area'],
+          ['DNS Flyer Studio', de ? 'Erstellen und Bearbeiten, eigenes Gebiet' : 'Creazione e modifica, propria area'],
+          ['DNS Analytics', de ? 'Nur lesen' : 'Sola consultazione'],
+          ['FAIR Model', de ? 'Nur lesen' : 'Sola consultazione'],
+        ].map(([tool, access]) => <div className="flex flex-wrap gap-2 justify-between border-b py-2" key={tool}>
+          <strong>{tool}</strong><span className="text-sm">{access}</span>
+        </div>)}
+      </div>}
+      {tab === 'usage' && <div className="space-y-2">
+        <h3 className="font-semibold">{de ? 'Aggregierte Nutzungsstatistik' : 'Statistiche aggregate di utilizzo'}</h3>
+        <p role="status" className="text-sm text-dns-muted">{de
+          ? 'Erfassung noch deaktiviert. Keine Nutzungszahlen verfügbar. Keine Einzelnutzer-Verfolgung vorgesehen.'
+          : 'Raccolta non ancora attiva. Nessun dato di utilizzo disponibile. Nessun tracciamento individuale previsto.'}</p>
+      </div>}
+    </div>
+  </section>;
+}
