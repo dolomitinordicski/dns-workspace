@@ -4,7 +4,7 @@ import {
   type DNSWorkspaceLanguage,
 } from '../services/foundation';
 
-export type WorkspaceView = 'cockpit' | 'system-map' | 'orbit';
+export type WorkspaceView = 'cockpit' | 'system-map' | 'orbit' | 'organizations-access';
 
 type WorkspaceHeaderProps = {
   language: DNSWorkspaceLanguage;
@@ -104,6 +104,11 @@ export function WorkspaceHeader({
             onClick={() => onViewChange('orbit')}
           >
             Orbit
+          </button>
+          <button type="button" className={['dns-tab', activeView === 'organizations-access' ? 'dns-tab-active' : ''].filter(Boolean).join(' ')}
+            aria-current={activeView === 'organizations-access' ? 'page' : undefined}
+            onClick={() => onViewChange('organizations-access')}>
+            {language === 'de' ? 'Organisationen & Zugänge' : 'Organizzazioni e accessi'}
           </button>
           </>)}
         </div>
