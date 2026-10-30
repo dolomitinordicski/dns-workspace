@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { WorkspaceAccount } from './components/WorkspaceAccount';
 import { WorkspaceCockpit } from './components/WorkspaceCockpit';
+import { WorkspaceAdminManagement } from './components/WorkspaceAdminManagement';
 import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeader';
 import { WorkspaceNavigator } from './components/WorkspaceNavigator';
 import { WorkspaceToolView } from './components/WorkspaceToolView';
@@ -65,6 +66,8 @@ export default function App() {
         ) : openTool ? (
           <WorkspaceToolView language={language} tool={openTool}
             onClose={() => { setOpenTool(null); setActiveView('cockpit'); }} />
+        ) : activeView === 'organizations-access' && isAdmin ? (
+          <div className="py-4"><WorkspaceAdminManagement language={language} identity={identity} organizations={organizations} /></div>
         ) : activeView === 'cockpit' || !isAdmin ? (
           <WorkspaceCockpit language={language} identity={identity}
             organization={organization} organizations={organizations}
