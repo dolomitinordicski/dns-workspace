@@ -1,3 +1,5 @@
+import { AppWindow, ChartNoAxesCombined, ClipboardList, Database, Palette, ReceiptText, Users } from 'lucide-react';
+import { getDNSToolIcon } from '@dolomitinordicski/dns-shared-data/tool-icons';
 import { useEffect, useState } from 'react';
 import { loadDNSReleases, type DNSRelease } from '../services/dnsReleases';
 import type { DNSIdentity } from '../services/dnsIdentity';
@@ -98,19 +100,23 @@ export function WorkspaceCockpit(props: Props) {
         {tools.length === 0 ? <p className="dns-card p-5">{c.empty}</p> : (
           <div className="workspace-cockpit-tools">
             {tools.map(tool => {
-              const category = /analy|statistic|report/i.test(tool.id + ' ' + tool.label) ? 'analytics'
-                : /data|entry|core/i.test(tool.id + ' ' + tool.label) ? 'data'
-                : /faktura|bill|invoice/i.test(tool.id + ' ' + tool.label) ? 'finance'
-                : /flyer|studio|design/i.test(tool.id + ' ' + tool.label) ? 'creative'
-                : /partner|hub/i.test(tool.id + ' ' + tool.label) ? 'partners'
-                : /poll|survey/i.test(tool.id + ' ' + tool.label) ? 'polls' : 'general';
-              const symbols: Record<string, string> = { analytics: '▥', data: '▤', finance: '▧', creative: '✦', partners: '◎', polls: '☷', general: '↗' };
+              const visual = getDNSToolIcon(tool.id);
+              const icons = {
+                'chart-no-axes-combined': ChartNoAxesCombined,
+                database: Database,
+                'receipt-text': ReceiptText,
+                palette: Palette,
+                users: Users,
+                'clipboard-list': ClipboardList,
+                'app-window': AppWindow,
+              };
+              const ToolIcon = icons[visual.icon];
               return <button key={tool.id} type="button"
-                className="workspace-app-card" data-category={category}
+                className="workspace-app-card" data-category={visual.category}
                 disabled={!tool.url} onClick={() => onOpenTool(tool)}
                 aria-label={`${c.open}: ${tool.label}`}>
                 <span className="workspace-app-card-top">
-                  <span className="workspace-app-icon" aria-hidden="true">{symbols[category]}</span>
+                  <span className="workspace-app-icon" aria-hidden="true"><ToolIcon size={24} strokeWidth={1.8} /></span>
                   <span className="workspace-app-arrow" aria-hidden="true">↗</span>
                 </span>
                 <span className="workspace-app-card-name">{tool.label}</span>
