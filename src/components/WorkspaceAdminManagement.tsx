@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { WorkspaceOrderDeadline } from './WorkspaceOrderDeadline';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import { organizationName } from '../services/dnsOrganizations';
 import type { DNSIdentity } from '../services/dnsIdentity';
 
-type AdminTab = 'organizations' | 'users' | 'permissions' | 'usage';
+type AdminTab = 'organizations' | 'users' | 'permissions' | 'usage' | 'deadlines';
 type Props = {
   language: DNSWorkspaceLanguage;
   identity: DNSIdentity;
@@ -25,6 +26,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
     { id: 'users', label: de ? 'Benutzer' : 'Utenti' },
     { id: 'permissions', label: de ? 'Berechtigungen' : 'Permessi' },
     { id: 'usage', label: de ? 'Aktivität & Nutzung' : 'Attività & Utilizzo' },
+    { id: 'deadlines', label: de ? 'Bestellfrist' : 'Scadenza ordini' },
   ];
   const filtered = organizations.filter(org =>
     `${org.canonicalName} ${org.id} ${org.reportingAreaIds.join(' ')}`
@@ -95,6 +97,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
           <strong>{tool}</strong><span className="text-sm">{access}</span>
         </div>)}
       </div>}
+      {tab === 'deadlines' && <WorkspaceOrderDeadline language={language} />}
       {tab === 'usage' && <div className="space-y-2">
         <h3 className="font-semibold">{de ? 'Aggregierte Nutzungsstatistik' : 'Statistiche aggregate di utilizzo'}</h3>
         <p role="status" className="text-sm text-dns-muted">{de
