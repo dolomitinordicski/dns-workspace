@@ -127,11 +127,14 @@ service cloud.firestore {
     function dataEntryMatrixAllows(orgId, write) {
       let policyPath = /databases/$(database)/documents/organizationToolAccess/$(orgId);
       let memberPath = /databases/$(database)/documents/memberships/$(request.auth.uid + '__' + orgId);
-      return !exists(policyPath)
-        || (exists(memberPath)
-          && get(memberPath).data.active == true
-          && (get(policyPath).data.tools.get('data-entry', 'none') == 'write'
-            || (!write && get(policyPath).data.tools.get('data-entry', 'none') == 'read')));
+      // One lookup per resource keeps validated sales writes within the rules budget.
+      let policy = get(policyPath);
+      let member = get(memberPath);
+      return policy == null
+        || (member != null
+          && member.data.active == true
+          && (policy.data.tools.get('data-entry', 'none') == 'write'
+            || (!write && policy.data.tools.get('data-entry', 'none') == 'read')));
     }
 
     function hasOrderPermission(permission, data) {
