@@ -50,6 +50,11 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
         {filtered.map(org => <article key={org.id} className="border-b py-2">
           <h3 className="font-semibold">{organizationName(org, language)}</h3>
           <p className="text-sm text-dns-muted">{org.id} · {org.reportingAreaIds.join(', ') || 'DNS'}</p>
+          {org.address && <p className="text-sm">{[org.address.street, [org.address.postalCode, org.address.city].filter(Boolean).join(' '), org.address.country].filter(Boolean).join(', ')}</p>}
+          {org.email && <p className="text-sm"><a href={`mailto:${org.email}`}>{org.email}</a></p>}
+          {org.phone && <p className="text-sm">{org.phone}</p>}
+          {org.website && <p className="text-sm">{org.website}</p>}
+          {!org.address && !org.email && !org.phone && <p className="text-xs text-dns-muted">{de ? 'Kontaktangaben in DNS Core noch nicht verfügbar.' : 'Recapiti non ancora disponibili in DNS Core.'}</p>}
         </article>)}
         {!filtered.length && <p role="status">{de ? 'Keine Organisation gefunden.' : 'Nessuna organizzazione trovata.'}</p>}
       </>}
