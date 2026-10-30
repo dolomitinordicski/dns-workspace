@@ -959,3 +959,37 @@
 @media (max-width: 480px) {
   .workspace-cockpit-tools { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Partner Workspace: application-first dashboard, news follows normal page scroll. */
+.workspace-cockpit-layout { grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr); }
+.workspace-cockpit-sidebar { position: static; top: auto; max-height: none; overflow: visible; align-self: start; }
+.workspace-cockpit-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.workspace-app-card {
+  --app-accent: #347584; --app-tint: #e5f1f3;
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+  gap: .65rem; min-width: 0; width: 100%; min-height: 192px;
+  padding: 1.2rem; background: var(--color-dns-surface, #fff);
+  border: 1px solid var(--color-dns-border, rgba(65,116,131,.20));
+  border-radius: var(--dns-card-radius, 12px); color: var(--color-dns-deep, #0D4D5E);
+  cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.workspace-app-card[data-category="analytics"] { --app-accent: #176b78; --app-tint: #dceff1; }
+.workspace-app-card[data-category="data"] { --app-accent: #355f9a; --app-tint: #e5edf9; }
+.workspace-app-card[data-category="finance"] { --app-accent: #99612c; --app-tint: #f6ecdd; }
+.workspace-app-card[data-category="creative"] { --app-accent: #94518e; --app-tint: #f2e6f2; }
+.workspace-app-card[data-category="partners"] { --app-accent: #347a52; --app-tint: #e3f0e6; }
+.workspace-app-card[data-category="polls"] { --app-accent: #625d9e; --app-tint: #e8e9f6; }
+.workspace-app-card:hover:not(:disabled) { border-color: var(--app-accent); box-shadow: 0 8px 22px rgba(13,77,94,.09); transform: translateY(-2px); }
+.workspace-app-card:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 3px; }
+.workspace-app-card:disabled { opacity: .55; cursor: not-allowed; }
+.workspace-app-card-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.workspace-app-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; background: var(--app-tint); color: var(--app-accent); font-size: 23px; font-weight: 700; }
+.workspace-app-arrow { color: var(--app-accent); font-size: 20px; }
+.workspace-app-card-name { font-size: 1.12rem; line-height: 1.2; font-weight: 700; }
+.workspace-app-card-description { font-size: .85rem; line-height: 1.5; color: var(--color-dns-muted, #5A7F8A); }
+.workspace-app-card-meta { margin-top: auto; font-size: .7rem; color: var(--app-accent); font-weight: 600; }
+@media (max-width: 1100px) { .workspace-cockpit-layout { grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); } }
+@media (max-width: 720px) { .workspace-cockpit-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .workspace-cockpit-tools { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .workspace-app-card { transition: none; } .workspace-app-card:hover:not(:disabled) { transform: none; } }
