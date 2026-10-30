@@ -32,6 +32,9 @@ export function toolsForOrganization(
     g.scopeType === 'reportingArea' && org.reportingAreaIds.includes(g.scopeId))
     .flatMap(g => g.permissions));
   return tools.filter(tool => {
+    // Organization policy is a cap, never an entitlement: grants remain required.
+    // Absence of a policy retains the legacy behavior during phased rollout.
+    if (identity.toolPolicies[org.id]?.[tool.id] === 'none') return false;
     if (tool.id === 'partner-hub') return identity.memberships.some(m => m.organizationId === org.id);
     const needed = TOOL_PERMISSIONS[tool.id];
     return Boolean(needed?.some(permission => granted.has(permission as never)));
