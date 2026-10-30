@@ -56,7 +56,8 @@ export function watchDNSIdentity(notify: (value: DNSIdentity) => void): () => vo
         const snapshots = await Promise.all(ids.map(orgId => getDoc(doc(coreDb, 'organizationToolAccess', orgId))));
         if (revision !== generation) return;
         for (let i = 0; i < ids.length; i++) {
-          if (snapshots[i].exists()) toolPolicies[ids[i]] = snapshots[i].data().tools as Record<string, DNSMatrixLevel>;
+          const snapshot = snapshots[i];
+          if (snapshot?.exists()) toolPolicies[ids[i]] = snapshot.data().tools as Record<string, DNSMatrixLevel>;
         }
       }
       notify({
