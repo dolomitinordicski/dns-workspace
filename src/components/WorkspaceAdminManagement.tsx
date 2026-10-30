@@ -5,7 +5,16 @@ import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import { organizationName } from '../services/dnsOrganizations';
 import type { DNSIdentity } from '../services/dnsIdentity';
 
-type AdminTab = 'organizations' | 'users' | 'permissions' | 'usage' | 'deadlines';
+type AdminTab = 'permissions' | 'organizations' | 'users' | 'usage' | 'deadlines';
+const MATRIX_TOOLS = [
+  { id: 'data-entry', name: 'Data Entry' },
+  { id: 'analytics', name: 'Analytics' },
+  { id: 'flyer-studio', name: 'Flyer Studio' },
+  { id: 'fair', name: 'FAIR Model' },
+  { id: 'faktura', name: 'Faktura' },
+  { id: 'polls', name: 'Polls' },
+  { id: 'partner-hub', name: 'Partner Hub' },
+] as const;
 type Props = {
   language: DNSWorkspaceLanguage;
   identity: DNSIdentity;
@@ -14,17 +23,18 @@ type Props = {
 
 /** Admin-only presentation. Does not provision accounts, change grants or write analytics. */
 export function WorkspaceAdminManagement({ language, identity, organizations }: Props) {
-  const [tab, setTab] = useState<AdminTab>('organizations');
+  const [tab, setTab] = useState<AdminTab>('permissions');
   const [filter, setFilter] = useState('');
   const [draftOrg, setDraftOrg] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
   const [draftArea, setDraftArea] = useState('');
+  const [matrixDraft, setMatrixDraft] = useState<Record<string, boolean>>({});
   if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin')) return null;
   const de = language === 'de';
   const tabs: { id: AdminTab; label: string }[] = [
+    { id: 'permissions', label: de ? 'Tool-Zugänge' : 'Accessi ai tool' },
     { id: 'organizations', label: de ? 'Organisationen' : 'Organizzazioni' },
     { id: 'users', label: de ? 'Benutzer' : 'Utenti' },
-    { id: 'permissions', label: de ? 'Berechtigungen' : 'Permessi' },
     { id: 'usage', label: de ? 'Aktivität & Nutzung' : 'Attività & Utilizzo' },
     { id: 'deadlines', label: de ? 'Bestellfrist' : 'Scadenza ordini' },
   ];
@@ -86,16 +96,41 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
           {de ? 'Einladung senden (noch nicht verfügbar)' : 'Invia invito (non ancora disponibile)'}
         </button>
       </div>}
-      {tab === 'permissions' && <div className="space-y-2">
-        <p className="text-sm text-dns-muted">{de ? 'Geplantes Standardprofil für Gebietsadministratoren (noch keine Berechtigungsänderung).' : 'Profilo Area Admin previsto (nessuna modifica ai permessi).'}</p>
-        {[
-          ['DNS Data Entry', de ? 'Lesen und Schreiben, eigenes Gebiet' : 'Lettura e scrittura, propria area'],
-          ['DNS Flyer Studio', de ? 'Erstellen und Bearbeiten, eigenes Gebiet' : 'Creazione e modifica, propria area'],
-          ['DNS Analytics', de ? 'Nur lesen' : 'Sola consultazione'],
-          ['FAIR Model', de ? 'Nur lesen' : 'Sola consultazione'],
-        ].map(([tool, access]) => <div className="flex flex-wrap gap-2 justify-between border-b py-2" key={tool}>
-          <strong>{tool}</strong><span className="text-sm">{access}</span>
-        </div>)}
+      {tab === 'permissions' && <div className="space-y-3">
+        <p className="text-sm text-dns-muted">{de
+          ? 'Matrix zur Vorbereitung der Zugänge. Häkchen sind Entwürfe, keine aktiven Berechtigungen; Speichern ist noch nicht freigeschaltet.'
+          : 'Matrice per preparare gli accessi. Le spunte sono bozze, non permessi attivi; il salvataggio non è ancora abilitato.'}</p>
+        <div className="overflow-x-auto" role="region" tabIndex={0}
+          aria-label={de ? 'Tool-Zugänge nach Organisation' : 'Accessi ai tool per organizzazione'}>
+          <table className="w-full text-sm border-collapse" style={{ minWidth: 720 }}>
+            <thead><tr>
+              <th scope="col" className="text-left p-3 border-b sticky left-0 bg-white">{de ? 'Tool' : 'Tool'}</th>
+              {organizations.filter(o => o.organizationType === 'tourism-organisation').map(org =>
+                <th key={org.id} scope="col" className="text-center p-3 border-b"
+                  style={{ minWidth: 125 }}>{organizationName(org, language)}</th>)}
+            </tr></thead>
+            <tbody>{MATRIX_TOOLS.map(tool =>
+              <tr key={tool.id}>
+                <th scope="row" className="text-left p-3 border-b sticky left-0 bg-white font-medium">{tool.name}</th>
+                {organizations.filter(o => o.organizationType === 'tourism-organisation').map(org => {
+                  const key = org.id + ':' + tool.id;
+                  return <td key={key} className="p-3 border-b text-center">
+                    <input type="checkbox" className="h-5 w-5 cursor-pointer"
+                      checked={Boolean(matrixDraft[key])}
+                      onChange={event => setMatrixDraft(previous => ({ ...previous, [key]: event.target.checked }))}
+                      aria-label={tool.name + ' · ' + organizationName(org, language) + (de ? ' (Entwurf)' : ' (bozza)')} />
+                  </td>;
+                })}
+              </tr>)}</tbody>
+          </table>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" className="dns-button" data-variant="secondary"
+            onClick={() => setMatrixDraft({})}>{de ? 'Entwurf zurücksetzen' : 'Azzera bozza'}</button>
+          <span className="text-sm text-dns-muted">{de
+            ? 'Keine Änderungen an Firebase oder Benutzerkonten.'
+            : 'Nessuna modifica a Firebase o agli account.'}</span>
+        </div>
       </div>}
       {tab === 'deadlines' && <WorkspaceOrderDeadline language={language} />}
       {tab === 'usage' && <div className="space-y-2">
