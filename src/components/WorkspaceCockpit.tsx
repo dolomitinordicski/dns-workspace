@@ -50,7 +50,7 @@ export function WorkspaceCockpit(props: Props) {
   };
   return (
     <div className="workspace-cockpit-layout py-4">
-      <aside className="workspace-cockpit-sidebar" aria-label={language === 'de' ? 'Arbeitsbereich und Neuigkeiten' : 'Contesto e novità'}>
+      <div className="workspace-cockpit-content">
       <section className="dns-card p-5 flex flex-wrap gap-4 items-center justify-between">
         <div>
           <div className="dns-kicker">{c.subtitle}</div>
@@ -69,28 +69,6 @@ export function WorkspaceCockpit(props: Props) {
             onClick={() => void signOutDNS()}>{c.signOut}</button>
         </div>
       </section>
-      <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-news-title">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="dns-kicker">{language === 'de' ? 'Aktuelles' : 'Aggiornamenti'}</div>
-            <h2 id="workspace-news-title" className="dns-section-title">{language === 'de' ? 'Neuigkeiten' : 'Novità'}</h2>
-          </div>
-          <button type="button" className="dns-button" data-variant="secondary"
-            aria-expanded={showAllNews} onClick={() => setShowAllNews(value => !value)}>
-            {showAllNews ? (language === 'de' ? 'Schließen' : 'Chiudi') : (language === 'de' ? 'Alle anzeigen' : 'Vedi tutte')}
-          </button>
-        </div>
-        {newsError ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Neuigkeiten derzeit nicht verfügbar.' : 'Novità temporaneamente non disponibili.'}</p>
-          : news.length === 0 ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Noch keine veröffentlichten Neuigkeiten.' : 'Nessuna novità pubblicata al momento.'}</p>
-          : <div className="space-y-3">{(showAllNews ? news : news.slice(0, 3)).map(item =>
-            <article key={item.id} className="space-y-1 border-b pb-2">
-              <div className="dns-kicker">{item.toolId} · {item.version} · {item.type === 'urgent' ? (language === 'de' ? 'Wichtig' : 'Urgente') : item.type === 'technical' ? (language === 'de' ? 'Technisch' : 'Tecnica') : (language === 'de' ? 'Neu' : 'Novità')}</div>
-              <h3 className="font-semibold">{item.title[language]}</h3>
-              <p className="text-sm text-dns-muted">{item.description[language]}</p>
-            </article>)}</div>}
-      </section>
-      </aside>
-      <div className="workspace-cockpit-content">
       {isAdmin && <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-technical-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -119,20 +97,47 @@ export function WorkspaceCockpit(props: Props) {
         </div>
         {tools.length === 0 ? <p className="dns-card p-5">{c.empty}</p> : (
           <div className="workspace-cockpit-tools">
-            {tools.map(tool => (
-              <article key={tool.id} className="dns-card p-4 space-y-3">
-                <div className="dns-kicker">{tool.group} · {tool.lifecycle}</div>
-                <h3 className="font-semibold text-lg">{tool.label}</h3>
-                <p className="text-sm text-dns-muted">{tool.description[language]}</p>
-                <button type="button" data-variant="primary" className="dns-button"
-                  disabled={!tool.url} onClick={() => onOpenTool(tool)}>{c.open}</button>
-              </article>
-            ))}
-          </div>
+            {tools.map(tool => {
+              return <button key={tool.id} type="button"
+                className="workspace-app-card" data-tool-id={tool.id}
+                disabled={!tool.url} onClick={() => onOpenTool(tool)}
+                aria-label={`${c.open}: ${tool.label}`}>
+                <span className="workspace-app-card-top">
+                  <span className="workspace-app-icon workspace-app-icon-placeholder" aria-hidden="true" />
+                  <span className="workspace-app-arrow" aria-hidden="true">↗</span>
+                </span>
+                <span className="workspace-app-card-name">{tool.label}</span>
+                <span className="workspace-app-card-description">{tool.description[language]}</span>
+                <span className="workspace-app-card-meta">{tool.group} · {tool.lifecycle}</span>
+              </button>;
+            })}         </div>
         )}
       </section>
       <p className="text-xs text-dns-muted">{c.hint}</p>
       </div>
+      <aside className="workspace-cockpit-sidebar" aria-label={language === 'de' ? 'Neuigkeiten' : 'Novità'}>
+      <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-news-title">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="dns-kicker">{language === 'de' ? 'Aktuelles' : 'Aggiornamenti'}</div>
+            <h2 id="workspace-news-title" className="dns-section-title">{language === 'de' ? 'Neuigkeiten' : 'Novità'}</h2>
+          </div>
+          <button type="button" className="dns-button" data-variant="secondary"
+            aria-expanded={showAllNews} onClick={() => setShowAllNews(value => !value)}>
+            {showAllNews ? (language === 'de' ? 'Schließen' : 'Chiudi') : (language === 'de' ? 'Alle anzeigen' : 'Vedi tutte')}
+          </button>
+        </div>
+        {newsError ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Neuigkeiten derzeit nicht verfügbar.' : 'Novità temporaneamente non disponibili.'}</p>
+          : news.length === 0 ? <p role="status" className="text-sm text-dns-muted">{language === 'de' ? 'Noch keine veröffentlichten Neuigkeiten.' : 'Nessuna novità pubblicata al momento.'}</p>
+          : <div className="space-y-3">{(showAllNews ? news : news.slice(0, 3)).map(item =>
+            <article key={item.id} className="space-y-1 border-b pb-2">
+              <div className="dns-kicker">{item.toolId} · {item.version} · {item.type === 'urgent' ? (language === 'de' ? 'Wichtig' : 'Urgente') : item.type === 'technical' ? (language === 'de' ? 'Technisch' : 'Tecnica') : (language === 'de' ? 'Neu' : 'Novità')}</div>
+              <h3 className="font-semibold">{item.title[language]}</h3>
+              <p className="text-sm text-dns-muted">{item.description[language]}</p>
+            </article>)}</div>}
+      </section>
+
+      </aside>
     </div>
   );
 }
