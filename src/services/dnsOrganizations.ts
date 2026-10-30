@@ -3,7 +3,12 @@ import type { Organization } from '@dolomitinordicski/dns-shared-data';
 import { passAuth } from './digitalPassApi';
 
 export type DNSWorkspaceOrganization = Pick<Organization,
-  'id' | 'canonicalName' | 'localizedName' | 'organizationType' | 'reportingAreaIds'>;
+  'id' | 'canonicalName' | 'localizedName' | 'organizationType' | 'reportingAreaIds'> & {
+  address?: { street?: string; postalCode?: string; city?: string; country?: string };
+  phone?: string;
+  email?: string;
+  website?: string;
+};
 
 export async function getDNSWorkspaceOrganizations(): Promise<DNSWorkspaceOrganization[]> {
   const result = await getDocs(collection(getFirestore(passAuth.app), 'organizations'));
