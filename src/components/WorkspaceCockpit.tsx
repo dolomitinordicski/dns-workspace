@@ -49,7 +49,8 @@ export function WorkspaceCockpit(props: Props) {
     open: 'Apri',
   };
   return (
-    <div className="space-y-5 py-4">
+    <div className="workspace-cockpit-layout py-4">
+      <aside className="workspace-cockpit-sidebar" aria-label={language === 'de' ? 'Arbeitsbereich und Neuigkeiten' : 'Contesto e novità'}>
       <section className="dns-card p-5 flex flex-wrap gap-4 items-center justify-between">
         <div>
           <div className="dns-kicker">{c.subtitle}</div>
@@ -88,6 +89,8 @@ export function WorkspaceCockpit(props: Props) {
               <p className="text-sm text-dns-muted">{item.description[language]}</p>
             </article>)}</div>}
       </section>
+      </aside>
+      <div className="workspace-cockpit-content">
       {isAdmin && <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-technical-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -115,7 +118,7 @@ export function WorkspaceCockpit(props: Props) {
           <span className="text-sm">{tools.length}</span>
         </div>
         {tools.length === 0 ? <p className="dns-card p-5">{c.empty}</p> : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="workspace-cockpit-tools">
             {tools.map(tool => (
               <article key={tool.id} className="dns-card p-4 space-y-3">
                 <div className="dns-kicker">{tool.group} · {tool.lifecycle}</div>
@@ -129,6 +132,7 @@ export function WorkspaceCockpit(props: Props) {
         )}
       </section>
       <p className="text-xs text-dns-muted">{c.hint}</p>
+      </div>
     </div>
   );
 }
