@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { WorkspaceAdminManagement } from './WorkspaceAdminManagement';
 import { loadDNSReleases, type DNSRelease } from '../services/dnsReleases';
 import type { DNSIdentity } from '../services/dnsIdentity';
 import { organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
@@ -70,7 +69,6 @@ export function WorkspaceCockpit(props: Props) {
             onClick={() => void signOutDNS()}>{c.signOut}</button>
         </div>
       </section>
-      {isAdmin && <WorkspaceAdminManagement language={language} identity={identity} organizations={organizations} />}
       {isAdmin && <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-technical-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
