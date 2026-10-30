@@ -14,7 +14,7 @@ shared emulator: the dedicated demo database is cleared before each suite.
   and remote hosts.
 - Rules/integration: real email/password sign-in to Auth Emulator; the Firebase
   client SDK then executes identity queries and operational reads/writes against
-  the pinned proposed upstream Firestore rules. Only fixture setup disables rules.
+  the pinned proposed upstream Firestore rules. Only fixture setup disables rules. Synthetic Auth accounts are provisioned through the local emulator administrative endpoint; all test sessions use normal password sign-in.
   Covers own/foreign memberships and accessGrants, policy get/list/edit, W/R/none,
   grant absence, cross-organization queries/mutations, DNS Admin and anonymous
   access. Orders cover create/read/update/delete; sales cover validated create,
@@ -71,11 +71,11 @@ Normal builds retain the existing production Firebase configuration.
 - Chromium only; Firefox/WebKit and mobile behavior remain untested.
 
 The rules snapshot now depends on proposed shared-data PR #225 at immutable commit
-`1a328d4a9d38448d0f3cd2cdd6ae463f6f0fca73`. The original baseline at
+`5d733075179f2fdd19fc646e509daf3050765c15`. The original baseline at
 `f3627d7b87401b732dc30db90b2ee33ab7abe519` failed a valid W sale create in
 [CI run 41118331810](https://github.com/dolomitinordicski/dns-workspace/actions/runs/41118331810).
 Acceptance against the proposed correction does not certify production, where no
 rules have been deployed by this work. PR #225 must be independently reviewed.
 
-CI evidence and final counts are recorded in the PR description after execution.
+The proposed upstream correction passed seven regression cases plus the existing seasonal, collective-order and release rules suites, and canonical dataset validation in [shared-data CI](https://github.com/dolomitinordicski/dns-shared-data/actions/runs/41120135713). Final Workspace evidence (8 application + 1 safety + 15 integration + 8 browser cases, production-bundle check) is recorded in PR #32 after the last run.
 No merge or deployment is performed by this work.

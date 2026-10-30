@@ -9,7 +9,6 @@ service cloud.firestore {
 
     function activeUser() {
       return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
     }
 
@@ -127,9 +126,9 @@ service cloud.firestore {
     function dataEntryMatrixAllows(orgId, write) {
       let policyPath = /databases/$(database)/documents/organizationToolAccess/$(orgId);
       let memberPath = /databases/$(database)/documents/memberships/$(request.auth.uid + '__' + orgId);
-      // One lookup per resource keeps validated sales writes within the rules budget.
-      let policy = get(policyPath);
-      let member = get(memberPath);
+      // Reuse snapshots and avoid a member lookup during legacy policy rollout.
+      let policy = exists(policyPath) ? get(policyPath) : null;
+      let member = policy == null ? null : get(memberPath);
       return policy == null
         || (member != null
           && member.data.active == true
