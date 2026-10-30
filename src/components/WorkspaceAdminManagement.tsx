@@ -15,6 +15,9 @@ type Props = {
 export function WorkspaceAdminManagement({ language, identity, organizations }: Props) {
   const [tab, setTab] = useState<AdminTab>('organizations');
   const [filter, setFilter] = useState('');
+  const [draftOrg, setDraftOrg] = useState('');
+  const [draftEmail, setDraftEmail] = useState('');
+  const [draftArea, setDraftArea] = useState('');
   if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin')) return null;
   const de = language === 'de';
   const tabs: { id: AdminTab; label: string }[] = [
@@ -58,10 +61,29 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
         </article>)}
         {!filtered.length && <p role="status">{de ? 'Keine Organisation gefunden.' : 'Nessuna organizzazione trovata.'}</p>}
       </>}
-      {tab === 'users' && <p role="status" className="text-sm">
-        {de ? 'Benutzerverwaltung ist in Vorbereitung. Neue Einladungen erfordern einen gesicherten Verwaltungsdienst.'
-          : 'Gestione utenti in preparazione. Gli inviti richiedono un servizio amministrativo protetto.'}
-      </p>}
+      {tab === 'users' && <div className="space-y-3">
+        <p role="status" className="text-sm text-dns-muted">{de ? 'Vorschau ohne Speicherung: Es werden keine Einladungen versendet und keine Konten geändert.' : 'Anteprima senza salvataggio: non vengono inviati inviti né modificati account.'}</p>
+        <label className="block space-y-1"><span className="text-sm">{de ? 'E-Mail des Benutzers' : 'Email utente'}</span>
+          <input className="dns-input w-full" type="email" autoComplete="off" value={draftEmail} onChange={e => setDraftEmail(e.target.value)} />
+        </label>
+        <label className="block space-y-1"><span className="text-sm">{de ? 'Organisation' : 'Organizzazione'}</span>
+          <select className="dns-input w-full" value={draftOrg} onChange={e => { setDraftOrg(e.target.value); setDraftArea(''); }}>
+            <option value="">{de ? 'Organisation wählen' : 'Seleziona organizzazione'}</option>
+            {organizations.filter(o => o.organizationType === 'tourism-organisation').map(o =>
+              <option key={o.id} value={o.id}>{organizationName(o, language)}</option>)}
+          </select>
+        </label>
+        <label className="block space-y-1"><span className="text-sm">{de ? 'Berechtigtes Gebiet' : 'Area autorizzata'}</span>
+          <select className="dns-input w-full" value={draftArea} onChange={e => setDraftArea(e.target.value)} disabled={!draftOrg}>
+            <option value="">{de ? 'Gebiet wählen' : 'Seleziona area'}</option>
+            {organizations.find(o => o.id === draftOrg)?.reportingAreaIds.map(a => <option value={a} key={a}>{a}</option>)}
+          </select>
+        </label>
+        <p className="text-sm">{de ? 'Profil: Data Entry und Flyer bearbeiten; Analytics und FAIR nur lesen.' : 'Profilo: Data Entry e Flyer modificabili; Analytics e FAIR in sola lettura.'}</p>
+        <button type="button" className="dns-button" disabled title={de ? 'Erst nach sicherem Backend-Test verfügbar' : 'Disponibile dopo collaudo backend protetto'}>
+          {de ? 'Einladung senden (noch nicht verfügbar)' : 'Invia invito (non ancora disponibile)'}
+        </button>
+      </div>}
       {tab === 'permissions' && <div className="space-y-2">
         <p className="text-sm text-dns-muted">{de ? 'Geplantes Standardprofil für Gebietsadministratoren (noch keine Berechtigungsänderung).' : 'Profilo Area Admin previsto (nessuna modifica ai permessi).'}</p>
         {[
