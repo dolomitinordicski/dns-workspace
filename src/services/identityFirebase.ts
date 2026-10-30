@@ -16,6 +16,9 @@ const config = emulatorMode ? {
   projectId: 'dns-core', appId: '1:387653285986:web:27ad6f2e9a41ea1aebb93b',
 };
 const existing = getApps().find(a => a.name === 'dns-digital-pass');
+if (existing && existing.options.projectId !== config.projectId) {
+  throw new Error('IDENTITY_FIREBASE_PROJECT_MISMATCH');
+}
 export const identityApp = existing ?? initializeApp(config, 'dns-digital-pass');
 export const identityAuth = getAuth(identityApp);
 if (emulatorMode && !existing) {

@@ -19,11 +19,11 @@ shared emulator: the dedicated demo database is cleared before each suite.
   grant absence, cross-organization queries/mutations, DNS Admin and anonymous
   access. Orders cover create/read/update/delete; sales cover validated create,
   read, atomic revision archive/update and forbidden delete.
-- Browser: seven Playwright Chromium cases use the real Workspace page, normal
+- Browser: eight Playwright Chromium cases use the real Workspace page, normal
   login form, Auth Emulator and Firestore Emulator. No mocked identity, intercepted
   successful API response, custom token or injected auth state is used. Covers
   organization selection/switching, tool visibility, foreign organization exclusion,
-  expired grant filtering, logout, invalid password, missing/inactive profile.
+  expired grant filtering, denied pre-login organization, logout, invalid password, missing/inactive profile.
   Remote browser traffic is blocked; static image/font/style requests are excluded
   from the assertion against unexpected remote application requests.
 

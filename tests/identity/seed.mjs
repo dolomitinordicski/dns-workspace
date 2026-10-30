@@ -8,6 +8,8 @@ export const orgs = [A.organizationId, A.secondaryOrganizationId, A.foreignOrgan
 export const permissions = ['ticketOrders.read', 'ticketOrders.write', 'ticketSales.read', 'ticketSales.write', 'kp.read', 'kp.write'];
 export async function seed() {
   requireEmulators();
+  const reset = await fetch(`http://127.0.0.1:9199/emulator/v1/projects/${projectId}/accounts`, { method: 'DELETE', headers: { Authorization: 'Bearer owner' } });
+  if (!reset.ok) throw new Error(await reset.text());
   const env = await initializeTestEnvironment({ projectId, firestore: { host: '127.0.0.1', port: 8188 } });
   await env.clearFirestore();
   await env.withSecurityRulesDisabled(async context => {
@@ -40,12 +42,11 @@ export async function seed() {
   await env.cleanup();
   for (const uid of [...Object.values(U), 'dns-test-inactive', 'dns-test-missing-profile']) {
     const response = await fetch(`http://127.0.0.1:9199/identitytoolkit.googleapis.com/v1/accounts:signUp?key=demo-key`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
       body: JSON.stringify({ localId: uid, email: `${uid}@example.test`, password, returnSecureToken: true }),
     });
-    if (!response.ok) {
-      const error = await response.text();
-      if (!error.includes('EMAIL_EXISTS')) throw new Error(error);
-    }
-  }
+    if (!response.ok) throw new Error(await response.text());
+    const account = await response.json();
+    if (account.localId !== uid) throw new Error('Emulator account UID mismatch');
+}
 }

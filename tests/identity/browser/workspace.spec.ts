@@ -64,3 +64,13 @@ for (const uid of ['dns-test-inactive', 'dns-test-missing-profile']) {
     await expect(page.getByRole('button', { name: /^(Abmelden|Esci)$/ })).toBeVisible();
   });
 }
+test('selecting a foreign organization before login does not grant Workspace access', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('combobox').selectOption(A.foreignOrganizationId);
+  await page.getByLabel(/E-Mail|Email/).fill(`${U.writer}@example.test`);
+  await page.getByLabel(/Passwort|Password/).fill(password);
+  await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
+  await expect(page.getByRole('alert')).toContainText(/Mitgliedschaft|appartenenza/);
+  await expect(page.locator('[data-tool-id="data-entry"]')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Mein DNS Cockpit|Il mio cockpit DNS/ })).toHaveCount(0);
+});
