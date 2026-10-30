@@ -10,12 +10,13 @@
     "validate": "npm run build"
   },
   "dependencies": {
-    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#foundation-v1.3.0",
+    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#72040dad407c9fb456f0edc756d8a103616da8db",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "firebase": "^12.3.0",
     "qrcode": "^1.5.4",
-    "@zxing/browser": "^0.1.5"
+    "@zxing/browser": "^0.1.5",
+    "lucide-react": "^0.468.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
