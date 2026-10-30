@@ -987,3 +987,6 @@
 @media (max-width: 720px) { .workspace-cockpit-layout { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) { .workspace-cockpit-tools { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .workspace-app-card { transition: none; } .workspace-app-card:hover:not(:disabled) { transform: none; } }
+
+/* Icon slot is reserved until the canonical Shared Data icon package is released. */
+.workspace-app-icon-placeholder { border: 1px dashed currentColor; opacity: .45; }
