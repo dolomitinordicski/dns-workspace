@@ -33,6 +33,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
   const [matrixDraft, setMatrixDraft] = useState<Record<string, 'none' | 'read' | 'write'>>({});
   const [matrixStatus, setMatrixStatus] = useState<'loading' | 'ready' | 'saving' | 'error'>('loading');
   const [matrixChanged, setMatrixChanged] = useState(false);
+  const [changedCells, setChangedCells] = useState<Record<string, boolean>>({});
   useEffect(() => {
     if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin') || organizations.length === 0) return;
     let live = true;
@@ -46,6 +47,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
       for (const item of items) for (const tool of MATRIX_TOOLS) result[item.id + ':' + tool.id] = item.tools[tool.id] ?? 'none';
       setMatrixDraft(result);
       setMatrixChanged(false);
+      setChangedCells({});
       setMatrixStatus('ready');
     }).catch(() => { if (live) setMatrixStatus('error'); });
     return () => { live = false; };
@@ -54,13 +56,18 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
     if (identity.state !== 'active' || matrixStatus !== 'ready') return;
     setMatrixStatus('saving');
     try {
+      // Save only cells edited in this session; never overwrite other organizations
+      // or the user's already-saved choices with defaults from a stale screen.
       for (const org of organizations.filter(o => o.organizationType === 'tourism-organisation')) {
-        const tools = Object.fromEntries(MATRIX_TOOLS.map(tool => [tool.id, matrixDraft[org.id + ':' + tool.id] ?? 'none']));
+        const edited = MATRIX_TOOLS.filter(tool => changedCells[org.id + ':' + tool.id]);
+        if (edited.length === 0) continue;
+        const tools = Object.fromEntries(edited.map(tool => [tool.id, matrixDraft[org.id + ':' + tool.id] ?? 'none']));
         await setDoc(doc(getFirestore(passAuth.app), 'organizationToolAccess', org.id), {
           organizationId: org.id, tools, updatedBy: identity.uid, updatedAt: serverTimestamp(),
-        });
+        }, { merge: true });
       }
       setMatrixChanged(false);
+      setChangedCells({});
       setMatrixStatus('ready');
     } catch { setMatrixStatus('error'); }
   };
@@ -154,7 +161,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
                       className="inline-flex min-w-10 items-center justify-center rounded-md px-3 py-2 text-sm font-bold border"
                       style={{ backgroundColor: matrixDraft[key] === 'write' ? '#166534' : matrixDraft[key] === 'read' ? '#d97706' : '#7f1d1d', color: '#ffffff', borderColor: 'transparent' }}
                       disabled={matrixStatus !== 'ready'}
-                      onClick={() => { setMatrixChanged(true); setMatrixDraft(previous => ({
+                      onClick={() => { setMatrixChanged(true); setChangedCells(previous => ({ ...previous, [key]: true })); setMatrixDraft(previous => ({
                         ...previous, [key]: previous[key] === 'none' || !previous[key] ? 'read' : previous[key] === 'read' ? 'write' : 'none',
                       })); }}
                       aria-label={tool.name + ' · ' + organizationName(org, language) + ' · ' + (matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno') + (de ? ' (Entwurf)' : ' (bozza)')}
