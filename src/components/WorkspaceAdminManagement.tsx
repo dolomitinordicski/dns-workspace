@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
+import { passAuth } from '../services/digitalPassApi';
 import { WorkspaceOrderDeadline } from './WorkspaceOrderDeadline';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
@@ -29,6 +31,39 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
   const [draftEmail, setDraftEmail] = useState('');
   const [draftArea, setDraftArea] = useState('');
   const [matrixDraft, setMatrixDraft] = useState<Record<string, 'none' | 'read' | 'write'>>({});
+  const [matrixStatus, setMatrixStatus] = useState<'loading' | 'ready' | 'saving' | 'error'>('loading');
+  const [matrixChanged, setMatrixChanged] = useState(false);
+  useEffect(() => {
+    if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin') || organizations.length === 0) return;
+    let live = true;
+    setMatrixStatus('loading');
+    Promise.all(organizations.filter(o => o.organizationType === 'tourism-organisation').map(async org => {
+      const snapshot = await getDoc(doc(getFirestore(passAuth.app), 'organizationToolAccess', org.id));
+      return { id: org.id, tools: snapshot.exists() ? snapshot.data().tools as Record<string, 'none' | 'read' | 'write'> : {} };
+    })).then(items => {
+      if (!live) return;
+      const result: Record<string, 'none' | 'read' | 'write'> = {};
+      for (const item of items) for (const tool of MATRIX_TOOLS) result[item.id + ':' + tool.id] = item.tools[tool.id] ?? 'none';
+      setMatrixDraft(result);
+      setMatrixChanged(false);
+      setMatrixStatus('ready');
+    }).catch(() => { if (live) setMatrixStatus('error'); });
+    return () => { live = false; };
+  }, [identity.state, organizations]);
+  const saveMatrix = async () => {
+    if (identity.state !== 'active' || matrixStatus !== 'ready') return;
+    setMatrixStatus('saving');
+    try {
+      for (const org of organizations.filter(o => o.organizationType === 'tourism-organisation')) {
+        const tools = Object.fromEntries(MATRIX_TOOLS.map(tool => [tool.id, matrixDraft[org.id + ':' + tool.id] ?? 'none']));
+        await setDoc(doc(getFirestore(passAuth.app), 'organizationToolAccess', org.id), {
+          organizationId: org.id, tools, updatedBy: identity.uid, updatedAt: serverTimestamp(),
+        });
+      }
+      setMatrixChanged(false);
+      setMatrixStatus('ready');
+    } catch { setMatrixStatus('error'); }
+  };
   if (identity.state !== 'active' || !identity.profile.globalRoles.includes('dns-admin')) return null;
   const de = language === 'de';
   const tabs: { id: AdminTab; label: string }[] = [
@@ -98,8 +133,8 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
       </div>}
       {tab === 'permissions' && <div className="space-y-3">
         <p className="text-sm text-dns-muted">{de
-          ? 'Matrix zur Vorbereitung der Zugänge. W = Schreiben (inkl. Lesen), R = Lesen, – = kein Zugriff. Entwurf, noch nicht gespeichert.'
-          : 'Matrice per preparare gli accessi. W = scrittura (include lettura), R = lettura, – = nessun accesso. Bozza non ancora salvata.'}</p>
+          ? 'W = Schreiben (inkl. Lesen), R = Lesen, – = kein Zugriff. Die Matrix wird in DNS Core gespeichert; die Tool-Sicherheitsregeln bleiben unabhängig.'
+          : 'W = scrittura (include lettura), R = lettura, – = nessun accesso. La matrice si salva in DNS Core; le regole di sicurezza dei tool restano indipendenti.'}</p>
         <div className="overflow-x-auto" role="region" tabIndex={0}
           aria-label={de ? 'Tool-Zugänge nach Organisation' : 'Accessi ai tool per organizzazione'}>
           <table className="w-full text-sm border-collapse" style={{ minWidth: 720 }}>
@@ -118,9 +153,10 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
                     <button type="button"
                       className="inline-flex min-w-10 items-center justify-center rounded-md px-3 py-2 text-sm font-bold border"
                       style={{ backgroundColor: matrixDraft[key] === 'write' ? '#166534' : matrixDraft[key] === 'read' ? '#d97706' : '#7f1d1d', color: '#ffffff', borderColor: 'transparent' }}
-                      onClick={() => setMatrixDraft(previous => ({
+                      disabled={matrixStatus !== 'ready'}
+                      onClick={() => { setMatrixChanged(true); setMatrixDraft(previous => ({
                         ...previous, [key]: previous[key] === 'none' || !previous[key] ? 'read' : previous[key] === 'read' ? 'write' : 'none',
-                      }))}
+                      })); }}
                       aria-label={tool.name + ' · ' + organizationName(org, language) + ' · ' + (matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno') + (de ? ' (Entwurf)' : ' (bozza)')}
                       title={matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno'}>
                       {matrixDraft[key] === 'write' ? 'W' : matrixDraft[key] === 'read' ? 'R' : '–'}
@@ -131,11 +167,13 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
           </table>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" className="dns-button" data-variant="secondary"
-            onClick={() => setMatrixDraft({})}>{de ? 'Entwurf zurücksetzen' : 'Azzera bozza'}</button>
-          <span className="text-sm text-dns-muted">{de
-            ? 'Keine Änderungen an Firebase oder Benutzerkonten.'
-            : 'Nessuna modifica a Firebase o agli account.'}</span>
+          <button type="button" className="dns-button" disabled={matrixStatus !== 'ready' || !matrixChanged}
+            onClick={() => void saveMatrix()}>{de ? 'Matrix speichern' : 'Salva matrice'}</button>
+          <span className="text-sm text-dns-muted" role="status">{matrixStatus === 'loading' ? (de ? 'Laden...' : 'Caricamento...') :
+            matrixStatus === 'saving' ? (de ? 'Speichern...' : 'Salvataggio...') :
+            matrixStatus === 'error' ? (de ? 'Fehler: Berechtigungen nicht gespeichert' : 'Errore: permessi non salvati') :
+            matrixChanged ? (de ? 'Nicht gespeicherte Änderungen' : 'Modifiche non salvate') :
+            (de ? 'Gespeichert / keine Änderungen' : 'Salvato / nessuna modifica')}</span>
         </div>
       </div>}
       {tab === 'deadlines' && <WorkspaceOrderDeadline language={language} />}
