@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { AppWindow, ChartNoAxesCombined, ClipboardList, Database, Palette, ReceiptText, Users } from 'lucide-react';
 import { getDNSToolIcon } from '@dolomitinordicski/dns-shared-data/tool-icons';
 import { useEffect, useState } from 'react';
@@ -113,6 +114,7 @@ export function WorkspaceCockpit(props: Props) {
               const ToolIcon = icons[visual.icon];
               return <button key={tool.id} type="button"
                 className="workspace-app-card" data-category={visual.category}
+                style={{ '--app-accent': visual.accent, '--app-tint': visual.tint } as CSSProperties}
                 disabled={!tool.url} onClick={() => onOpenTool(tool)}
                 aria-label={`${c.open}: ${tool.label}`}>
                 <span className="workspace-app-card-top">
