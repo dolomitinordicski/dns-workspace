@@ -7,24 +7,30 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "validate": "npm run build"
+    "validate": "npm run build",
+    "test:identity:app": "node --test tests/identity/safety.test.mjs && tsx --test tests/identity/access.test.ts",
+    "test:identity": "firebase emulators:exec --config firebase.identity.json --only auth,firestore --project demo-dns-identity \"node tests/identity/run.mjs\""
   },
   "dependencies": {
     "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#foundation-v1.3.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "@zxing/browser": "^0.1.5",
     "firebase": "^12.3.0",
     "qrcode": "^1.5.4",
-    "@zxing/browser": "^0.1.5"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.0",
+    "@playwright/test": "1.56.1",
     "@tailwindcss/vite": "^4.1.13",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
+    "firebase-tools": "14.12.0",
     "tailwindcss": "^4.1.13",
+    "tsx": "4.20.6",
     "typescript": "^5.9.2",
-    "vite": "^7.1.7",
-    "@types/qrcode": "^1.5.5"
+    "vite": "^7.1.7"
   }
 }

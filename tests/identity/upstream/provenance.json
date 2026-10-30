@@ -1,0 +1,12 @@
+{
+  "repository": "dolomitinordicski/dns-shared-data",
+  "commit": "f3627d7b87401b732dc30db90b2ee33ab7abe519",
+  "paths": {
+    "firestore.rules": "firestore.rules",
+    "virtual-dns-area.mjs": "tests/fixtures/virtual-dns-area.mjs"
+  },
+  "sha256": {
+    "firestore.rules": "1f29f1aa2580a6d283bbf2d8e6bfa875c8fc37a620e9ba17937e2ed735b2800d",
+    "virtual-dns-area.mjs": "9205102dff332f4d139758338fd874ed18d5780420ab6872a6ef3da92209810c"
+  }
+}

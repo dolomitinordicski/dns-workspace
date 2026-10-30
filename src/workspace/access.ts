@@ -34,7 +34,10 @@ export function toolsForOrganization(
   return tools.filter(tool => {
     // Organization policy is a cap, never an entitlement: grants remain required.
     // Absence of a policy retains the legacy behavior during phased rollout.
-    if (identity.toolPolicies[org.id]?.[tool.id] === 'none') return false;
+    const policy = identity.toolPolicies[org.id];
+    if (policy?.[tool.id] === 'none') return false;
+    // Firestore treats an omitted Data Entry level in an existing policy as none.
+    if (tool.id === 'data-entry' && policy && !['read', 'write'].includes(policy[tool.id] ?? 'none')) return false;
     if (tool.id === 'partner-hub') return identity.memberships.some(m => m.organizationId === org.id);
     const needed = TOOL_PERMISSIONS[tool.id];
     return Boolean(needed?.some(permission => granted.has(permission as never)));

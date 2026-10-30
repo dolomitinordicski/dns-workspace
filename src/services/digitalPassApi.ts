@@ -1,13 +1,6 @@
-import { getApps, initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
-// Same public Firebase application configuration already used by DNS Data Entry.
-// Stable Firebase Auth app name shared with DNS Polls on the same browser origin.
-// Never adopt an arbitrary dns-core app: Firebase Auth persistence keys include app name.
-const app = getApps().find(a => a.name === 'dns-digital-pass') ?? initializeApp({
-  apiKey: 'AIzaSyAgxv6Z45-AfrusbFnCSyvYChRUBu6-vXc', authDomain: 'dns-core.firebaseapp.com',
-  projectId: 'dns-core', appId: '1:387653285986:web:27ad6f2e9a41ea1aebb93b',
-}, 'dns-digital-pass');
-export const passAuth = getAuth(app);
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
+import { identityAuth } from './identityFirebase';
+export const passAuth = identityAuth;
 export { onAuthStateChanged, signOut };
 export const passApiConfigured = Boolean(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE);
 export async function operatorSignIn(email: string, password: string) {
