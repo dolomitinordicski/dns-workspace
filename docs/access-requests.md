@@ -22,7 +22,7 @@ Use Node 22, Java 21, `npm install`, `npm ci --prefix server`, and the Firebase 
 firebase emulators:exec --config firebase.access.json --only auth,firestore,functions --project demo-dns-identity "node --test --test-concurrency=1 server/tests/*.test.mjs && npx playwright test --config playwright.identity.config.ts"
 ```
 
-Set GCLOUD_PROJECT=demo-dns-identity, FIRESTORE_EMULATOR_HOST=127.0.0.1:8188 and FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9199. Tests refuse other projects/hosts. The service tests exercise real Firestore transactions with an explicit Auth metadata adapter; the callable test uses real Auth Emulator Google tokens, Functions and Firestore rules. Browser tests exercise the invitation and existing Workspace login. These do not certify a production Google OAuth/domain configuration.
+Set GCLOUD_PROJECT=demo-dns-identity, FIRESTORE_EMULATOR_HOST=127.0.0.1:8188, FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9199 and DNS_ACCESS_ACCEPTANCE=true. Tests refuse other projects/hosts. The service tests exercise real Firestore transactions with an explicit Auth metadata adapter; the callable test uses real Auth Emulator Google tokens, Functions and Firestore rules. Browser tests exercise Google popup login, request submission, administrator approval, permission preview, status refresh and approved Workspace login. These do not certify a production Google OAuth/domain configuration.
 
 ## Release gate
 
