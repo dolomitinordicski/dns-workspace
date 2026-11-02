@@ -9,7 +9,7 @@ const app=initializeApp({projectId:'demo-dns-identity'},'callable-tests');
 const db=getFirestore(app);
 const endpoint='http://127.0.0.1:5001/demo-dns-identity/europe-west8/dnsWorkspaceAccess';
 async function invoke(data,token) {
-  const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({data})});
+  const response=await fetch(endpoint,{method:'POST',signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({data})});
   return {status:response.status,body:await response.json()};
 }
 async function google(email) {
@@ -21,7 +21,7 @@ async function google(email) {
   const result=await response.json(); assert.equal(response.ok,true,JSON.stringify(result)); return result;
 }
 after(()=>deleteApp(app));
-test('real Google emulator token, protected callable, approval and scoped rules',async()=>{
+test('real Google emulator token, protected callable, approval and scoped rules',{timeout:90000},async()=>{
   const org='callable-org',area='callable-area';
   await db.doc(`organizations/${org}`).set({id:org,active:true,organizationType:'tourism-organisation',reportingAreaIds:[area]});
   await db.doc(`reportingAreas/${area}`).set({id:area,active:true});
@@ -34,6 +34,11 @@ test('real Google emulator token, protected callable, approval and scoped rules'
   const requested=await invoke({action:'request',organizationId:org,language:'it'},user.idToken);
   assert.equal(requested.status,200,JSON.stringify(requested.body)); assert.equal(requested.body.result.status,'pending');
   assert.equal((await db.doc(`users/${user.localId}`).get()).exists,false);
+  for (const path of ['ticketOrders/pending-probe','flyerDocuments/pending-probe']) {
+    const protectedRead=await fetch(`http://127.0.0.1:8188/v1/projects/demo-dns-identity/databases/(default)/documents/${path}`, {
+      headers:{Authorization:`Bearer ${user.idToken}`},signal:AbortSignal.timeout(10000),
+    }); assert.equal(protectedRead.status,403,'pending user cannot access operational data');
+  }
   assert.equal((await invoke({action:'list'},user.idToken)).status,403);
   // Direct client writes cannot self-approve or create authorization documents.
   for (const path of [`users/${user.localId}`,`workspaceAccessRequests/${user.localId}`,`workspaceOrganizationAccounts/${org}`]) {
