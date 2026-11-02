@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { WorkspaceAccount } from './components/WorkspaceAccount';
+import { WorkspaceAccessRequest } from './components/WorkspaceAccessRequest';
 import { WorkspaceCockpit } from './components/WorkspaceCockpit';
 import { WorkspaceAdminManagement } from './components/WorkspaceAdminManagement';
 import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeader';
@@ -59,7 +60,9 @@ export default function App() {
         onLanguageChange={setDNSWorkspaceLanguage}
         onViewChange={view => { setActiveView(view); setOpenTool(null); }} />
       <main data-dns-shell-main className="workspace-main">
-        {!authorized || !organization ? (
+        {new URLSearchParams(location.search).get('access') === 'request' ? (
+          <WorkspaceAccessRequest language={language} organizations={organizations} />
+        ) : !authorized || !organization ? (
           <WorkspaceAccount language={language} identity={identity}
             organizations={organizations} organizationStatus={organizationStatus}
             selectedOrganizationId={organizationId} onOrganizationChange={changeOrganization} />

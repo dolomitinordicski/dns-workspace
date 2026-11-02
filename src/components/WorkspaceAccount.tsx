@@ -108,6 +108,7 @@ export function WorkspaceAccount(props: Props) {
         <button type="button" className="dns-button" data-variant="secondary"
           onClick={() => void signOutDNS()}>{c.logout}</button>}
       <p className="text-xs text-dns-muted">{c.hint}</p>
+      <a className="dns-button" href="?access=request">{language === 'de' ? 'Zugang mit Google beantragen' : 'Richiedi accesso con Google'}</a>
       {error && <p className="text-sm" role="alert">{error}</p>}
     </section>
   );

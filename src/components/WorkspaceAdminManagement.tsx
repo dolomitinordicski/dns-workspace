@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { saveOrganizationPolicy } from '../services/dnsAccessRequests';
+import { WorkspaceAccessApprovals } from './WorkspaceAccessApprovals';
 import { passAuth } from '../services/digitalPassApi';
 import { WorkspaceOrderDeadline } from './WorkspaceOrderDeadline';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
@@ -23,13 +25,10 @@ type Props = {
   organizations: DNSWorkspaceOrganization[];
 };
 
-/** Admin-only presentation. Does not provision accounts, change grants or write analytics. */
+/** DNS Admin management; provisioning is performed only by the protected service. */
 export function WorkspaceAdminManagement({ language, identity, organizations }: Props) {
   const [tab, setTab] = useState<AdminTab>('permissions');
   const [filter, setFilter] = useState('');
-  const [draftOrg, setDraftOrg] = useState('');
-  const [draftEmail, setDraftEmail] = useState('');
-  const [draftArea, setDraftArea] = useState('');
   const [matrixDraft, setMatrixDraft] = useState<Record<string, 'none' | 'read' | 'write'>>({});
   const [matrixStatus, setMatrixStatus] = useState<'loading' | 'ready' | 'saving' | 'error'>('loading');
   const [matrixChanged, setMatrixChanged] = useState(false);
@@ -62,9 +61,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
         const edited = MATRIX_TOOLS.filter(tool => changedCells[org.id + ':' + tool.id]);
         if (edited.length === 0) continue;
         const tools = Object.fromEntries(edited.map(tool => [tool.id, matrixDraft[org.id + ':' + tool.id] ?? 'none']));
-        await setDoc(doc(getFirestore(passAuth.app), 'organizationToolAccess', org.id), {
-          organizationId: org.id, tools, updatedBy: identity.uid, updatedAt: serverTimestamp(),
-        }, { merge: true });
+        await saveOrganizationPolicy(org.id, tools);
       }
       setMatrixChanged(false);
       setChangedCells({});
@@ -88,8 +85,8 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
       <div className="dns-kicker">{de ? 'Nur DNS Admin' : 'Solo DNS Admin'}</div>
       <h2 className="dns-section-title">{de ? 'Organisationen & Zugänge' : 'Organizzazioni & Accessi'}</h2>
       <p className="text-sm text-dns-muted">{de
-        ? 'Verwaltungsübersicht. Änderungen an Benutzerkonten und Berechtigungen sind noch nicht aktiviert.'
-        : 'Vista amministrativa. Le modifiche agli account e ai permessi non sono ancora abilitate.'}</p>
+        ? 'Organisationen, gespeicherte Tool-Rechte und Zugangsfreigaben.'
+        : 'Gestione organizzazioni, permessi salvati e approvazione delle richieste di accesso.'}</p>
     </div>
     <div role="tablist" aria-label={de ? 'Verwaltungsbereiche' : 'Sezioni amministrative'} className="flex flex-wrap gap-2">
       {tabs.map(item => <button key={item.id} type="button" role="tab"
@@ -115,29 +112,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
         </article>)}
         {!filtered.length && <p role="status">{de ? 'Keine Organisation gefunden.' : 'Nessuna organizzazione trovata.'}</p>}
       </>}
-      {tab === 'users' && <div className="space-y-3">
-        <p role="status" className="text-sm text-dns-muted">{de ? 'Vorschau ohne Speicherung: Es werden keine Einladungen versendet und keine Konten geändert.' : 'Anteprima senza salvataggio: non vengono inviati inviti né modificati account.'}</p>
-        <label className="block space-y-1"><span className="text-sm">{de ? 'E-Mail des Benutzers' : 'Email utente'}</span>
-          <input className="dns-input w-full" type="email" autoComplete="off" value={draftEmail} onChange={e => setDraftEmail(e.target.value)} />
-        </label>
-        <label className="block space-y-1"><span className="text-sm">{de ? 'Organisation' : 'Organizzazione'}</span>
-          <select className="dns-input w-full" value={draftOrg} onChange={e => { setDraftOrg(e.target.value); setDraftArea(''); }}>
-            <option value="">{de ? 'Organisation wählen' : 'Seleziona organizzazione'}</option>
-            {organizations.filter(o => o.organizationType === 'tourism-organisation').map(o =>
-              <option key={o.id} value={o.id}>{organizationName(o, language)}</option>)}
-          </select>
-        </label>
-        <label className="block space-y-1"><span className="text-sm">{de ? 'Berechtigtes Gebiet' : 'Area autorizzata'}</span>
-          <select className="dns-input w-full" value={draftArea} onChange={e => setDraftArea(e.target.value)} disabled={!draftOrg}>
-            <option value="">{de ? 'Gebiet wählen' : 'Seleziona area'}</option>
-            {organizations.find(o => o.id === draftOrg)?.reportingAreaIds.map(a => <option value={a} key={a}>{a}</option>)}
-          </select>
-        </label>
-        <p className="text-sm">{de ? 'Profil: Data Entry und Flyer bearbeiten; Analytics und FAIR nur lesen.' : 'Profilo: Data Entry e Flyer modificabili; Analytics e FAIR in sola lettura.'}</p>
-        <button type="button" className="dns-button" disabled title={de ? 'Erst nach sicherem Backend-Test verfügbar' : 'Disponibile dopo collaudo backend protetto'}>
-          {de ? 'Einladung senden (noch nicht verfügbar)' : 'Invia invito (non ancora disponibile)'}
-        </button>
-      </div>}
+      {tab === 'users' && <WorkspaceAccessApprovals language={language} organizations={organizations} />}
       {tab === 'permissions' && <div className="space-y-3">
         <p className="text-sm text-dns-muted">{de
           ? 'W = Schreiben (inkl. Lesen), R = Lesen, – = kein Zugriff. Die Matrix wird in DNS Core gespeichert; die Tool-Sicherheitsregeln bleiben unabhängig.'
