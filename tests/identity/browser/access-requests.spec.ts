@@ -38,7 +38,12 @@ test('Google request, administrator approval, status refresh and approved login'
   test.skip(process.env.DNS_ACCESS_ACCEPTANCE !== 'true', 'Requires the dedicated Functions acceptance workflow');
   test.setTimeout(90000);
   await page.context().route('**/*', async route => {
-    if (!['127.0.0.1','localhost'].includes(new URL(route.request().url()).hostname)) await route.abort();
+    const url=new URL(route.request().url());
+    // Firebase's Google popup resolver downloads Google's static iframe library,
+    // even with Auth Emulator. Allow scripts only; authentication/data stay local.
+    const staticGoogleScript=url.protocol==='https:' && url.hostname==='apis.google.com'
+      && route.request().resourceType()==='script';
+    if (!['127.0.0.1','localhost'].includes(url.hostname) && !staticGoogleScript) await route.abort();
     else await route.continue();
   });
   const googleLogin = async () => {

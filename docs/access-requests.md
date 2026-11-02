@@ -24,6 +24,8 @@ npx --yes firebase-tools@15.34.2 emulators:exec --config firebase.access.json --
 
 Set GCLOUD_PROJECT=demo-dns-identity, FIRESTORE_EMULATOR_HOST=127.0.0.1:8188, FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9199 and DNS_ACCESS_ACCEPTANCE=true. Tests refuse other projects/hosts. The service tests exercise real Firestore transactions with an explicit Auth metadata adapter; the callable test uses real Auth Emulator Google tokens, Functions and Firestore rules. Browser tests exercise Google popup login, request submission, administrator approval, permission preview, status refresh and approved Workspace login. These do not certify a production Google OAuth/domain configuration.
 
+The Google popup test permits the Firebase SDK's static script download from apis.google.com. Auth, Firestore and Functions requests remain on loopback demo emulators; remote authentication/data requests are blocked.
+
 ## Release gate
 
 No deploy workflow is added. `firebase.access.json` is a manual deployment/test configuration, not production approval. Before release: review the PR, pass CI, verify the Functions runtime identity and minimum required Auth-read/Firestore permissions, confirm the production authorized domain for Google, then obtain explicit deployment approval. Deploy only the workspace-access Functions codebase; do not publish the test rules or emulator configuration to production. The new UI requires that backend before activation. Existing client matrix saves now require this service, so UI/backend rollout must be coordinated. Keep the current production UI until both are approved.
