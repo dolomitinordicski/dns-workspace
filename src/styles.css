@@ -1004,3 +1004,23 @@
 
 .workspace-reject-action { color: #9b2c2c; border-color: rgba(155,44,44,.45); }
 .workspace-reject-action:hover:not(:disabled) { background: rgba(155,44,44,.08); }
+
+/* Explicit three-state permissions: predictable, keyboard-operable, and readable. */
+.workspace-permission-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem; }
+.workspace-permission-choice {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  min-height: 42px; min-width: 106px; padding: .5rem .75rem;
+  border: 1px solid var(--color-dns-border, rgba(65,116,131,.25));
+  border-radius: var(--dns-card-radius, 10px);
+  background: var(--color-dns-surface, #fff);
+  color: var(--color-dns-deep, #0D4D5E); font-weight: 600;
+  cursor: pointer; transition: background-color .15s ease, border-color .15s ease;
+}
+.workspace-permission-choice[aria-pressed="true"] { border-width: 2px; }
+.workspace-permission-choice[data-level="none"][aria-pressed="true"] { background: #f8e9e9; border-color: #9b2c2c; color: #7f1d1d; }
+.workspace-permission-choice[data-level="read"][aria-pressed="true"] { background: #fff3d9; border-color: #b67517; color: #734600; }
+.workspace-permission-choice[data-level="write"][aria-pressed="true"] { background: #e7f3e9; border-color: #28723c; color: #18552d; }
+.workspace-permission-choice:hover:not(:disabled) { border-color: var(--color-dns-deep, #0D4D5E); }
+.workspace-permission-choice:focus-visible { outline: 3px solid var(--color-dns-deep, #0D4D5E); outline-offset: 2px; }
+.workspace-permission-choice:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 560px) { .workspace-permission-choices { justify-content: flex-start; } .workspace-permission-choice { flex: 1 1 95px; min-width: 0; } }
