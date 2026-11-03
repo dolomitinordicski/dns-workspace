@@ -1001,3 +1001,6 @@
 .workspace-app-card:hover:not(:disabled) .workspace-app-card-action { text-decoration: underline; }
 .workspace-cockpit-content > section:not(.workspace-technical-section) { min-width: 0; }
 @media (max-width: 720px) { .workspace-cockpit-layout { grid-template-columns: minmax(0, 1fr); } }
+
+.workspace-reject-action { color: #9b2c2c; border-color: rgba(155,44,44,.45); }
+.workspace-reject-action:hover:not(:disabled) { background: rgba(155,44,44,.08); }
