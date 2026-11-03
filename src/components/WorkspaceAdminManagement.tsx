@@ -137,27 +137,39 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
             <tbody>{MATRIX_TOOLS.map(tool =>
               <tr key={tool.id}>
                 <th scope="row" className="text-left p-3 border-b sticky left-0 bg-white font-medium">{tool.name}</th>
-                {activePermissionsOrganization && [activePermissionsOrganization].map(org => {
-                  const key = org.id + ':' + tool.id;
-                  return <td key={key} className="p-3 border-b text-center">
-                    <button type="button"
-                      className="inline-flex min-w-10 items-center justify-center rounded-md px-3 py-2 text-sm font-bold border"
-                      style={{ backgroundColor: matrixDraft[key] === 'write' ? '#166534' : matrixDraft[key] === 'read' ? '#d97706' : '#7f1d1d', color: '#ffffff', borderColor: 'transparent' }}
-                      disabled={matrixStatus !== 'ready'}
-                      onClick={() => { setMatrixChanged(true); setChangedCells(previous => ({ ...previous, [key]: true })); setMatrixDraft(previous => ({
-                        ...previous, [key]: previous[key] === 'none' || !previous[key] ? 'read' : previous[key] === 'read' ? 'write' : 'none',
-                      })); }}
-                      aria-label={tool.name + ' · ' + organizationName(org, language) + ' · ' + (matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno') + (de ? ' (Entwurf)' : ' (bozza)')}
-                      title={matrixDraft[key] === 'write' ? 'Write' : matrixDraft[key] === 'read' ? 'Read' : 'Nessuno'}>
-                      {matrixDraft[key] === 'write' ? 'W' : matrixDraft[key] === 'read' ? 'R' : '–'}
-                    </button>
+                {activePermissionsOrganization && (() => {
+                  const key = activePermissionsOrganization.id + ':' + tool.id;
+                  const current = matrixDraft[key] ?? 'none';
+                  const choices: { value: 'none' | 'read' | 'write'; it: string; de: string }[] = [
+                    { value: 'none', it: 'Nessuno', de: 'Kein Zugriff' },
+                    { value: 'read', it: 'Lettura', de: 'Lesen' },
+                    { value: 'write', it: 'Scrittura', de: 'Schreiben' },
+                  ];
+                  return <td className="p-3 border-b">
+                    <div className="workspace-permission-choices" role="group"
+                      aria-label={tool.name + ' · ' + organizationName(activePermissionsOrganization, language)}>
+                      {choices.map(choice => <button type="button" key={choice.value}
+                        className="workspace-permission-choice"
+                        data-level={choice.value}
+                        aria-pressed={current === choice.value}
+                        disabled={matrixStatus !== 'ready'}
+                        onClick={() => {
+                          if (current === choice.value) return;
+                          setMatrixChanged(true);
+                          setChangedCells(previous => ({ ...previous, [key]: true }));
+                          setMatrixDraft(previous => ({ ...previous, [key]: choice.value }));
+                        }}>
+                        <span aria-hidden="true">{choice.value === 'none' ? '–' : choice.value === 'read' ? 'R' : 'W'}</span>
+                        <span>{de ? choice.de : choice.it}</span>
+                      </button>)}
+                    </div>
                   </td>;
-                })}
+                })()}
               </tr>)}</tbody>
           </table>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" className="dns-button" disabled={matrixStatus !== 'ready' || !matrixChanged}
+          <button type="button" className="dns-button" data-variant="primary" disabled={matrixStatus !== 'ready' || !matrixChanged}
             onClick={() => void saveMatrix()}>{de ? 'Matrix speichern' : 'Salva matrice'}</button>
           <span className="text-sm text-dns-muted" role="status">{matrixStatus === 'loading' ? (de ? 'Laden...' : 'Caricamento...') :
             matrixStatus === 'saving' ? (de ? 'Speichern...' : 'Salvataggio...') :
