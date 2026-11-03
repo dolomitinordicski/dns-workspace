@@ -1,12 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { signInDNSEmail, signInDNSGoogle, signOutDNS, type DNSIdentity } from '../services/dnsIdentity';
-import { organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
-import { canUseOrganization } from '../workspace/access';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 
-type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
-  organizations: DNSWorkspaceOrganization[]; organizationStatus: 'loading' | 'ready' | 'error';
-  selectedOrganizationId: string; onOrganizationChange: (id: string) => void };
+type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity };
 const copy = {
   de: { title: 'DNS Workspace', subtitle: 'Zugang zur digitalen Plattform',
     org: 'Tourismusverein / Organisation', choose: 'Organisation auswählen',
@@ -34,19 +30,13 @@ const copy = {
   },
 } as const;
 
-export function WorkspaceAccount(props: Props) {
-  const { language, identity, organizations, organizationStatus,
-    selectedOrganizationId, onOrganizationChange } = props;
+export function WorkspaceAccount({ language, identity }: Props) {
   const c = copy[language];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const selectedOrg = organizations.find(o => o.id === selectedOrganizationId);
-  const denied = identity.state === 'active' && selectedOrg && !canUseOrganization(identity, selectedOrg);
-
   async function login(action: () => Promise<unknown>) {
-    if (!selectedOrg) return;
     setError(''); setBusy(true);
     try { await action(); setPassword(''); }
     catch (cause) {
@@ -70,19 +60,6 @@ export function WorkspaceAccount(props: Props) {
         <h1 className="text-2xl font-semibold">{c.title}</h1>
         <p className="text-sm text-dns-muted">{c.subtitle}</p>
       </div>
-      <label className="block space-y-2">
-        <span className="font-semibold text-sm">{c.org}</span>
-        <select className="dns-input w-full" required value={selectedOrganizationId}
-          disabled={organizationStatus !== 'ready'}
-          onChange={e => onOrganizationChange(e.target.value)}>
-          <option value="">{c.choose}</option>
-          {organizations.map(org => <option key={org.id} value={org.id}>
-            {organizationName(org, language)}
-          </option>)}
-        </select>
-      </label>
-      {organizationStatus !== 'ready' &&
-        <p role="status" className="text-sm">{organizationStatus === 'loading' ? c.loading : c.failed}</p>}
       {identity.state === 'signed-out' && (
         <>
           <form className="space-y-4" onSubmit={submit}>
@@ -93,21 +70,22 @@ export function WorkspaceAccount(props: Props) {
               <input className="dns-input w-full" type="password" autoComplete="current-password"
                 required value={password} onChange={e => setPassword(e.target.value)} /></label>
             <button className="dns-button w-full" data-variant="primary" type="submit"
-              disabled={!selectedOrg || busy}>{c.login}</button>
+              disabled={busy}>{c.login}</button>
           </form>
           <button className="dns-button w-full" data-variant="secondary" type="button"
-            disabled={!selectedOrg || busy} onClick={() => void login(signInDNSGoogle)}>{c.google}</button>
+            disabled={busy} onClick={() => void login(signInDNSGoogle)}>{c.google}</button>
         </>
       )}
       {identity.state === 'loading' && <p role="status">{c.checking}</p>}
       {identity.state === 'inactive' &&
         <p role="alert">{identity.email} · {identity.reason === 'inactive' ? c.inactive : c.missing}</p>}
       {identity.state === 'error' && <p role="alert">{identity.message}</p>}
-      {denied && <p role="alert">{identity.email} · {c.noAccess}</p>}
       {identity.state !== 'signed-out' && identity.state !== 'loading' &&
         <button type="button" className="dns-button" data-variant="secondary"
           onClick={() => void signOutDNS()}>{c.logout}</button>}
-      <p className="text-xs text-dns-muted">{c.hint}</p>
+      <p className="text-xs text-dns-muted">{language === 'de'
+        ? 'Nach der Anmeldung lädt DNS automatisch Ihre freigegebene Organisation und Anwendungen.'
+        : 'Dopo l’accesso DNS carica automaticamente la tua organizzazione e le applicazioni autorizzate.'}</p>
       <a className="dns-button" href="?access=request">{language === 'de' ? 'Zugang mit Google beantragen' : 'Richiedi accesso con Google'}</a>
       {error && <p className="text-sm" role="alert">{error}</p>}
     </section>
