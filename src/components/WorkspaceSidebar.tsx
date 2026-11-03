@@ -44,7 +44,7 @@ export function WorkspaceSidebar({
       <div className="workspace-sidebar-section-label">{language === 'de' ? 'Anwendungen' : 'Applicazioni'}</div>
       {tools.map(tool => <button key={tool.id} type="button"
         className={['workspace-sidebar-item', openTool?.id === tool.id ? 'is-active' : ''].filter(Boolean).join(' ')}
-        data-tool-id={tool.id}
+        data-sidebar-tool-id={tool.id}
         disabled={!tool.url}
         onClick={() => onOpenTool(tool)}>
         <span className="workspace-sidebar-tool-mark" aria-hidden="true">{tool.shortLabel?.slice(0, 1) || tool.label.slice(0, 1)}</span>
