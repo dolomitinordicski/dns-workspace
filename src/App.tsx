@@ -97,8 +97,7 @@ export default function App() {
                 <WorkspaceCockpit language={language} identity={identity}
                   organization={organization} organizations={organizations}
                   tools={availableTools} onOrganizationChange={changeOrganization}
-                  onOpenTool={openAllowedTool}
-                  onOpenAdmin={() => { setActiveView('organizations-access'); setOpenTool(null); }} />
+                  onOpenTool={openAllowedTool} />
               ) : (
                 <WorkspaceNavigator key={registryRevision} language={language} view={activeView}
                   onOpenTool={openAllowedTool} />
