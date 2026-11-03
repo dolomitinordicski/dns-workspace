@@ -20,7 +20,6 @@ export default function App() {
   const [language, setLanguage] = useState<DNSWorkspaceLanguage>(getDNSWorkspaceLanguage);
   const [identity, setIdentity] = useState<DNSIdentity>({ state: 'loading' });
   const [organizations, setOrganizations] = useState<DNSWorkspaceOrganization[]>([]);
-  const [organizationStatus, setOrganizationStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [organizationId, setOrganizationId] = useState('');
   const [activeView, setActiveView] = useState<WorkspaceView>('cockpit');
   const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
@@ -33,8 +32,8 @@ export default function App() {
   useEffect(() => {
     let active = true;
     getDNSWorkspaceOrganizations().then(items => {
-      if (active) { setOrganizations(items); setOrganizationStatus('ready'); }
-    }).catch(() => { if (active) setOrganizationStatus('error'); });
+      if (active) setOrganizations(items);
+    }).catch(() => { if (active) setOrganizations([]); });
     return () => { active = false; };
   }, []);
 
@@ -79,9 +78,7 @@ export default function App() {
         {new URLSearchParams(location.search).get('access') === 'request' ? (
           <WorkspaceAccessRequest language={language} organizations={organizations} />
         ) : !showWorkspaceShell ? (
-          <WorkspaceAccount language={language} identity={identity}
-            organizations={organizations} organizationStatus={organizationStatus}
-            selectedOrganizationId={organizationId} onOrganizationChange={changeOrganization} />
+          <WorkspaceAccount language={language} identity={identity} />
         ) : (
           <div className="workspace-authenticated-shell">
             <WorkspaceSidebar language={language} identity={identity}
