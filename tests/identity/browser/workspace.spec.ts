@@ -53,7 +53,6 @@ test('invalid password does not activate an identity', async ({ page }) => {
 for (const uid of ['dns-test-inactive', 'dns-test-missing-profile']) {
   test(`${uid}: authentication alone cannot activate Workspace`, async ({ page }) => {
     await page.goto('./');
-    await page.getByRole('combobox').selectOption(A.organizationId);
     await page.getByLabel(/E-Mail|Email/).fill(`${uid}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
