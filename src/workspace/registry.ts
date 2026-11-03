@@ -1,5 +1,5 @@
 import { collection, getDocs, getFirestore } from 'firebase/firestore';
-import { passAuth } from '../services/digitalPassApi';
+import { identityAuth } from '../services/identityFirebase';
 import {
   DNS_TOOL_REGISTRY,
   DNS_TOOL_REGISTRY_CANONICAL,
@@ -96,7 +96,7 @@ function validTool(value: unknown): value is WorkspaceTool {
 }
 export async function refreshToolRegistry(): Promise<void> {
   try {
-    const snapshot = await getDocs(collection(getFirestore(passAuth.app), 'toolRegistryPublic'));
+    const snapshot = await getDocs(collection(getFirestore(identityAuth.app), 'toolRegistryPublic'));
     const rows = snapshot.docs.filter(doc => doc.id !== '_meta').map(doc => doc.data());
     const validated = rows.filter(validTool);
     if (validated.length !== rows.length || !validated.length ||
