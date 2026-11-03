@@ -29,6 +29,7 @@ type Props = {
 export function WorkspaceAdminManagement({ language, identity, organizations }: Props) {
   const [tab, setTab] = useState<AdminTab>('permissions');
   const [filter, setFilter] = useState('');
+  const [selectedPermissionsOrganization, setSelectedPermissionsOrganization] = useState('');
   const [matrixDraft, setMatrixDraft] = useState<Record<string, 'none' | 'read' | 'write'>>({});
   const [matrixStatus, setMatrixStatus] = useState<'loading' | 'ready' | 'saving' | 'error'>('loading');
   const [matrixChanged, setMatrixChanged] = useState(false);
@@ -77,6 +78,8 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
     { id: 'usage', label: de ? 'Aktivität & Nutzung' : 'Attività & Utilizzo' },
     { id: 'deadlines', label: de ? 'Bestellfrist' : 'Scadenza ordini' },
   ];
+  const permissionOrganizations = organizations.filter(o => o.organizationType === 'tourism-organisation');
+  const activePermissionsOrganization = permissionOrganizations.find(o => o.id === selectedPermissionsOrganization) ?? permissionOrganizations[0];
   const filtered = organizations.filter(org =>
     `${org.canonicalName} ${org.id} ${org.reportingAreaIds.join(' ')}`
       .toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
@@ -117,19 +120,24 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
         <p className="text-sm text-dns-muted">{de
           ? 'W = Schreiben (inkl. Lesen), R = Lesen, – = kein Zugriff. Die Matrix wird in DNS Core gespeichert; die Tool-Sicherheitsregeln bleiben unabhängig.'
           : 'W = scrittura (include lettura), R = lettura, – = nessun accesso. La matrice si salva in DNS Core; le regole di sicurezza dei tool restano indipendenti.'}</p>
+        <label className="block space-y-2 max-w-lg">
+          <span className="text-sm font-semibold">{de ? 'Organisation auswählen' : 'Seleziona organizzazione'}</span>
+          <select className="dns-input w-full" value={activePermissionsOrganization?.id ?? ''}
+            onChange={event => setSelectedPermissionsOrganization(event.target.value)}>
+            {permissionOrganizations.map(org => <option key={org.id} value={org.id}>{organizationName(org, language)}</option>)}
+          </select>
+        </label>
         <div className="overflow-x-auto" role="region" tabIndex={0}
           aria-label={de ? 'Tool-Zugänge nach Organisation' : 'Accessi ai tool per organizzazione'}>
-          <table className="w-full text-sm border-collapse" style={{ minWidth: 720 }}>
+          <table className="w-full text-sm border-collapse" style={{ minWidth: 320 }}>
             <thead><tr>
               <th scope="col" className="text-left p-3 border-b sticky left-0 bg-white">{de ? 'Tool' : 'Tool'}</th>
-              {organizations.filter(o => o.organizationType === 'tourism-organisation').map(org =>
-                <th key={org.id} scope="col" className="text-center p-3 border-b"
-                  style={{ minWidth: 125 }}>{organizationName(org, language)}</th>)}
+              <th scope="col" className="text-center p-3 border-b">{de ? 'Berechtigung' : 'Permesso'}</th>
             </tr></thead>
             <tbody>{MATRIX_TOOLS.map(tool =>
               <tr key={tool.id}>
                 <th scope="row" className="text-left p-3 border-b sticky left-0 bg-white font-medium">{tool.name}</th>
-                {organizations.filter(o => o.organizationType === 'tourism-organisation').map(org => {
+                {activePermissionsOrganization && [activePermissionsOrganization].map(org => {
                   const key = org.id + ':' + tool.id;
                   return <td key={key} className="p-3 border-b text-center">
                     <button type="button"
