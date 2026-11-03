@@ -33,10 +33,10 @@ export function WorkspaceAccessApprovals({ language, organizations }: {
       <input className="dns-input w-full" readOnly value={invitation.href} onFocus={e => e.target.select()} /></label>
     <p>{de ? 'Organisation und Tool-Rechte werden vorab im Tab Tool-Zugänge eingerichtet. Prüfen Sie die Identität vor der Freigabe.'
       : 'Organizzazione e permessi si preparano nella sezione Accessi ai tool. Verifica chi richiede l’accesso prima di approvare.'}</p>
-    <button className="dns-button" disabled={busy} onClick={() => void load()}>{de ? 'Aktualisieren' : 'Aggiorna richieste'}</button>
+    <button className="dns-button" data-variant="secondary" disabled={busy} onClick={() => void load()}>{de ? 'Aktualisieren' : 'Aggiorna richieste'}</button>
     {requests.map(r => <RequestRow key={r.uid} request={r} language={language} organizations={organizations} busy={busy} decide={decide} />)}
     {!requests.length && !busy && !error && <p>{de ? 'Keine Anfragen.' : 'Nessuna richiesta.'}</p>}
-    {after && <button className="dns-button" disabled={busy} onClick={() => void load(after)}>{de ? 'Weitere laden' : 'Carica altre'}</button>}
+    {after && <button className="dns-button" data-variant="secondary" disabled={busy} onClick={() => void load(after)}>{de ? 'Weitere laden' : 'Carica altre'}</button>}
     {busy && <p role="status">{de ? 'Laden…' : 'Caricamento…'}</p>}
     {error && <p role="alert">{error}</p>}
   </div>;
@@ -73,13 +73,13 @@ function RequestRow({ request: r, language, organizations, busy, decide }: {
       <label className="block">{de ? 'Gebiet' : 'Area'}<select className="dns-input w-full" value={area} disabled={busy || confirming} onChange={e => setArea(e.target.value)}>
         <option value="">—</option>{selected?.reportingAreaIds.map(a => <option key={a} value={a}>{a}</option>)}
       </select></label>
-      {!confirming ? <button className="dns-button" disabled={busy || previewBusy || !area} onClick={() => void prepare()}>{de ? 'Freigabe prüfen' : 'Verifica approvazione'}</button>
+      {!confirming ? <button className="dns-button" data-variant="primary" disabled={busy || previewBusy || !area} onClick={() => void prepare()}>{de ? 'Freigabe prüfen' : 'Verifica approvazione'}</button>
         : <div className="space-y-2"><p>{de ? 'Dieses Google-Konto mit den gespeicherten Organisationsrechten freigeben?' : 'Autorizzare questo account Google con i permessi salvati dell’organizzazione?'}</p>
           <ul>{Object.entries(preview).map(([tool, level]) => <li key={tool}>{tool}: {level === 'write' ? 'W' : level === 'read' ? 'R' : '–'}</li>)}</ul>
-          <button className="dns-button" disabled={busy} onClick={() => void decide(r, true, org, area, preview)}>{de ? 'Freigabe bestätigen' : 'Conferma approvazione'}</button>
-          <button className="dns-button" disabled={busy} onClick={() => setConfirming(false)}>{de ? 'Abbrechen' : 'Annulla'}</button>
+          <button className="dns-button" data-variant="primary" disabled={busy} onClick={() => void decide(r, true, org, area, preview)}>{de ? 'Freigabe bestätigen' : 'Conferma approvazione'}</button>
+          <button className="dns-button" data-variant="secondary" disabled={busy} onClick={() => setConfirming(false)}>{de ? 'Abbrechen' : 'Annulla'}</button>
         </div>}
-      <button className="dns-button" disabled={busy} onClick={() => void decide(r, false, org, area)}>{de ? 'Ablehnen' : 'Rifiuta'}</button>
+      <button className="dns-button workspace-reject-action" data-variant="secondary" disabled={busy} onClick={() => void decide(r, false, org, area)}>{de ? 'Ablehnen' : 'Rifiuta'}</button>
       {previewError && <p role="alert">{previewError}</p>}
     </> : <p>{organizations.find(o => o.id === r.organizationId)?.canonicalName || r.organizationId} · {r.reportingAreaId}</p>}
   </article>;
