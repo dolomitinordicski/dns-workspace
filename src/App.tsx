@@ -6,6 +6,7 @@ import { WorkspaceAdminManagement } from './components/WorkspaceAdminManagement'
 import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeader';
 import { WorkspaceNavigator } from './components/WorkspaceNavigator';
 import { WorkspaceToolView } from './components/WorkspaceToolView';
+import { WorkspaceSidebar } from './components/WorkspaceSidebar';
 import { watchDNSIdentity, type DNSIdentity } from './services/dnsIdentity';
 import { getDNSWorkspaceOrganizations, type DNSWorkspaceOrganization } from './services/dnsOrganizations';
 import { getDNSWorkspaceLanguage, setDNSWorkspaceLanguage, subscribeDNSWorkspaceLanguage,
@@ -37,6 +38,14 @@ export default function App() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (identity.state !== 'active' || identity.profile.globalRoles.includes('dns-admin')) return;
+    const eligible = organizations.filter(org => canUseOrganization(identity, org));
+    if (!eligible.length) return;
+    const current = eligible.some(org => org.id === organizationId);
+    if (!current) setOrganizationId(eligible[0].id);
+  }, [identity, organizations, organizationId]);
+
   const organization = organizations.find(org => org.id === organizationId);
   const authorized = Boolean(organization && canUseOrganization(identity, organization));
   const isAdmin = identity.state === 'active' &&
@@ -53,40 +62,54 @@ export default function App() {
     if (availableTools.some(allowed => allowed.id === tool.id) && tool.url) setOpenTool(tool);
   };
 
+  const showWorkspaceShell = authorized && organization;
+
   return (
     <div className="workspace-app">
       <WorkspaceHeader language={language} activeView={activeView}
-        showNavigation={authorized} adminNavigation={isAdmin}
+        showNavigation={false} adminNavigation={isAdmin}
         onLanguageChange={setDNSWorkspaceLanguage}
         onViewChange={view => { setActiveView(view); setOpenTool(null); }} />
-      <main data-dns-shell-main className="workspace-main">
+      <main data-dns-shell-main className={showWorkspaceShell ? 'workspace-main workspace-main-authenticated' : 'workspace-main'}>
         {new URLSearchParams(location.search).get('access') === 'request' ? (
           <WorkspaceAccessRequest language={language} organizations={organizations} />
-        ) : !authorized || !organization ? (
+        ) : !showWorkspaceShell ? (
           <WorkspaceAccount language={language} identity={identity}
             organizations={organizations} organizationStatus={organizationStatus}
             selectedOrganizationId={organizationId} onOrganizationChange={changeOrganization} />
-        ) : openTool ? (
-          <WorkspaceToolView language={language} tool={openTool}
-            onClose={() => { setOpenTool(null); setActiveView('cockpit'); }} />
-        ) : activeView === 'organizations-access' && isAdmin ? (
-          <div className="py-4"><WorkspaceAdminManagement language={language} identity={identity} organizations={organizations} /></div>
-        ) : activeView === 'cockpit' || !isAdmin ? (
-          <WorkspaceCockpit language={language} identity={identity}
-            organization={organization} organizations={organizations}
-            tools={availableTools} onOrganizationChange={changeOrganization}
-            onOpenTool={openAllowedTool}
-            onOpenAdmin={() => { setActiveView('organizations-access'); setOpenTool(null); }} />
         ) : (
-          <WorkspaceNavigator key={registryRevision} language={language} view={activeView}
-            onOpenTool={openAllowedTool} />
-        )}
-        {authorized && !openTool && (
-          <p className="text-xs py-3">
-            <a href="/dns-workspace/pass.html" className="dns-button" data-variant="secondary">
-              Digital Pass · {language === 'de' ? 'Öffentliche Registrierung' : 'Registrazione pubblica'}
-            </a>
-          </p>
+          <div className="workspace-authenticated-shell">
+            <WorkspaceSidebar language={language} identity={identity}
+              organization={organization} tools={availableTools} openTool={openTool}
+              activeView={activeView}
+              onDashboard={() => { setOpenTool(null); setActiveView('cockpit'); }}
+              onOpenTool={openAllowedTool}
+              onAdminView={view => { setOpenTool(null); setActiveView(view); }} />
+            <div className="workspace-shell-content">
+              {openTool ? (
+                <WorkspaceToolView language={language} tool={openTool}
+                  onClose={() => { setOpenTool(null); setActiveView('cockpit'); }} />
+              ) : activeView === 'organizations-access' && isAdmin ? (
+                <div className="py-4"><WorkspaceAdminManagement language={language} identity={identity} organizations={organizations} /></div>
+              ) : activeView === 'cockpit' || !isAdmin ? (
+                <WorkspaceCockpit language={language} identity={identity}
+                  organization={organization} organizations={organizations}
+                  tools={availableTools} onOrganizationChange={changeOrganization}
+                  onOpenTool={openAllowedTool}
+                  onOpenAdmin={() => { setActiveView('organizations-access'); setOpenTool(null); }} />
+              ) : (
+                <WorkspaceNavigator key={registryRevision} language={language} view={activeView}
+                  onOpenTool={openAllowedTool} />
+              )}
+              {!openTool && (
+                <p className="text-xs py-3">
+                  <a href="/dns-workspace/pass.html" className="dns-button" data-variant="secondary">
+                    Digital Pass · {language === 'de' ? 'Öffentliche Registrierung' : 'Registrazione pubblica'}
+                  </a>
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </main>
       <footer data-dns-tool-footer>
