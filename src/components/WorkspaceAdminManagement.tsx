@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { saveOrganizationPolicy } from '../services/dnsAccessRequests';
 import { WorkspaceAccessApprovals } from './WorkspaceAccessApprovals';
-import { passAuth } from '../services/digitalPassApi';
+import { identityAuth } from '../services/identityFirebase';
 import { WorkspaceOrderDeadline } from './WorkspaceOrderDeadline';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
@@ -39,7 +39,7 @@ export function WorkspaceAdminManagement({ language, identity, organizations }: 
     let live = true;
     setMatrixStatus('loading');
     Promise.all(organizations.filter(o => o.organizationType === 'tourism-organisation').map(async org => {
-      const snapshot = await getDoc(doc(getFirestore(passAuth.app), 'organizationToolAccess', org.id));
+      const snapshot = await getDoc(doc(getFirestore(identityAuth.app), 'organizationToolAccess', org.id));
       return { id: org.id, tools: snapshot.exists() ? snapshot.data().tools as Record<string, 'none' | 'read' | 'write'> : {} };
     })).then(items => {
       if (!live) return;
