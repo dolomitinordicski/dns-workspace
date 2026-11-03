@@ -56,13 +56,13 @@ export function WorkspaceCockpit(props: Props) {
           <p>{identity.email} · {isAdmin ? c.admin : c.user}</p>
         </div>
         <div className="workspace-home-actions">
-          <label className="workspace-org-switcher">
+          {isAdmin && <label className="workspace-org-switcher">
             <span>{c.context}</span>
             <select className="dns-input" value={organization.id}
               onChange={e => onOrganizationChange(e.target.value)}>
               {eligible.map(org => <option key={org.id} value={org.id}>{organizationName(org, language)}</option>)}
             </select>
-          </label>
+          </label>}
           {isAdmin && <button className="dns-button" data-variant="primary" type="button"
             onClick={onOpenAdmin}>{language === 'de' ? 'DNS verwalten' : 'Gestione DNS'}</button>}
           <button className="workspace-signout-link" type="button"
