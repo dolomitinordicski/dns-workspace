@@ -3,7 +3,7 @@ import type { Organization } from '@dolomitinordicski/dns-shared-data';
 import { passAuth } from './digitalPassApi';
 
 export type DNSWorkspaceOrganization = Pick<Organization,
-  'id' | 'canonicalName' | 'localizedName' | 'organizationType' | 'reportingAreaIds'> & {
+  'id' | 'canonicalName' | 'localizedName' | 'organizationType' | 'reportingAreaIds' | 'logoFile'> & {
   address?: { street?: string; postalCode?: string; city?: string; country?: string };
   phone?: string;
   email?: string;
@@ -23,4 +23,13 @@ export async function getDNSWorkspaceOrganizations(): Promise<DNSWorkspaceOrgani
 
 export function organizationName(org: DNSWorkspaceOrganization, language: 'de' | 'it') {
   return org.localizedName?.[language] || org.canonicalName;
+}
+
+const SHARED_DATA_RAW_BASE = 'https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/main';
+
+export function organizationLogoUrl(org: DNSWorkspaceOrganization): string | null {
+  if (!org.logoFile) return null;
+  const filename = org.logoFile.split('/').pop();
+  if (!filename) return null;
+  return `${SHARED_DATA_RAW_BASE}/assets/organization-logos/${encodeURIComponent(filename)}`;
 }
