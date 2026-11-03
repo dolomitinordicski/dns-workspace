@@ -1,7 +1,7 @@
 import { GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import type { DNSAccessGrant, DNSMembership, DNSUserProfile } from '@dolomitinordicski/dns-shared-data';
-import { passAuth } from './digitalPassApi';
+import { identityAuth } from './identityFirebase';
 
 export type DNSMatrixLevel = 'none' | 'read' | 'write';
 export type DNSOrganizationToolPolicies = Record<string, Partial<Record<string, DNSMatrixLevel>>>;
@@ -13,7 +13,7 @@ export type DNSIdentity =
   | { state: 'active'; email: string; uid: string; profile: DNSUserProfile;
       memberships: DNSMembership[]; grants: DNSAccessGrant[]; toolPolicies: DNSOrganizationToolPolicies };
 
-const coreDb = getFirestore(passAuth.app);
+const coreDb = getFirestore(identityAuth.app);
 
 function withinDates(item: { active: boolean; validFrom?: string; validTo?: string }) {
   const now = Date.now();
@@ -26,7 +26,7 @@ function withinDates(item: { active: boolean; validFrom?: string; validTo?: stri
 
 export function watchDNSIdentity(notify: (value: DNSIdentity) => void): () => void {
   let generation = 0;
-  const unsubscribe = onAuthStateChanged(passAuth, async user => {
+  const unsubscribe = onAuthStateChanged(identityAuth, async user => {
     const revision = ++generation;
     if (!user) { notify({ state: 'signed-out' }); return; }
     notify({ state: 'loading' });
@@ -79,9 +79,9 @@ export function watchDNSIdentity(notify: (value: DNSIdentity) => void): () => vo
 export async function signInDNSGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  await signInWithPopup(passAuth, provider);
+  await signInWithPopup(identityAuth, provider);
 }
 export async function signInDNSEmail(email: string, password: string) {
-  await signInWithEmailAndPassword(passAuth, email.trim(), password);
+  await signInWithEmailAndPassword(identityAuth, email.trim(), password);
 }
-export async function signOutDNS() { await signOut(passAuth); }
+export async function signOutDNS() { await signOut(identityAuth); }
