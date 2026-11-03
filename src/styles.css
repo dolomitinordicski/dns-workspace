@@ -990,3 +990,14 @@
 
 /* Icon slot is reserved until the canonical Shared Data icon package is released. */
 .workspace-app-icon-placeholder { border: 1px dashed currentColor; opacity: .45; }
+
+/* Workspace UI simplification: preserve Foundation tokens and existing accessibility. */
+.workspace-cockpit-intro { padding: .4rem 0 1.1rem; border-bottom: 1px solid var(--color-dns-border, rgba(65,116,131,.2)); }
+.workspace-technical-section { padding: .5rem 0; border-bottom: 1px solid var(--color-dns-border, rgba(65,116,131,.2)); }
+.workspace-news-section { padding: .3rem 0; }
+.workspace-app-card { min-height: 160px; gap: .6rem; border-color: var(--color-dns-border, rgba(65,116,131,.2)); }
+.workspace-app-icon { font-size: 1.1rem; font-weight: 750; }
+.workspace-app-card-action { display: inline-flex; align-items: center; gap: .4rem; margin-top: auto; padding-top: .5rem; font-weight: 700; font-size: .85rem; color: var(--app-accent); }
+.workspace-app-card:hover:not(:disabled) .workspace-app-card-action { text-decoration: underline; }
+.workspace-cockpit-content > section:not(.workspace-technical-section) { min-width: 0; }
+@media (max-width: 720px) { .workspace-cockpit-layout { grid-template-columns: minmax(0, 1fr); } }
