@@ -39,11 +39,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (identity.state !== 'active' || identity.profile.globalRoles.includes('dns-admin')) return;
+    if (identity.state !== 'active' || !organizations.length) return;
     const eligible = organizations.filter(org => canUseOrganization(identity, org));
     if (!eligible.length) return;
     const current = eligible.some(org => org.id === organizationId);
-    if (!current) setOrganizationId(eligible[0].id);
+    if (current) return;
+    if (identity.profile.globalRoles.includes('dns-admin')) {
+      setOrganizationId(eligible.find(org => org.id === 'dolomiti-nordicski')?.id ?? eligible[0].id);
+    } else {
+      setOrganizationId(eligible[0].id);
+    }
   }, [identity, organizations, organizationId]);
 
   const organization = organizations.find(org => org.id === organizationId);
