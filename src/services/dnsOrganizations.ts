@@ -1,6 +1,6 @@
 import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import type { Organization } from '@dolomitinordicski/dns-shared-data';
-import { passAuth } from './digitalPassApi';
+import { identityAuth } from './identityFirebase';
 
 export type DNSWorkspaceOrganization = Pick<Organization,
   'id' | 'canonicalName' | 'localizedName' | 'organizationType' | 'reportingAreaIds'> & {
@@ -55,7 +55,7 @@ function resolveManifestLogo(
 
 export async function getDNSWorkspaceOrganizations(): Promise<DNSWorkspaceOrganization[]> {
   const [result, logoManifest] = await Promise.all([
-    getDocs(collection(getFirestore(passAuth.app), 'organizations')),
+    getDocs(collection(getFirestore(identityAuth.app), 'organizations')),
     loadRegionLogoManifest(),
   ]);
   return result.docs.map(record => ({ ...record.data(), id: record.id }) as DNSWorkspaceOrganization & { active?: boolean })
