@@ -1,31 +1,26 @@
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
-import { identityAuth } from './identityFirebase';
-export const passAuth = identityAuth;
+import { onAuthStateChanged, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
+import { customerAuth } from './customerFirebase';
+export const passAuth = customerAuth;
 export { onAuthStateChanged, signOut };
 export const passApiConfigured = Boolean(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE);
-export async function operatorSignIn(email: string, password: string) {
-  return signInWithEmailAndPassword(passAuth, email.trim(), password);
-}
 export function digitalPassReturnUrl(currentHref: string): string {
   const current = new URL(currentHref);
-  // Never redirect authentication to unapproved previews, forks or custom hosts.
   const approvedHosts = new Set([
-    'dolomitinordicski.github.io',
-    'dns-core.firebaseapp.com',
-    'dns-core.web.app',
-    'localhost',
+    'dolomitinordicski.github.io', 'dns-core.firebaseapp.com',
+    'dns-core.web.app', 'localhost', '127.0.0.1',
   ]);
   if (!approvedHosts.has(current.hostname) ||
-      (current.protocol !== 'https:' && current.hostname !== 'localhost')) {
+      (current.protocol !== 'https:' && !['localhost','127.0.0.1'].includes(current.hostname))) {
     throw new Error('DIGITAL_PASS_AUTH_DOMAIN_NOT_APPROVED');
   }
-  // Only use the real Workspace route on GitHub Pages, not another repo's page.
-  if (current.hostname === 'dolomitinordicski.github.io' &&
-      current.pathname !== '/dns-workspace/' && current.pathname !== '/dns-workspace/index.html' && current.pathname !== '/dns-workspace/pass.html') {
-    throw new Error('DIGITAL_PASS_AUTH_ROUTE_NOT_APPROVED');
+  // Customer email links always return to the isolated customer page, never Workspace index.
+  if (current.hostname === 'dolomitinordicski.github.io') {
+    if (!['/dns-workspace/pass.html', '/dns-workspace/', '/dns-workspace/index.html'].includes(current.pathname)) {
+      throw new Error('DIGITAL_PASS_AUTH_ROUTE_NOT_APPROVED');
+    }
+    return current.origin + '/dns-workspace/pass.html#digital-pass';
   }
-  // Preserve GitHub Pages base path while excluding query tokens.
-  return current.origin + current.pathname + '#digital-pass';
+  return current.origin + (current.pathname.startsWith('/dns-workspace/') ? '/dns-workspace/pass.html' : '/pass.html') + '#digital-pass';
 }
 export async function requestEmailLink(email: string) {
   await sendSignInLinkToEmail(passAuth, email.trim(), {
