@@ -56,6 +56,7 @@ test('Google request, administrator approval, status refresh and approved login'
   };
   await page.goto('./?access=request');
   await googleLogin();
+  await page.getByRole('combobox').selectOption('dns-approval-test-org');
   await page.getByRole('button',{name:/Anfrage senden|Invia richiesta/}).click();
   await expect(page.getByText(/Anfrage wartet auf Freigabe|Richiesta in attesa di approvazione/)).toBeVisible();
   await expect(page.locator('[data-tool-id]')).toHaveCount(0);
