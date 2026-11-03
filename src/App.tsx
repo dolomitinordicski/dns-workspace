@@ -96,8 +96,7 @@ export default function App() {
               ) : activeView === 'cockpit' || !isAdmin ? (
                 <WorkspaceCockpit language={language} identity={identity}
                   organization={organization} organizations={organizations}
-                  tools={availableTools} onOrganizationChange={changeOrganization}
-                  onOpenTool={openAllowedTool} />
+                  tools={availableTools} onOrganizationChange={changeOrganization} />
               ) : (
                 <WorkspaceNavigator key={registryRevision} language={language} view={activeView}
                   onOpenTool={openAllowedTool} />
