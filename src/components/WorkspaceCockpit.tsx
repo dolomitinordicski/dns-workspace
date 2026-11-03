@@ -10,10 +10,10 @@ import type { DNSWorkspaceLanguage } from '../services/foundation';
 type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
   organization: DNSWorkspaceOrganization; organizations: DNSWorkspaceOrganization[];
   tools: WorkspaceTool[]; onOrganizationChange: (id: string) => void;
-  onOpenTool: (tool: WorkspaceTool) => void; onOpenAdmin: () => void };
+  onOpenTool: (tool: WorkspaceTool) => void };
 
 export function WorkspaceCockpit(props: Props) {
-  const { language, identity, organization, organizations, tools, onOrganizationChange, onOpenTool, onOpenAdmin } = props;
+  const { language, identity, organization, organizations, tools, onOrganizationChange, onOpenTool } = props;
   const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
   const [showAllNews, setShowAllNews] = useState(false);
   const [releases, setReleases] = useState<DNSRelease[]>([]);
@@ -63,8 +63,6 @@ export function WorkspaceCockpit(props: Props) {
               {eligible.map(org => <option key={org.id} value={org.id}>{organizationName(org, language)}</option>)}
             </select>
           </label>}
-          {isAdmin && <button className="dns-button" data-variant="primary" type="button"
-            onClick={onOpenAdmin}>{language === 'de' ? 'DNS verwalten' : 'Gestione DNS'}</button>}
           <button className="workspace-signout-link" type="button"
             onClick={() => void signOutDNS()}>{c.signOut}</button>
         </div>
