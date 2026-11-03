@@ -17,7 +17,7 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
-    await expect(page.getByRole('heading', { name: /Mein DNS Cockpit|Il mio cockpit DNS/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Willkommen|Benvenuto/ })).toBeVisible();
     if (role === 'writer') await expect(page.locator('[data-tool-id="polls"]')).toHaveCount(0);
     const card = page.locator('[data-tool-id="data-entry"]');
     if (role === 'outsider') await expect(card).toHaveCount(0);
@@ -72,5 +72,5 @@ test('selecting a foreign organization before login does not grant Workspace acc
   await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
   await expect(page.getByRole('alert')).toContainText(/Mitgliedschaft|appartenenza/);
   await expect(page.locator('[data-tool-id="data-entry"]')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Mein DNS Cockpit|Il mio cockpit DNS/ })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Willkommen|Benvenuto/ })).toHaveCount(0);
 });
