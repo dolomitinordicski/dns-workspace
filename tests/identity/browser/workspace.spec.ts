@@ -18,10 +18,10 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
     await expect(page.getByRole('heading', { name: /Willkommen|Benvenuto/ })).toBeVisible();
 
-    const card = page.locator('[data-tool-id="data-entry"]');
+    const card = page.locator('[data-sidebar-tool-id="data-entry"]');
     if (role === 'outsider') await expect(card).toHaveCount(0);
     else await expect(card).toBeVisible();
-    if (role === 'writer') await expect(page.locator('[data-tool-id="polls"]')).toHaveCount(0);
+    if (role === 'writer') await expect(page.locator('[data-sidebar-tool-id="polls"]')).toHaveCount(0);
 
     if (role === 'admin') {
       const select = page.getByRole('combobox');
@@ -46,7 +46,7 @@ test('invalid password does not activate an identity', async ({ page }) => {
   await page.getByLabel(/Passwort|Password/).fill('incorrect-password');
   await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
   await expect(page.getByRole('alert')).toBeVisible();
-  await expect(page.locator('[data-tool-id="data-entry"]')).toHaveCount(0);
+  await expect(page.locator('[data-sidebar-tool-id="data-entry"]')).toHaveCount(0);
 });
 
 
@@ -57,7 +57,7 @@ for (const uid of ['dns-test-inactive', 'dns-test-missing-profile']) {
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
     await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.locator('[data-tool-id="data-entry"]')).toHaveCount(0);
+    await expect(page.locator('[data-sidebar-tool-id="data-entry"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^(Abmelden|Esci)$/ })).toBeVisible();
   });
 }
