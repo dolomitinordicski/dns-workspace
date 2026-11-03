@@ -1114,15 +1114,16 @@
 }
 .workspace-sidebar-brand {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: .7rem;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: .85rem;
   align-items: center;
-  padding: .35rem .35rem 1rem;
+  padding: .45rem .35rem 1.15rem;
 }
 .workspace-sidebar-brand img {
-  width: 48px;
-  height: 48px;
+  width: 76px;
+  height: 64px;
   object-fit: contain;
+  object-position: center;
   border-radius: 10px;
   background: #fff;
 }
@@ -1223,7 +1224,7 @@
   .workspace-authenticated-shell { grid-template-columns: 80px minmax(0, 1fr); }
   .workspace-sidebar { padding-inline: .5rem; }
   .workspace-sidebar-brand { grid-template-columns: 1fr; justify-items: center; }
-  .workspace-sidebar-brand img { width: 42px; height: 42px; }
+  .workspace-sidebar-brand img { width: 56px; height: 48px; }
   .workspace-sidebar-brand > div,
   .workspace-sidebar-section-label,
   .workspace-sidebar-item > span:last-child { display: none; }
