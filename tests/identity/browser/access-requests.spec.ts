@@ -81,7 +81,7 @@ test('Google request, administrator approval, status refresh and approved login'
   await page.getByRole('button',{name:/^(Abmelden|Esci)$/}).click();
   await googleLogin();
   await page.getByRole('link',{name:/Zum Workspace|Vai al Workspace/}).click();
-  await page.getByRole('combobox').selectOption('dns-approval-test-org');
+  await expect(page.getByRole('combobox')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:/Willkommen|Benvenuto/})).toBeVisible();
   await expect(page.locator('[data-tool-id="data-entry"]')).toBeVisible();
   await adminContext.close();
