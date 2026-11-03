@@ -63,11 +63,10 @@ test('Google request, administrator approval, status refresh and approved login'
   const adminContext=await browser.newContext();
   const admin=await adminContext.newPage();
   await admin.goto('http://127.0.0.1:4173/dns-workspace/');
-  await admin.getByRole('combobox').selectOption('dns-approval-test-org');
   await admin.getByLabel(/E-Mail|Email/).fill(`${U.admin}@example.test`);
   await admin.getByLabel(/Passwort|Password/).fill(password);
   await admin.getByRole('button',{name:/^(Anmelden|Accedi)$/}).click();
-  await admin.getByRole('button',{name:/Organisationen & Zugänge|Organizzazioni e accessi/}).click();
+  await admin.getByRole('button',{name:/DNS verwalten|Gestione DNS/}).click();
   await admin.getByRole('tab',{name:/Benutzer|Utenti/}).click();
   const row=admin.getByRole('article').filter({hasText:'browser-approval@example.test'});
   await row.getByRole('button',{name:/Freigabe prüfen|Verifica approvazione/}).click();
@@ -81,8 +80,9 @@ test('Google request, administrator approval, status refresh and approved login'
   // Approval does not alter Google credentials; a fresh login loads the new DNS profile.
   await page.getByRole('button',{name:/^(Abmelden|Esci)$/}).click();
   await googleLogin();
+  await expect(page.getByText(/Freigegeben. Melden|Richiesta approvata/)).toBeVisible();
   await page.getByRole('link',{name:/Zum Workspace|Vai al Workspace/}).click();
-  await page.getByRole('combobox').selectOption('dns-approval-test-org');
+  await expect(page.getByRole('combobox')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:/Willkommen|Benvenuto/})).toBeVisible();
   await expect(page.locator('[data-tool-id="data-entry"]')).toBeVisible();
   await adminContext.close();
