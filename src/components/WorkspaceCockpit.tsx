@@ -51,7 +51,7 @@ export function WorkspaceCockpit(props: Props) {
   return (
     <div className="workspace-cockpit-layout py-4">
       <div className="workspace-cockpit-content">
-      <section className="dns-card p-5 flex flex-wrap gap-4 items-center justify-between">
+      <section className="workspace-cockpit-intro flex flex-wrap gap-4 items-center justify-between">
         <div>
           <div className="dns-kicker">{c.subtitle}</div>
           <h1 className="text-2xl font-semibold">{c.title}</h1>
@@ -69,7 +69,7 @@ export function WorkspaceCockpit(props: Props) {
             onClick={() => void signOutDNS()}>{c.signOut}</button>
         </div>
       </section>
-      {isAdmin && <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-technical-title">
+      {isAdmin && <section className="workspace-technical-section space-y-3" aria-labelledby="workspace-technical-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="dns-kicker">{language === 'de' ? 'Nur DNS Admin' : 'Solo DNS Admin'}</div>
@@ -103,20 +103,20 @@ export function WorkspaceCockpit(props: Props) {
                 disabled={!tool.url} onClick={() => onOpenTool(tool)}
                 aria-label={`${c.open}: ${tool.label}`}>
                 <span className="workspace-app-card-top">
-                  <span className="workspace-app-icon workspace-app-icon-placeholder" aria-hidden="true" />
+                  <span className="workspace-app-icon" aria-hidden="true">{tool.label.slice(0, 1).toUpperCase()}</span>
                   <span className="workspace-app-arrow" aria-hidden="true">↗</span>
                 </span>
                 <span className="workspace-app-card-name">{tool.label}</span>
                 <span className="workspace-app-card-description">{tool.description[language]}</span>
-                <span className="workspace-app-card-meta">{tool.group} · {tool.lifecycle}</span>
+                <span className="workspace-app-card-action">{language === 'de' ? 'Öffnen' : 'Apri'} <span aria-hidden="true">→</span></span>
               </button>;
             })}         </div>
         )}
       </section>
-      <p className="text-xs text-dns-muted">{c.hint}</p>
+
       </div>
       <aside className="workspace-cockpit-sidebar" aria-label={language === 'de' ? 'Neuigkeiten' : 'Novità'}>
-      <section className="dns-card p-5 space-y-3" aria-labelledby="workspace-news-title">
+      <section className="workspace-news-section space-y-3" aria-labelledby="workspace-news-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="dns-kicker">{language === 'de' ? 'Aktuelles' : 'Aggiornamenti'}</div>
