@@ -80,6 +80,7 @@ test('Google request, administrator approval, status refresh and approved login'
   // Approval does not alter Google credentials; a fresh login loads the new DNS profile.
   await page.getByRole('button',{name:/^(Abmelden|Esci)$/}).click();
   await googleLogin();
+  await expect(page.getByText(/Freigegeben. Melden|Richiesta approvata/)).toBeVisible();
   await page.getByRole('link',{name:/Zum Workspace|Vai al Workspace/}).click();
   await expect(page.getByRole('combobox')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:/Willkommen|Benvenuto/})).toBeVisible();
