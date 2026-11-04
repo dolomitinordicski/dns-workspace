@@ -83,7 +83,7 @@ test('Google request, administrator approval, status refresh and approved login'
   await expect(page.getByText(/Freigegeben. Melden|Richiesta approvata/)).toBeVisible();
   await page.getByRole('link',{name:/Zum Workspace|Vai al Workspace/}).click();
   await expect(page.getByRole('combobox')).toHaveCount(0);
-  await expect(page.getByRole('heading',{name:/Willkommen|Benvenuto/})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/DNS Netzwerk|Rete DNS|Gebiet im Überblick|Area in sintesi/})).toBeVisible();
   await expect(page.locator('[data-sidebar-tool-id="data-entry"]')).toBeVisible();
   await adminContext.close();
 });
