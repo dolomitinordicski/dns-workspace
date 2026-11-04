@@ -7,6 +7,12 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.route('**/*', async route => {
       const url = new URL(route.request().url());
       if (!['127.0.0.1', 'localhost'].includes(url.hostname)) {
+        const canonicalSharedAsset = url.hostname === 'raw.githubusercontent.com'
+          && url.pathname.startsWith('/dolomitinordicski/dns-shared-data/');
+        if (canonicalSharedAsset) {
+          await route.continue();
+          return;
+        }
         if (!['image', 'font', 'stylesheet'].includes(route.request().resourceType())) external.push(url.origin);
         await route.abort();
       } else await route.continue();
