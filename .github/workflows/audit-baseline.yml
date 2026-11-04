@@ -1,0 +1,53 @@
+name: Audit exact Workspace baseline and PR 40
+on:
+  pull_request:
+    paths: ['.github/workflows/audit-baseline.yml']
+permissions:
+  contents: read
+jobs:
+  compare:
+    if: github.event.pull_request.number == 40
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: ['d9fe5cef5cfbef69906a86ebecf78d5b47295987', '1692241752b832c1489472ab8cc8a2bf784ccef3']
+        suite: ['identity', 'access']
+    name: '${{ matrix.suite }} @ ${{ matrix.ref }}'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '${{ matrix.ref }}'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: git rev-parse HEAD
+      - run: npm install --no-audit --no-fund
+      - if: matrix.suite == 'access'
+        run: npm ci --prefix server --no-audit --no-fund
+      - run: npm run build
+      - run: node tests/identity/check-production-build.mjs
+      - if: matrix.suite == 'identity'
+        run: npm run test:identity:app
+      - run: npx playwright install --with-deps chromium
+      - if: matrix.suite == 'identity'
+        run: npm run test:identity
+      - if: matrix.suite == 'access'
+        run: npx --yes firebase-tools@15.34.2 emulators:exec --config firebase.access.json --only auth,firestore,functions --project demo-dns-identity "node --test --test-concurrency=1 server/tests/*.test.mjs && npx playwright test --config playwright.identity.config.ts"
+        env:
+          GCLOUD_PROJECT: demo-dns-identity
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8188
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9199
+          DNS_ACCESS_ACCEPTANCE: 'true'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 'audit-${{ matrix.suite }}-${{ matrix.ref }}'
+          path: |
+            playwright-report/
+            test-results/
