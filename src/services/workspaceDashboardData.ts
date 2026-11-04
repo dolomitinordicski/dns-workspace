@@ -4,6 +4,7 @@ import type { DNSWorkspaceOrganization } from './dnsOrganizations';
 
 export type WorkspaceDashboardData = {
   trails: { openKm: number; totalKm: number; observedAt: string | null } | null;
+  areaTrails: Array<{ areaId: string; openKm: number; totalKm: number; observedAt: string | null }>;
   performance: { tickets: number; revenue: number; seasonId: string } | null;
   deadline: { deadlineAt: Date; enabled: boolean } | null;
   submission: { completed: number; total: number } | null;
@@ -51,6 +52,30 @@ async function loadTrails(org: DNSWorkspaceOrganization) {
   } catch {
     return null;
   }
+}
+
+async function loadAreaTrails(org: DNSWorkspaceOrganization) {
+  if (org.id !== 'dolomiti-nordicski') return [];
+  const db = getFirestore(passAuth.app);
+  const areaIds = Object.keys(ANALYTICS_REGION_BY_REPORTING_AREA);
+  const rows = await Promise.all(areaIds.map(async areaId => {
+    try {
+      const snapshot = await getDoc(doc(db, 'widgetPublicSnapshots', `2026-27__${areaId}`));
+      const trails = snapshot.data()?.snapshot?.trails;
+      const openKm = asNumber(trails?.openKm);
+      const totalKm = asNumber(trails?.totalKm);
+      if (openKm === null || totalKm === null) return null;
+      return {
+        areaId,
+        openKm,
+        totalKm,
+        observedAt: typeof trails?.observedAt === 'string' ? trails.observedAt : null,
+      };
+    } catch {
+      return null;
+    }
+  }));
+  return rows.filter((row): row is NonNullable<typeof row> => row !== null);
 }
 
 async function loadPerformance(org: DNSWorkspaceOrganization) {
@@ -112,11 +137,12 @@ async function loadSubmission(org: DNSWorkspaceOrganization) {
 }
 
 export async function loadWorkspaceDashboardData(org: DNSWorkspaceOrganization): Promise<WorkspaceDashboardData> {
-  const [trails, performance, deadline, submission] = await Promise.all([
+  const [trails, areaTrails, performance, deadline, submission] = await Promise.all([
     loadTrails(org),
+    loadAreaTrails(org),
     loadPerformance(org),
     loadDeadline(),
     loadSubmission(org),
   ]);
-  return { trails, performance, deadline, submission };
+  return { trails, areaTrails, performance, deadline, submission };
 }
