@@ -13,6 +13,7 @@ import { getDNSWorkspaceLanguage, setDNSWorkspaceLanguage, subscribeDNSWorkspace
   type DNSWorkspaceLanguage } from './services/foundation';
 import { canUseOrganization, toolsForOrganization } from './workspace/access';
 import { workspaceTools, refreshToolRegistry, subscribeToolRegistry, getToolRegistryRevision, type WorkspaceTool } from './workspace/registry';
+import { recordWorkspaceToolOpen } from './services/workspaceLocalUsage';
 
 export default function App() {
   const registryRevision = useSyncExternalStore(subscribeToolRegistry, getToolRegistryRevision);
@@ -63,7 +64,10 @@ export default function App() {
     setActiveView('cockpit');
   };
   const openAllowedTool = (tool: WorkspaceTool) => {
-    if (availableTools.some(allowed => allowed.id === tool.id) && tool.url) setOpenTool(tool);
+    if (availableTools.some(allowed => allowed.id === tool.id) && tool.url) {
+      recordWorkspaceToolOpen(tool.id);
+      setOpenTool(tool);
+    }
   };
 
   const showWorkspaceShell = authorized && organization;
