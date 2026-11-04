@@ -7,6 +7,8 @@ import { canUseOrganization } from '../workspace/access';
 import type { WorkspaceTool } from '../workspace/registry';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import { loadWorkspaceDashboardData, type WorkspaceDashboardData } from '../services/workspaceDashboardData';
+import { readWorkspaceLocalUsage, subscribeWorkspaceLocalUsage } from '../services/workspaceLocalUsage';
+import { DNS_QUALITY_MILESTONES } from '../workspace/qualityMilestones';
 
 type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
   organization: DNSWorkspaceOrganization; organizations: DNSWorkspaceOrganization[];
@@ -20,6 +22,20 @@ function daysUntil(date: Date) {
   return Math.ceil((date.getTime() - Date.now()) / 86_400_000);
 }
 
+function trailTone(percent: number | null) {
+  if (percent === null) return 'neutral';
+  if (percent >= 70) return 'green';
+  if (percent >= 35) return 'yellow';
+  return 'red';
+}
+
+function donutColor(tone: ReturnType<typeof trailTone>) {
+  if (tone === 'green') return '#2E8B57';
+  if (tone === 'yellow') return '#D89A19';
+  if (tone === 'red') return '#C84B3A';
+  return '#A9B8BD';
+}
+
 export function WorkspaceCockpit(props: Props) {
   const { language, identity, organization, organizations, tools, onOrganizationChange } = props;
   const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
@@ -28,6 +44,7 @@ export function WorkspaceCockpit(props: Props) {
   const [newsError, setNewsError] = useState(false);
   const [pulse, setPulse] = useState<WorkspaceDashboardData | null>(null);
   const [pulseLoading, setPulseLoading] = useState(true);
+  const [localUsage, setLocalUsage] = useState(() => readWorkspaceLocalUsage());
   const allowedIds = tools.map(tool => tool.id).join(',');
   const news = releases.filter(item => item.type !== 'technical');
   const urgent = news.filter(item => item.type === 'urgent');
@@ -51,14 +68,34 @@ export function WorkspaceCockpit(props: Props) {
     return () => { active = false; };
   }, [organization.id]);
 
+  useEffect(() => subscribeWorkspaceLocalUsage(() => setLocalUsage(readWorkspaceLocalUsage())), []);
+
   if (identity.state !== 'active') return null;
   const eligible = organizations.filter(org => canUseOrganization(identity, org));
   const isNetwork = organization.id === 'dolomiti-nordicski';
   const trailPct = pulse?.trails?.totalKm ? Math.round((pulse.trails.openKm / pulse.trails.totalKm) * 100) : null;
+  const tone = trailTone(trailPct);
   const avgTicket = pulse?.performance?.tickets
     ? pulse.performance.revenue / pulse.performance.tickets
     : null;
   const deadlineDays = pulse?.deadline?.enabled ? daysUntil(pulse.deadline.deadlineAt) : null;
+
+  const usageRows = tools
+    .map(tool => ({ id: tool.id, label: tool.shortLabel || tool.label, count: localUsage[tool.id] ?? 0 }))
+    .filter(row => row.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const maxUsage = Math.max(1, ...usageRows.map(row => row.count));
+  const totalUsage = usageRows.reduce((sum, row) => sum + row.count, 0);
+
+  const quality = DNS_QUALITY_MILESTONES;
+  const areaTargetKm = quality.december08.minimumPreparedKm;
+  const networkAreasKnown = pulse?.areaTrails.length ?? 0;
+  const networkAreasPassed = pulse?.areaTrails.filter(row => row.openKm >= areaTargetKm).length ?? 0;
+  const milestoneProgress = isNetwork
+    ? (networkAreasKnown ? Math.round((networkAreasPassed / 8) * 100) : 0)
+    : Math.min(100, Math.round(((pulse?.trails?.openKm ?? 0) / areaTargetKm) * 100));
+  const milestoneTone = trailTone(milestoneProgress);
 
   const attention = useMemo(() => {
     const rows: Array<{ id: string; title: string; body: string; urgent?: boolean }> = [];
@@ -102,6 +139,8 @@ export function WorkspaceCockpit(props: Props) {
     avgTicket: 'Ø Ticketwert', deadline: 'Nächste Frist',
     updated: 'Stand', news: 'Neuigkeiten', all: 'Alle anzeigen', close: 'Schließen',
     noNews: 'Noch keine veröffentlichten Neuigkeiten.',
+    quality: 'Qualitäts-Meilensteine', usage: 'Workspace Nutzung',
+    localUsage: 'Auf diesem Browser', noUsage: 'Noch keine App-Aufrufe in diesem Browser.',
   } : {
     title: isNetwork ? 'Rete DNS' : 'Area in sintesi',
     subtitle: 'Panoramica operativa',
@@ -115,6 +154,8 @@ export function WorkspaceCockpit(props: Props) {
     avgTicket: 'Valore medio ticket', deadline: 'Prossima scadenza',
     updated: 'Aggiornato', news: 'Novità', all: 'Vedi tutte', close: 'Chiudi',
     noNews: 'Nessuna novità pubblicata al momento.',
+    quality: 'Milestone qualità', usage: 'Utilizzo Workspace',
+    localUsage: 'Su questo browser', noUsage: 'Nessuna apertura di app ancora registrata su questo browser.',
   };
 
   return (
@@ -173,19 +214,22 @@ export function WorkspaceCockpit(props: Props) {
         </section>
 
         <section className="workspace-domain-grid">
-          <article className="workspace-domain-card">
+          <article className="workspace-domain-card workspace-visual-card">
             <div className="workspace-domain-card-head">
               <div><div className="dns-kicker">WS 2026/27</div><h2>{c.trailsToday}</h2></div>
-              <strong>{trailPct !== null ? `${trailPct}%` : '—'}</strong>
             </div>
-            <div className="workspace-progress-track" aria-label={c.trailsToday}>
-              <span style={{ width: `${Math.max(0, Math.min(100, trailPct ?? 0))}%` }} />
+            <div className="workspace-donut-row">
+              <div className={`workspace-donut is-${tone}`}
+                style={{ background: `conic-gradient(${donutColor(tone)} ${trailPct ?? 0}%, #E7EEF0 0)` }}
+                role="img" aria-label={trailPct === null ? c.unavailable : `${trailPct}%`}>
+                <div><strong>{trailPct !== null ? `${trailPct}%` : '—'}</strong><span>{language === 'de' ? 'offen' : 'aperte'}</span></div>
+              </div>
+              <div className="workspace-donut-copy">
+                <strong>{pulse?.trails ? `${km.format(pulse.trails.openKm)} km` : '—'}</strong>
+                <span>{language === 'de' ? 'von' : 'su'} {pulse?.trails ? `${km.format(pulse.trails.totalKm)} km` : '—'}</span>
+                {pulse?.trails?.observedAt && <small>{c.updated}: {new Date(pulse.trails.observedAt).toLocaleString(language === 'de' ? 'de-DE' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })}</small>}
+              </div>
             </div>
-            <div className="workspace-domain-stats">
-              <div><span>{language === 'de' ? 'Geöffnet' : 'Aperti'}</span><strong>{pulse?.trails ? `${km.format(pulse.trails.openKm)} km` : '—'}</strong></div>
-              <div><span>{language === 'de' ? 'Netz' : 'Rete'}</span><strong>{pulse?.trails ? `${km.format(pulse.trails.totalKm)} km` : '—'}</strong></div>
-            </div>
-            {pulse?.trails?.observedAt && <p className="workspace-source-note">{c.updated}: {new Date(pulse.trails.observedAt).toLocaleString(language === 'de' ? 'de-DE' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })}</p>}
           </article>
 
           <article className="workspace-domain-card">
@@ -198,6 +242,40 @@ export function WorkspaceCockpit(props: Props) {
               <div><span>{c.avgTicket}</span><strong>{avgTicket !== null ? money.format(avgTicket) : '—'}</strong></div>
             </div>
             <p className="workspace-source-note">Analytics · {pulse?.performance?.seasonId ?? '2025-26'}</p>
+          </article>
+
+          <article className="workspace-domain-card workspace-milestone-card">
+            <div className="workspace-domain-card-head">
+              <div><div className="dns-kicker">DNS Quality</div><h2>{c.quality}</h2></div>
+            </div>
+            <div className="workspace-milestone-primary">
+              <span className={`workspace-milestone-status is-${milestoneTone}`} />
+              <div>
+                <strong>08/12 · {quality.december08.label[language]}</strong>
+                <p>{isNetwork
+                  ? `${networkAreasPassed}/8 ${language === 'de' ? 'Gebiete mit mindestens 5 km' : 'aree con almeno 5 km'}`
+                  : `${km.format(pulse?.trails?.openKm ?? 0)} / ${areaTargetKm} km`}</p>
+              </div>
+            </div>
+            <div className="workspace-milestone-secondary">
+              <span>23/12</span>
+              <div><strong>{quality.december23.label[language]}</strong><small>{quality.december23.note[language]}</small></div>
+            </div>
+            {isNetwork && networkAreasKnown < 8 && <p className="workspace-source-note">{language === 'de' ? `${networkAreasKnown}/8 Gebietsdaten verfügbar` : `${networkAreasKnown}/8 dati area disponibili`}</p>}
+          </article>
+
+          <article className="workspace-domain-card workspace-usage-card">
+            <div className="workspace-domain-card-head">
+              <div><div className="dns-kicker">{c.localUsage}</div><h2>{c.usage}</h2></div>
+              <strong>{totalUsage}</strong>
+            </div>
+            {usageRows.length ? <div className="workspace-usage-bars">
+              {usageRows.map(row => <div key={row.id} className="workspace-usage-row">
+                <div><span>{row.label}</span><strong>{row.count}</strong></div>
+                <div className="workspace-usage-track"><span style={{ width: `${Math.round((row.count / maxUsage) * 100)}%` }} /></div>
+              </div>)}
+            </div> : <p className="workspace-usage-empty">{c.noUsage}</p>}
+            <p className="workspace-source-note">{language === 'de' ? 'Nur lokal auf diesem Browser gespeichert · keine personenbezogenen Daten.' : 'Salvato solo localmente su questo browser · nessun dato personale.'}</p>
           </article>
         </section>
 
