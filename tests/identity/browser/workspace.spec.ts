@@ -16,7 +16,7 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
-    await expect(page.getByRole('heading', { name: /Willkommen|Benvenuto/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /DNS Network Pulse|Bereich Pulse|Pulse dell’area/ })).toBeVisible();
 
     const card = page.locator('[data-sidebar-tool-id="data-entry"]');
     if (role === 'outsider') await expect(card).toHaveCount(0);
