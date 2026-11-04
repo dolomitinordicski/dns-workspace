@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { loadDNSReleases, type DNSRelease } from '../services/dnsReleases';
 import type { DNSIdentity } from '../services/dnsIdentity';
 import { organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
@@ -35,10 +35,7 @@ export function WorkspaceCockpit(props: Props) {
 
   if (identity.state !== 'active') return null;
   const eligible = organizations.filter(org => canUseOrganization(identity, org));
-  const orgRows = useMemo(() => {
-    if (!isAdmin) return [organization];
-    return eligible.filter(org => org.id !== 'dolomiti-nordicski');
-  }, [isAdmin, eligible, organization]);
+  const orgRows = isAdmin ? eligible.filter(org => org.id !== 'dolomiti-nordicski') : [organization];
 
   const hasAnalytics = availability(tools, 'analytics');
   const hasDataEntry = availability(tools, 'data-entry');
