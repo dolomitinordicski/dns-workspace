@@ -7,6 +7,12 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.route('**/*', async route => {
       const url = new URL(route.request().url());
       if (!['127.0.0.1', 'localhost'].includes(url.hostname)) {
+        const canonicalSharedAsset = url.hostname === 'raw.githubusercontent.com'
+          && url.pathname.startsWith('/dolomitinordicski/dns-shared-data/');
+        if (canonicalSharedAsset) {
+          await route.continue();
+          return;
+        }
         if (!['image', 'font', 'stylesheet'].includes(route.request().resourceType())) external.push(url.origin);
         await route.abort();
       } else await route.continue();
@@ -16,7 +22,7 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
-    await expect(page.getByRole('heading', { name: /Willkommen|Benvenuto/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /DNS Netzwerk|Rete DNS|Gebiet im Überblick|Area in sintesi/ })).toBeVisible();
 
     const card = page.locator('[data-sidebar-tool-id="data-entry"]');
     if (role === 'outsider') await expect(card).toHaveCount(0);
