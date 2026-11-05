@@ -51,6 +51,16 @@ export function WorkspaceSidebar({
         <span>{tool.shortLabel || tool.label}</span>
       </button>)}
 
+      <div className="workspace-sidebar-divider" />
+      <a className="workspace-sidebar-item"
+        href="https://drive.google.com/drive/folders/1P3eZ4a6SCRucX90uBrRaW9-m1fPE0cdp?usp=drive_link"
+        target="_blank" rel="noopener noreferrer"
+        aria-label={language === 'de' ? 'Toolbox in neuem Tab öffnen' : 'Apri Toolbox in una nuova scheda'}
+        data-sidebar-toolbox>
+        <span className="workspace-sidebar-mark" aria-hidden="true">↗</span>
+        <span>Toolbox</span>
+      </a>
+
       {isAdmin && <>
         <div className="workspace-sidebar-divider" />
         <div className="workspace-sidebar-section-label">DNS Admin</div>
