@@ -70,3 +70,33 @@ test('Area user grants remain enforced independently from admin area preview', (
   assert.deepEqual(toolsForOrganization(user, org, [tool]), []);
   assert.deepEqual(adminAreaTools([tool], { 'data-entry': 'write' }), [tool]);
 });
+
+test('area matrix: FAIR is shown and Partner Hub withheld when only FAIR is enabled', () => {
+  const user = identity('write');
+  user.toolPolicies[org.id] = {
+    'data-entry': 'write', 'analytics': 'read', 'flyer-studio': 'read',
+    fair: 'read', 'partner-hub': 'none',
+  };
+  user.grants[0].permissions.push('ticketSales.read', 'flyer.read');
+  const catalog = ['data-entry', 'analytics', 'flyer-studio', 'fair', 'partner-hub', 'faktura']
+    .map(id => ({ id, lifecycle: 'active' })) as any;
+  assert.deepEqual(toolsForOrganization(user, org, catalog).map(t => t.id),
+    ['data-entry', 'analytics', 'flyer-studio', 'fair']);
+});
+
+test('area matrix: omitted FAIR and Partner Hub fail closed, including legacy membership fallback', () => {
+  const user = identity('write');
+  const catalog = ['fair', 'partner-hub'].map(id => ({ id, lifecycle: 'active' })) as any;
+  assert.deepEqual(toolsForOrganization(user, org, catalog), []);
+  user.toolPolicies = {};
+  assert.deepEqual(toolsForOrganization(user, org, catalog).map(t => t.id), ['fair', 'partner-hub']);
+});
+
+test('area matrix: FAIR and Partner Hub require membership and do not confer other access', () => {
+  const user = identity('none', []);
+  user.toolPolicies[org.id] = { fair: 'read', 'partner-hub': 'read' };
+  const catalog = ['fair', 'partner-hub', 'data-entry'].map(id => ({ id, lifecycle: 'active' })) as any;
+  assert.deepEqual(toolsForOrganization(user, org, catalog).map(t => t.id), ['fair', 'partner-hub']);
+  user.memberships = [];
+  assert.deepEqual(toolsForOrganization(user, org, catalog), []);
+});
