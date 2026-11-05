@@ -49,7 +49,7 @@ test('only verified Google authentication may submit', async () => {
 });
 test('request stores trusted email and creates no entitlement', async () => {
   const r=await request('alice'); assert.equal(r.status,'pending'); assert.equal(r.email,'alice@example.test');
-  for (const path of ['users/alice','memberships/alice__org-a','accessGrants/alice__reportingArea__area-a','workspaceOrganizationAccounts/org-a'])
+  for (const path of ['users/alice','memberships/alice__org-a','accessGrants/alice__reportingArea__area-a','flyerPolicyReaders/alice','workspaceOrganizationAccounts/org-a'])
     assert.equal((await db.doc(path).get()).exists,false);
   assert.equal((await call('alice',{action:'status'})).uid,'alice');
   assert.equal(await call('bob',{action:'status'}),null);
@@ -87,6 +87,7 @@ test('approval atomically uses existing matrix and canonical area', async () => 
   const grant=(await db.doc('accessGrants/alice__reportingArea__area-a').get()).data();
   assert.equal(grant.scopeId,'area-a'); assert.equal(grant.userId,'alice');
   assert(grant.permissions.includes('kp.write')); assert(grant.permissions.includes('flyer.read'));
+  assert.deepEqual((await db.doc('flyerPolicyReaders/alice').get()).data(), {scopeType:'reportingArea',scopeId:'area-a'});
   assert(!grant.permissions.includes('flyer.write')); assert(!grant.permissions.includes('season.manage'));
   assert.equal((await db.doc('workspaceAccessRequests/alice').get()).data().status,'approved');
   assert.equal((await db.doc('workspaceOrganizationAccounts/org-a').get()).data().uid,'alice');

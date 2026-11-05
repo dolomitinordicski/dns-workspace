@@ -122,9 +122,10 @@ export async function accessService(db, authApi, actor, input) {
     const profileRef = db.doc(`users/${userId}`);
     const memberRef = db.doc(`memberships/${userId}__${orgId}`);
     const grantRef = db.doc(`accessGrants/${userId}__reportingArea__${areaId}`);
-    const [org, policy, assignment, profile, member, grant, area] = await tx.getAll(
+    const flyerPolicyReaderRef = db.doc(`flyerPolicyReaders/${userId}`);
+    const [org, policy, assignment, profile, member, grant, area, flyerPolicyReader] = await tx.getAll(
       db.doc(`organizations/${orgId}`), db.doc(`organizationToolAccess/${orgId}`), assignmentRef,
-      profileRef, memberRef, grantRef, db.doc(`reportingAreas/${areaId}`));
+      profileRef, memberRef, grantRef, db.doc(`reportingAreas/${areaId}`), flyerPolicyReaderRef);
     const existingMembers = await tx.get(db.collection('memberships').where('organizationId','==',orgId));
     const ownMembers = await tx.get(db.collection('memberships').where('userId','==',userId));
     const ownGrants = await tx.get(db.collection('accessGrants').where('userId','==',userId));
@@ -137,13 +138,15 @@ export async function accessService(db, authApi, actor, input) {
       fail('failed-precondition', 'Permessi cambiati: verifica nuovamente l’approvazione.');
     if (assignment.exists || existingMembers.docs.some(d => d.data().active === true))
       fail('already-exists', 'Organizzazione già assegnata: sostituzione o eccezione da verificare separatamente.');
-    if (profile.exists || member.exists || grant.exists || !ownMembers.empty || !ownGrants.empty)
+    if (profile.exists || member.exists || grant.exists || flyerPolicyReader.exists || !ownMembers.empty || !ownGrants.empty)
       fail('failed-precondition', 'Account già configurato: nessun permesso esistente è stato sovrascritto.');
     const permissions = permissionsFor(policy.data().tools);
     tx.create(profileRef, { id: userId, active: true, globalRoles: [], preferredLanguage: req.data().language, createdAt: fresh(), updatedAt: fresh() });
     tx.create(memberRef, { id: memberRef.id, userId, organizationId: orgId, role: 'contributor', active: true, createdAt: fresh() });
     tx.create(grantRef, { id: grantRef.id, userId, scopeType: 'reportingArea', scopeId: areaId, permissions,
       active: true, managedBy: 'workspace-access', grantedBy: uid, createdAt: fresh(), updatedAt: fresh() });
+    // The private reader index references the managed area grant; it does not grant permissions.
+    tx.create(flyerPolicyReaderRef, { scopeType: 'reportingArea', scopeId: areaId });
     tx.create(assignmentRef, { uid: userId, organizationId: orgId, reportingAreaId: areaId, approvedBy: uid, approvedAt: fresh() });
     tx.update(target, { status: 'approved', organizationId: orgId, reportingAreaId: areaId, reviewedBy: uid, reviewedAt: fresh() });
     return { status: 'approved' };
