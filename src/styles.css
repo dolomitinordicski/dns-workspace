@@ -28,6 +28,9 @@
 
 .workspace-app {
   min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: var(--color-dns-bg, #F4F8F9);
 }
 
@@ -68,6 +71,7 @@
 }
 
 .workspace-main {
+  flex: 1 0 auto;
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
