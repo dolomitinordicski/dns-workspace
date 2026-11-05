@@ -1,9 +1,11 @@
 import type { WorkspaceTool } from '../workspace/registry';
+import { workspaceEmbeddedUrl } from '../workspace/embeddedUrl';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 
 export function WorkspaceToolView({ tool, language, onClose }: {
   tool: WorkspaceTool; language: DNSWorkspaceLanguage; onClose: () => void;
 }) {
+  const iframeUrl = tool.url ? workspaceEmbeddedUrl(tool.url) : 'about:blank';
   return <section className="workspace-tool-view" aria-label={tool.label}>
     <div className="workspace-tool-toolbar">
       <button className="dns-button" data-variant="secondary" type="button" onClick={onClose}>
@@ -16,7 +18,7 @@ export function WorkspaceToolView({ tool, language, onClose }: {
       </a>
     </div>
     <iframe className="workspace-tool-frame" title={tool.label}
-      src={tool.url || 'about:blank'} referrerPolicy="strict-origin-when-cross-origin" />
+      src={iframeUrl} referrerPolicy="strict-origin-when-cross-origin" />
     <p className="workspace-tool-note">{language === 'de'
       ? 'Die Anmeldung wird nicht umgangen; der Tool-Server überprüft seine Berechtigungen.'
       : 'L’accesso non viene aggirato: ogni tool deve verificare i permessi sul proprio backend.'}</p>
