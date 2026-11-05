@@ -1,5 +1,5 @@
 /* Cache only public app-shell assets; never cache Firebase API responses or holder records. */
-const CACHE='dns-pass-shell-v3';
+const CACHE='dns-pass-shell-v4';
 const ROOT='/dns-workspace/';
 self.addEventListener('install',event=>{event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
@@ -18,6 +18,8 @@ self.addEventListener('fetch',event=>{
  if(!(url.pathname===ROOT+'pass.html'||url.pathname.includes('/assets/')||url.pathname===ROOT+'digital-pass.webmanifest'||url.pathname===ROOT+'digital-pass-icon.svg'))return;
  event.respondWith((async()=>{const cache=await caches.open(CACHE);
  const saved=await cache.match(req,{ignoreSearch:true});
+ // Do not cache Workspace staff bundles. Only assets pre-cached from pass.html belong to the pass offline shell.
+ if(url.pathname.includes('/assets/')&&!saved)return fetch(req,{cache:'no-store'});
  // Prefer current HTML when online; retain a previously opened page for offline use.
  if(url.pathname===ROOT+'pass.html') {
    try {const fresh=await fetch(req,{cache:'no-store'});if(fresh.ok){await cache.put(req,fresh.clone());return fresh}}catch{}

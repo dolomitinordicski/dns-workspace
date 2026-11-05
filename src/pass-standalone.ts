@@ -25,7 +25,8 @@ function translate(){const t=translations[lang];const m=marketing[lang];document
 }
 function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
  $('unavailable').classList.toggle('hide',passActivationEnabled||authorized);
- $('login').classList.toggle('hide',authorized);
+ $('login').classList.toggle('hide', authorized || !passActivationEnabled);
+ ($('login') as HTMLFormElement).hidden = authorized || !passActivationEnabled;
  const registrationVisible=passActivationEnabled&&authorized&&!pass;
  $('registration').classList.toggle('hide',!registrationVisible);
  ($('registration') as HTMLFormElement).hidden=!registrationVisible;
@@ -49,7 +50,7 @@ async function showPass(){if(!pass||pass.status!=='ACTIVE'||!/^dns-pass:v1:[A-Za
 async function restoreOffline(){const saved=await readOfflinePass();if(saved){pass=saved;offline=true;await showPass();render()}}
 $('save-offline').addEventListener('click',async()=>{if(!pass||offline)return;try{await saveOfflinePass(pass);setText('status',translations[lang].saved)}catch{setText('status',translations[lang].error)}});
 $('lang').addEventListener('change',()=>{lang=($('lang') as HTMLSelectElement).value as Lang;translate();render();if(passAuth.currentUser?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated)});
-$('login').addEventListener('submit',async(e)=>{e.preventDefault();loading=true;render();setText('status','');try{
+$('login').addEventListener('submit',async(e)=>{e.preventDefault();if(!passActivationEnabled)return;loading=true;render();setText('status','');try{
  const email=($('email') as HTMLInputElement).value.trim();
  if(hasEmailLink()){await finishEmailLink(email);if(!passActivationEnabled)setText('status',translations[lang].authenticated);}else{await requestEmailLink(email);setText('status',translations[lang].sent);}
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});

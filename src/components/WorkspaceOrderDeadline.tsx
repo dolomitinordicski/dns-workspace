@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { doc, getDoc, getFirestore, setDoc, Timestamp } from 'firebase/firestore';
-import { passAuth } from '../services/digitalPassApi';
+import { identityAuth } from '../services/identityFirebase';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 
 const SEASON = '2026-27';
-const docRef = () => doc(getFirestore(passAuth.app), 'orderDeadlines', SEASON);
+const docRef = () => doc(getFirestore(identityAuth.app), 'orderDeadlines', SEASON);
 
 export function WorkspaceOrderDeadline({ language }: { language: DNSWorkspaceLanguage }) {
   const de = language === 'de';

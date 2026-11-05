@@ -1,5 +1,5 @@
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
-import { passAuth } from './digitalPassApi';
+import { identityAuth } from './identityFirebase';
 
 export type DNSRelease = {
   id: string;
@@ -15,7 +15,7 @@ export type DNSRelease = {
 
 // Server-side Firestore rules must enforce audience separation as well.
 export async function loadDNSReleases(isAdmin: boolean, allowedToolIds: string[]): Promise<DNSRelease[]> {
-  const db = getFirestore(passAuth.app);
+  const db = getFirestore(identityAuth.app);
   const base = collection(db, 'systemReleases');
   const snapshots = await Promise.all(
     (isAdmin ? ['dns', 'area'] : ['area']).map(audience =>

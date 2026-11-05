@@ -1,6 +1,6 @@
 import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import type { Organization } from '@dolomitinordicski/dns-shared-data';
-import { passAuth } from './digitalPassApi';
+import { identityAuth } from './identityFirebase';
 
 export type DNSWorkspaceOrganization = Pick<Organization,
   'id' | 'canonicalName' | 'localizedName' | 'organizationType' | 'reportingAreaIds'> & {
@@ -24,6 +24,9 @@ const SHARED_DATA_RAW_BASE = 'https://raw.githubusercontent.com/dolomitinordicsk
 const REGION_LOGO_MANIFEST_URL = `${SHARED_DATA_RAW_BASE}/brand/regions/manifest.json`;
 
 async function loadRegionLogoManifest(): Promise<RegionLogoManifest | null> {
+  // The isolated identity test must never reach public GitHub or depend on
+  // live brand assets; retain the production logo manifest behavior unchanged.
+  if (import.meta.env.MODE === 'identity-e2e') return null;
   try {
     const response = await fetch(REGION_LOGO_MANIFEST_URL, { cache: 'force-cache' });
     if (!response.ok) return null;
@@ -55,7 +58,7 @@ function resolveManifestLogo(
 
 export async function getDNSWorkspaceOrganizations(): Promise<DNSWorkspaceOrganization[]> {
   const [result, logoManifest] = await Promise.all([
-    getDocs(collection(getFirestore(passAuth.app), 'organizations')),
+    getDocs(collection(getFirestore(identityAuth.app), 'organizations')),
     loadRegionLogoManifest(),
   ]);
   return result.docs.map(record => ({ ...record.data(), id: record.id }) as DNSWorkspaceOrganization & { active?: boolean })

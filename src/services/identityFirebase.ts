@@ -15,11 +15,13 @@ const config = emulatorMode ? {
   apiKey: 'AIzaSyAgxv6Z45-AfrusbFnCSyvYChRUBu6-vXc', authDomain: 'dns-core.firebaseapp.com',
   projectId: 'dns-core', appId: '1:387653285986:web:27ad6f2e9a41ea1aebb93b',
 };
-const existing = getApps().find(a => a.name === 'dns-digital-pass');
+// Staff Firebase Auth is keyed by this canonical app name on all DNS tools.
+// Never share this name with public Digital Pass customers.
+const existing = getApps().find(a => a.name === 'dns-core-staff');
 if (existing && existing.options.projectId !== config.projectId) {
   throw new Error('IDENTITY_FIREBASE_PROJECT_MISMATCH');
 }
-export const identityApp = existing ?? initializeApp(config, 'dns-digital-pass');
+export const identityApp = existing ?? initializeApp(config, 'dns-core-staff');
 export const identityAuth = getAuth(identityApp);
 if (emulatorMode && !existing) {
   connectAuthEmulator(identityAuth, 'http://127.0.0.1:9199', { disableWarnings: true });
