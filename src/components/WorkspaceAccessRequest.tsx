@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { passAuth } from '../services/digitalPassApi';
+import { identityAuth } from '../services/identityFirebase';
 import { signInDNSGoogle, signOutDNS } from '../services/dnsIdentity';
 import { accessError, accessStatus, requestAccess, type AccessRequest } from '../services/dnsAccessRequests';
 import { organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
@@ -9,14 +9,14 @@ export function WorkspaceAccessRequest({ language, organizations }: {
   language: 'it' | 'de'; organizations: DNSWorkspaceOrganization[];
 }) {
   const de = language === 'de';
-  const [user, setUser] = useState(passAuth.currentUser);
+  const [user, setUser] = useState(identityAuth.currentUser);
   const [org, setOrg] = useState('');
   const [request, setRequest] = useState<AccessRequest | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
     let generation = 0;
-    const unsubscribe = onAuthStateChanged(passAuth, async next => {
+    const unsubscribe = onAuthStateChanged(identityAuth, async next => {
       const revision = ++generation;
       setUser(next); setRequest(null); setError(''); setBusy(Boolean(next));
       if (!next) return;
