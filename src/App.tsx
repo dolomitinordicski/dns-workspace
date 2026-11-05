@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { WorkspaceAccount } from './components/WorkspaceAccount';
 import { WorkspaceAccessRequest } from './components/WorkspaceAccessRequest';
 import { WorkspaceCockpit } from './components/WorkspaceCockpit';
@@ -7,11 +8,12 @@ import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeade
 import { WorkspaceNavigator } from './components/WorkspaceNavigator';
 import { WorkspaceToolView } from './components/WorkspaceToolView';
 import { WorkspaceSidebar } from './components/WorkspaceSidebar';
-import { watchDNSIdentity, type DNSIdentity } from './services/dnsIdentity';
+import { watchDNSIdentity, type DNSIdentity, type DNSMatrixLevel } from './services/dnsIdentity';
+import { identityAuth } from './services/identityFirebase';
 import { getDNSWorkspaceOrganizations, type DNSWorkspaceOrganization } from './services/dnsOrganizations';
 import { getDNSWorkspaceLanguage, setDNSWorkspaceLanguage, subscribeDNSWorkspaceLanguage,
   type DNSWorkspaceLanguage } from './services/foundation';
-import { canUseOrganization, toolsForOrganization } from './workspace/access';
+import { adminAreaTools, canUseOrganization, toolsForOrganization } from './workspace/access';
 import { workspaceTools, refreshToolRegistry, subscribeToolRegistry, getToolRegistryRevision, type WorkspaceTool } from './workspace/registry';
 import { recordWorkspaceToolOpen } from './services/workspaceLocalUsage';
 
@@ -24,6 +26,11 @@ export default function App() {
   const [organizationId, setOrganizationId] = useState('');
   const [activeView, setActiveView] = useState<WorkspaceView>('cockpit');
   const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
+  const [adminAreaPolicy, setAdminAreaPolicy] = useState<{
+    organizationId: string;
+    status: 'ready' | 'missing' | 'error';
+    tools: Record<string, DNSMatrixLevel> | null;
+  } | null>(null);
 
   useEffect(() => subscribeDNSWorkspaceLanguage(setLanguage), []);
   useEffect(() => watchDNSIdentity(setIdentity), []);
@@ -55,8 +62,47 @@ export default function App() {
   const authorized = Boolean(organization && canUseOrganization(identity, organization));
   const isAdmin = identity.state === 'active' &&
     identity.profile.globalRoles.includes('dns-admin');
-  const availableTools = organization && authorized
-    ? toolsForOrganization(identity, organization, workspaceTools) : [];
+  // The admin area selector is a preview, not impersonation. Load the exact
+  // organization matrix; do not fall back to global admin tools on missing data.
+  // Reload when returning to the cockpit after saving a matrix in DNS Admin.
+  useEffect(() => {
+    if (!isAdmin || !organization || organization.id === 'dolomiti-nordicski') {
+      setAdminAreaPolicy(null);
+      return;
+    }
+    let current = true;
+    setAdminAreaPolicy(null);
+    getDoc(doc(getFirestore(identityAuth.app), 'organizationToolAccess', organization.id))
+      .then(snapshot => {
+        if (!current) return;
+        const values = snapshot.exists() ? snapshot.data().tools : null;
+        const valid = values && typeof values === 'object' && !Array.isArray(values)
+          ? Object.fromEntries(Object.entries(values).filter((entry): entry is [string, DNSMatrixLevel] =>
+              entry[1] === 'none' || entry[1] === 'read' || entry[1] === 'write'))
+          : null;
+        setAdminAreaPolicy({
+          organizationId: organization.id,
+          status: valid ? 'ready' : 'missing',
+          tools: valid,
+        });
+      })
+      .catch(() => {
+        if (current) setAdminAreaPolicy({
+          organizationId: organization.id, status: 'error', tools: null,
+        });
+      });
+    return () => { current = false; };
+  }, [isAdmin, organization?.id, activeView]);
+
+  const adminAreaSelected = isAdmin && organization?.id !== 'dolomiti-nordicski';
+  const areaPolicy = adminAreaPolicy?.organizationId === organization?.id
+    ? adminAreaPolicy : null;
+  const availableTools = !organization || !authorized ? []
+    : adminAreaSelected
+      ? adminAreaTools(workspaceTools, areaPolicy?.tools ?? null)
+      : toolsForOrganization(identity, organization, workspaceTools);
+  const areaToolViewStatus = adminAreaSelected
+    ? areaPolicy?.status ?? 'loading' : undefined;
 
   const changeOrganization = (id: string) => {
     setOrganizationId(id);
@@ -86,7 +132,7 @@ export default function App() {
         ) : (
           <div className="workspace-authenticated-shell">
             <WorkspaceSidebar language={language} identity={identity}
-              organization={organization} tools={availableTools} openTool={openTool}
+              organization={organization} tools={availableTools} toolViewStatus={areaToolViewStatus} openTool={openTool}
               activeView={activeView}
               onDashboard={() => { setOpenTool(null); setActiveView('cockpit'); }}
               onOpenTool={openAllowedTool}
