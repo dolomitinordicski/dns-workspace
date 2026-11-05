@@ -52,10 +52,15 @@ export function toolsForOrganization(
     // Organization policy is a cap, never an entitlement: grants remain required.
     // Absence of a policy retains the legacy behavior during phased rollout.
     const policy = identity.toolPolicies[org.id];
-    if (policy?.[tool.id] === 'none') return false;
-    // Firestore treats an omitted Data Entry level in an existing policy as none.
-    if (tool.id === 'data-entry' && policy && !['read', 'write'].includes(policy[tool.id] ?? 'none')) return false;
-    if (tool.id === 'partner-hub') return identity.memberships.some(m => m.organizationId === org.id);
+    // A saved organization matrix is authoritative for visibility: omitted
+    // entries fail closed, including FAIR and Partner Hub. Visibility alone
+    // never grants access to a tool's data or backend APIs.
+    if (policy && !['read', 'write'].includes(policy[tool.id] ?? 'none')) return false;
+    if (tool.id === 'fair' || tool.id === 'partner-hub') {
+      // These tools do not receive domain grants from workspace-access.
+      // Membership plus a saved matrix entry controls their navigation only.
+      return identity.memberships.some(m => m.organizationId === org.id);
+    }
     const needed = TOOL_PERMISSIONS[tool.id];
     return Boolean(needed?.some(permission => granted.has(permission as never)));
   });
