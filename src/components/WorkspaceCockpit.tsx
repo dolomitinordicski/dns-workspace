@@ -7,7 +7,6 @@ import { canUseOrganization } from '../workspace/access';
 import type { WorkspaceTool } from '../workspace/registry';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import { loadWorkspaceDashboardData, type WorkspaceDashboardData } from '../services/workspaceDashboardData';
-import { readWorkspaceLocalUsage, subscribeWorkspaceLocalUsage } from '../services/workspaceLocalUsage';
 import { DNS_QUALITY_MILESTONES } from '../workspace/qualityMilestones';
 
 type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
@@ -44,7 +43,6 @@ export function WorkspaceCockpit(props: Props) {
   const [newsError, setNewsError] = useState(false);
   const [pulse, setPulse] = useState<WorkspaceDashboardData | null>(null);
   const [pulseLoading, setPulseLoading] = useState(true);
-  const [localUsage, setLocalUsage] = useState(() => readWorkspaceLocalUsage());
   const allowedIds = tools.map(tool => tool.id).join(',');
   const news = releases.filter(item => item.type !== 'technical');
   const urgent = news.filter(item => item.type === 'urgent');
@@ -68,8 +66,6 @@ export function WorkspaceCockpit(props: Props) {
     return () => { active = false; };
   }, [organization.id]);
 
-  useEffect(() => subscribeWorkspaceLocalUsage(() => setLocalUsage(readWorkspaceLocalUsage())), []);
-
   if (identity.state !== 'active') return null;
   const eligible = organizations.filter(org => canUseOrganization(identity, org));
   const isNetwork = organization.id === 'dolomiti-nordicski';
@@ -79,14 +75,6 @@ export function WorkspaceCockpit(props: Props) {
     ? pulse.performance.revenue / pulse.performance.tickets
     : null;
   const deadlineDays = pulse?.deadline?.enabled ? daysUntil(pulse.deadline.deadlineAt) : null;
-
-  const usageRows = tools
-    .map(tool => ({ id: tool.id, label: tool.shortLabel || tool.label, count: localUsage[tool.id] ?? 0 }))
-    .filter(row => row.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-  const maxUsage = Math.max(1, ...usageRows.map(row => row.count));
-  const totalUsage = usageRows.reduce((sum, row) => sum + row.count, 0);
 
   const quality = DNS_QUALITY_MILESTONES;
   const areaTargetKm = quality.december08.minimumPreparedKm;
@@ -139,8 +127,7 @@ export function WorkspaceCockpit(props: Props) {
     avgTicket: 'Ø Ticketwert', deadline: 'Nächste Frist',
     updated: 'Stand', news: 'Neuigkeiten', all: 'Alle anzeigen', close: 'Schließen',
     noNews: 'Noch keine veröffentlichten Neuigkeiten.',
-    quality: 'Qualitäts-Meilensteine', usage: 'Workspace Nutzung',
-    localUsage: 'Auf diesem Browser', noUsage: 'Noch keine App-Aufrufe in diesem Browser.',
+    quality: 'Qualitäts-Meilensteine',
   } : {
     title: isNetwork ? 'Rete DNS' : 'Area in sintesi',
     subtitle: 'Panoramica operativa',
@@ -154,8 +141,7 @@ export function WorkspaceCockpit(props: Props) {
     avgTicket: 'Valore medio ticket', deadline: 'Prossima scadenza',
     updated: 'Aggiornato', news: 'Novità', all: 'Vedi tutte', close: 'Chiudi',
     noNews: 'Nessuna novità pubblicata al momento.',
-    quality: 'Milestone qualità', usage: 'Utilizzo Workspace',
-    localUsage: 'Su questo browser', noUsage: 'Nessuna apertura di app ancora registrata su questo browser.',
+    quality: 'Milestone qualità',
   };
 
   return (
@@ -264,19 +250,6 @@ export function WorkspaceCockpit(props: Props) {
             {isNetwork && networkAreasKnown < 8 && <p className="workspace-source-note">{language === 'de' ? `${networkAreasKnown}/8 Gebietsdaten verfügbar` : `${networkAreasKnown}/8 dati area disponibili`}</p>}
           </article>
 
-          <article className="workspace-domain-card workspace-usage-card">
-            <div className="workspace-domain-card-head">
-              <div><div className="dns-kicker">{c.localUsage}</div><h2>{c.usage}</h2></div>
-              <strong>{totalUsage}</strong>
-            </div>
-            {usageRows.length ? <div className="workspace-usage-bars">
-              {usageRows.map(row => <div key={row.id} className="workspace-usage-row">
-                <div><span>{row.label}</span><strong>{row.count}</strong></div>
-                <div className="workspace-usage-track"><span style={{ width: `${Math.round((row.count / maxUsage) * 100)}%` }} /></div>
-              </div>)}
-            </div> : <p className="workspace-usage-empty">{c.noUsage}</p>}
-            <p className="workspace-source-note">{language === 'de' ? 'Nur lokal auf diesem Browser gespeichert · keine personenbezogenen Daten.' : 'Salvato solo localmente su questo browser · nessun dato personale.'}</p>
-          </article>
         </section>
 
         <section className="workspace-action-section" aria-labelledby="workspace-actions-title">
