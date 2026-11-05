@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canUseOrganization, toolsForOrganization } from '../../src/workspace/access.ts';
+import { adminAreaTools, canUseOrganization, toolsForOrganization } from '../../src/workspace/access.ts';
 const org = { id: 'dns-test-organisation', reportingAreaIds: ['dns-test-area'] } as any;
 const foreign = { ...org, id: 'dns-test-foreign-organisation' };
 const tool = { id: 'data-entry', lifecycle: 'active' } as any;
@@ -42,4 +42,31 @@ test('application: an existing policy with omitted Data Entry must fail closed, 
 test('application: absent policy preserves explicit legacy grants during rollout', () => {
   const user = identity('write'); user.toolPolicies = {};
   assert.deepEqual(toolsForOrganization(user, org, [tool]), [tool]);
+});
+
+test('DNS Admin area preview shows only configured read/write tools', () => {
+  const catalog = [
+    { id: 'data-entry', lifecycle: 'active' },
+    { id: 'analytics', lifecycle: 'active' },
+    { id: 'faktura', lifecycle: 'active' },
+    { id: 'polls', lifecycle: 'legacy' },
+  ] as any;
+  const matrix = { 'data-entry': 'write', 'analytics': 'read', 'faktura': 'none', 'polls': 'write' } as const;
+  assert.deepEqual(adminAreaTools(catalog, matrix).map(item => item.id), ['data-entry', 'analytics']);
+});
+
+test('DNS Admin area preview fails closed without a configured matrix', () => {
+  assert.deepEqual(adminAreaTools([tool], null), []);
+  assert.deepEqual(adminAreaTools([tool], {}), []);
+});
+
+test('DNS Admin retains all nonlegacy tools in global DNS view', () => {
+  const user = identity('none', []); user.profile.globalRoles = ['dns-admin'];
+  assert.deepEqual(toolsForOrganization(user, org, [tool]), [tool]);
+});
+
+test('Area user grants remain enforced independently from admin area preview', () => {
+  const user = identity('write', []);
+  assert.deepEqual(toolsForOrganization(user, org, [tool]), []);
+  assert.deepEqual(adminAreaTools([tool], { 'data-entry': 'write' }), [tool]);
 });

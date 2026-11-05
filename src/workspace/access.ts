@@ -19,6 +19,23 @@ export function canUseOrganization(identity: DNSIdentity, org: DNSWorkspaceOrgan
     g => g.scopeType === 'network' && g.scopeId === 'dolomiti-nordicski');
 }
 
+/**
+ * DNS Admin area preview: use the selected organization's configured matrix,
+ * not the administrator's global entitlements. This is display-only; embedded
+ * tools continue to authorize the signed-in DNS Admin independently.
+ * A missing matrix must not be mistaken for "all tools enabled".
+ */
+export function adminAreaTools(
+  tools: readonly WorkspaceTool[],
+  policy: Readonly<Record<string, 'none' | 'read' | 'write'>> | null,
+): WorkspaceTool[] {
+  if (!policy) return [];
+  return tools.filter(tool =>
+    tool.lifecycle !== 'legacy' &&
+    (policy[tool.id] === 'read' || policy[tool.id] === 'write'),
+  );
+}
+
 export function toolsForOrganization(
   identity: DNSIdentity, org: DNSWorkspaceOrganization, tools: readonly WorkspaceTool[],
 ): WorkspaceTool[] {

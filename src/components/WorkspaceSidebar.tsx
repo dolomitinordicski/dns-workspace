@@ -9,6 +9,7 @@ type Props = {
   identity: DNSIdentity;
   organization: DNSWorkspaceOrganization;
   tools: WorkspaceTool[];
+  toolViewStatus?: 'loading' | 'ready' | 'missing' | 'error';
   openTool: WorkspaceTool | null;
   activeView: WorkspaceView;
   onDashboard: () => void;
@@ -17,7 +18,7 @@ type Props = {
 };
 
 export function WorkspaceSidebar({
-  language, identity, organization, tools, openTool, activeView,
+  language, identity, organization, tools, toolViewStatus, openTool, activeView,
   onDashboard, onOpenTool, onAdminView,
 }: Props) {
   const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
@@ -42,6 +43,20 @@ export function WorkspaceSidebar({
       </button>
 
       <div className="workspace-sidebar-section-label">{language === 'de' ? 'Anwendungen' : 'Applicazioni'}</div>
+      {toolViewStatus && toolViewStatus !== 'ready' && (
+        <p className="px-3 py-2 text-xs text-dns-muted" role="status">
+          {toolViewStatus === 'loading'
+            ? (language === 'de' ? 'Gebietsrechte werden geladen…' : 'Caricamento permessi area…')
+            : toolViewStatus === 'missing'
+              ? (language === 'de' ? 'Für dieses Gebiet ist keine Tool-Matrix konfiguriert.' : 'Nessuna matrice tool configurata per quest’area.')
+              : (language === 'de' ? 'Gebietsrechte nicht verfügbar.' : 'Permessi area non disponibili.')}
+        </p>
+      )}
+      {toolViewStatus === 'ready' && tools.length === 0 && (
+        <p className="px-3 py-2 text-xs text-dns-muted" role="status">
+          {language === 'de' ? 'Keine Tools für dieses Gebiet freigegeben.' : 'Nessun tool abilitato per quest’area.'}
+        </p>
+      )}
       {tools.map(tool => <button key={tool.id} type="button"
         className={['workspace-sidebar-item', openTool?.id === tool.id ? 'is-active' : ''].filter(Boolean).join(' ')}
         data-sidebar-tool-id={tool.id}
