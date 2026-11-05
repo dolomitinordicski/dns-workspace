@@ -35,6 +35,11 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
       await select.selectOption(A.secondaryOrganizationId);
       await expect(card).toBeVisible();
       await select.selectOption(A.foreignOrganizationId);
+      // Foreign organization is configured with Data Entry = none.
+      // The admin keeps all privileges but the area preview hides the tool.
+      await expect(card).toHaveCount(0);
+      await expect(page.getByText(/Keine Tools für dieses Gebiet freigegeben|Nessun tool abilitato per quest’area/)).toBeVisible();
+      await select.selectOption(A.organizationId);
       await expect(card).toBeVisible();
     } else {
       await expect(page.getByRole('combobox')).toHaveCount(0);
