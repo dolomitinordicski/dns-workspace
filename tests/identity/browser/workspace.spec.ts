@@ -19,7 +19,8 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     });
     await page.goto('./');
     await expect(page.getByRole('combobox')).toHaveCount(0);
-    await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
+    await page.locator('details > summary').click();
+  await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
     await expect(page.getByRole('heading', { name: /DNS Netzwerk|Rete DNS|Gebiet im Überblick|Area in sintesi/ })).toBeVisible();
@@ -46,7 +47,7 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     }
 
     await page.getByRole('button', { name: /^(Abmelden|Esci)$/ }).click();
-    await expect(page.getByLabel(/Passwort|Password/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Mit Google anmelden|Accedi con Google/ })).toBeVisible();
     await expect(card).toHaveCount(0);
     expect(external).toEqual([]);
   });
@@ -64,6 +65,7 @@ test('invalid password does not activate an identity', async ({ page }) => {
 for (const uid of ['dns-test-inactive', 'dns-test-missing-profile']) {
   test(`${uid}: authentication alone cannot activate Workspace`, async ({ page }) => {
     await page.goto('./');
+    await page.locator('details > summary').click();
     await page.getByLabel(/E-Mail|Email/).fill(`${uid}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
