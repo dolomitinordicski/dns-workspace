@@ -17,7 +17,7 @@ export function permissionsFor(policy) {
   add('data-entry', ['season.read','pricing.read','ticketOrders.read','ticketSales.read','kp.read'],
     ['ticketOrders.write','ticketSales.write','kp.write']);
   add('analytics', ['ticketSales.read','kp.read']);
-  add('flyer-studio', ['flyer.read'], ['flyer.write']);
+  add('flyer-studio', ['flyer.read'], ['flyer.write', 'flyer.publish']);
   add('faktura', ['verification.read'], ['ticketOrders.verify','ticketSales.verify']);
   add('polls', ['polls.read','events.read'], ['polls.manage','events.manage']);
   return [...result].sort();
