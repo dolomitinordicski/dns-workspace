@@ -75,6 +75,14 @@ export function WorkspaceSidebar({
         <span className="workspace-sidebar-mark" aria-hidden="true">↗</span>
         <span>Toolbox</span>
       </a>
+      <a className="workspace-sidebar-item"
+        href="https://admin-tirol.mapservices.eu/contwise_maps/v2/login"
+        target="_blank" rel="noopener noreferrer"
+        aria-label={language === 'de' ? 'Contwise in neuem Tab öffnen' : 'Apri Contwise in una nuova scheda'}
+        data-sidebar-contwise>
+        <span className="workspace-sidebar-mark" aria-hidden="true">↗</span>
+        <span>Contwise</span>
+      </a>
 
       {isAdmin && <>
         <div className="workspace-sidebar-divider" />
