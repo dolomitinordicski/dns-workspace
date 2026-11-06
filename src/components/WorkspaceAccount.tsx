@@ -7,7 +7,7 @@ const copy = {
   de: { title: 'DNS Workspace', subtitle: 'Zugang zur digitalen Plattform',
     org: 'Tourismusverein / Organisation', choose: 'Organisation auswählen',
     email: 'E-Mail', password: 'Passwort', login: 'Anmelden', logout: 'Abmelden',
-    google: 'Alternativ: verknüpftes Google-Konto verwenden',
+    google: 'Mit Google anmelden',
     loading: 'Organisationen werden aus DNS Core geladen…',
     failed: 'DNS Core-Organisationen nicht verfügbar. Bitte erneut laden.',
     checking: 'DNS-Berechtigungen werden geprüft…',
@@ -19,7 +19,7 @@ const copy = {
   it: { title: 'DNS Workspace', subtitle: 'Accesso alla piattaforma digitale',
     org: 'Associazione turistica / Organizzazione', choose: 'Seleziona organizzazione',
     email: 'Email', password: 'Password', login: 'Accedi', logout: 'Esci',
-    google: 'Alternativa: usa un account Google collegato',
+    google: 'Accedi con Google',
     loading: 'Caricamento organizzazioni da DNS Core…',
     failed: 'Elenco organizzazioni DNS Core non disponibile. Ricarica la pagina.',
     checking: 'Verifica autorizzazioni DNS…',
@@ -62,18 +62,23 @@ export function WorkspaceAccount({ language, identity }: Props) {
       </div>
       {identity.state === 'signed-out' && (
         <>
-          <form className="space-y-4" onSubmit={submit}>
-            <label className="block space-y-2"><span className="text-sm">{c.email}</span>
-              <input className="dns-input w-full" type="email" autoComplete="username"
-                required value={email} onChange={e => setEmail(e.target.value)} /></label>
-            <label className="block space-y-2"><span className="text-sm">{c.password}</span>
-              <input className="dns-input w-full" type="password" autoComplete="current-password"
-                required value={password} onChange={e => setPassword(e.target.value)} /></label>
-            <button className="dns-button w-full" data-variant="primary" type="submit"
-              disabled={busy}>{c.login}</button>
-          </form>
-          <button className="dns-button w-full" data-variant="secondary" type="button"
+          <button className="dns-button w-full" data-variant="primary" type="button"
             disabled={busy} onClick={() => void login(signInDNSGoogle)}>{c.google}</button>
+          <details className="space-y-3">
+            <summary className="cursor-pointer text-sm text-dns-muted">
+              {language === 'de' ? 'Bisherige Anmeldung (vorübergehend)' : 'Accesso precedente (temporaneo)'}
+            </summary>
+            <form className="space-y-4 mt-3" onSubmit={submit}>
+              <label className="block space-y-2"><span className="text-sm">{c.email}</span>
+                <input className="dns-input w-full" type="email" autoComplete="username"
+                  required value={email} onChange={e => setEmail(e.target.value)} /></label>
+              <label className="block space-y-2"><span className="text-sm">{c.password}</span>
+                <input className="dns-input w-full" type="password" autoComplete="current-password"
+                  required value={password} onChange={e => setPassword(e.target.value)} /></label>
+              <button className="dns-button w-full" data-variant="secondary" type="submit"
+                disabled={busy}>{c.login}</button>
+            </form>
+          </details>
         </>
       )}
       {identity.state === 'loading' && <p role="status">{c.checking}</p>}
