@@ -20,7 +20,7 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
     await page.goto('./');
     await expect(page.getByRole('combobox')).toHaveCount(0);
     await page.locator('details > summary').click();
-  await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
+    await page.getByLabel(/E-Mail|Email/).fill(`${U[role]}@example.test`);
     await page.getByLabel(/Passwort|Password/).fill(password);
     await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
     await expect(page.getByRole('heading', { name: /DNS Netzwerk|Rete DNS|Gebiet im Überblick|Area in sintesi/ })).toBeVisible();
@@ -54,6 +54,7 @@ for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
 }
 test('invalid password does not activate an identity', async ({ page }) => {
   await page.goto('./');
+  await page.locator('details > summary').click();
   await page.getByLabel(/E-Mail|Email/).fill(`${U.writer}@example.test`);
   await page.getByLabel(/Passwort|Password/).fill('incorrect-password');
   await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
