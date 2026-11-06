@@ -63,6 +63,7 @@ test('Google request, administrator approval, status refresh and approved login'
   const adminContext=await browser.newContext();
   const admin=await adminContext.newPage();
   await admin.goto('http://127.0.0.1:4173/dns-workspace/');
+  await admin.locator('details > summary').click();
   await admin.getByLabel(/E-Mail|Email/).fill(`${U.admin}@example.test`);
   await admin.getByLabel(/Passwort|Password/).fill(password);
   await admin.getByRole('button',{name:/^(Anmelden|Accedi)$/}).click();
