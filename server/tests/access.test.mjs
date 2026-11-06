@@ -140,8 +140,22 @@ test('matrix edits preserve unedited cells and cannot add unknown privileges', a
   assert.equal((await db.doc('organizationToolAccess/org-a').get()).data().tools['data-entry'],'write');
   await denied(call('admin',{action:'policy',organizationId:'org-a',tools:{'dns-admin':'write'}}),'invalid-argument');
 });
-test('permission builder has no global/admin/publish privileges and read excludes write', () => {
+test('permission builder grants scoped publication only with Flyer write access', () => {
   assert.deepEqual(permissionsFor({'flyer-studio':'read'}),['flyer.read']);
   assert.deepEqual(permissionsFor({'flyer-studio':'none'}),[]);
-  assert.deepEqual(permissionsFor({'flyer-studio':'write'}),['flyer.read','flyer.write']);
+  assert.deepEqual(permissionsFor({'flyer-studio':'write'}),['flyer.publish','flyer.read','flyer.write']);
 });
+
+ test('managed Flyer writer can publish only in its assigned area; downgrade revokes publication', async () => {
+  await request('alice'); await approve('alice');
+  await call('admin',{action:'policy',organizationId:'org-a',tools:{'flyer-studio':'write'}});
+  const ref=db.doc('accessGrants/alice__reportingArea__area-a');
+  const writer=(await ref.get()).data();
+  assert(writer.permissions.includes('flyer.publish'));
+  assert.equal(writer.scopeType,'reportingArea'); assert.equal(writer.scopeId,'area-a');
+  assert.equal((await db.doc('accessGrants/alice__reportingArea__area-b').get()).exists,false);
+  await call('admin',{action:'policy',organizationId:'org-a',tools:{'flyer-studio':'read'}});
+  const reader=(await ref.get()).data();
+  assert(reader.permissions.includes('flyer.read'));
+  assert(!reader.permissions.includes('flyer.write')); assert(!reader.permissions.includes('flyer.publish'));
+ });
