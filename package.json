@@ -1,7 +1,7 @@
 {
   "name": "dns-workspace",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
     "test:identity": "firebase emulators:exec --config firebase.identity.json --only auth,firestore --project demo-dns-identity \"node tests/identity/run.mjs\""
   },
   "dependencies": {
-    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#foundation-v1.3.0",
+    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#foundation-v1.4.0",
     "@zxing/browser": "^0.1.5",
     "firebase": "^12.3.0",
     "qrcode": "^1.5.4",
