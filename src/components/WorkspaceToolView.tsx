@@ -9,7 +9,7 @@ export function WorkspaceToolView({ tool, language, onClose }: {
 }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   // Delivery remains disabled until each tool explicitly opts into Foundation's receiver.
-  const themeBridgeEnabled = false;
+  const themeBridgeEnabled = tool.id === 'data-entry';
   useEffect(() => {
     if (!themeBridgeEnabled || !tool.url) return;
     const root = document.documentElement;
@@ -30,7 +30,7 @@ export function WorkspaceToolView({ tool, language, onClose }: {
       observer.disconnect();
       frame?.removeEventListener('load', sendTheme);
     };
-  }, [tool.url]);
+  }, [tool.url, themeBridgeEnabled]);
   const iframeUrl = tool.url ? workspaceEmbeddedUrl(tool.url) : 'about:blank';
   return <section className="workspace-tool-view" aria-label={tool.label}>
     <div className="workspace-tool-toolbar">
