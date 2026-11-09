@@ -162,7 +162,7 @@ export default function App() {
           </div>
         )}
       </main>
-      <footer data-dns-tool-footer>
+      <footer data-dns-tool-footer data-dns-guide-enabled="true" data-dns-guide-url="https://dolomitinordicski.github.io/dns-wiki/" data-dns-tool-name="DNS Workspace">
         <div className="dns-tool-footer-shell">
           <span className="dns-tool-footer-primary">Dolomiti NordicSki</span>
           <span className="dns-tool-footer-meta">DNS Workspace · Digital Platform</span>
