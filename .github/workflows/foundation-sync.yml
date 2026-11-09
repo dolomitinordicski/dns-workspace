@@ -11,82 +11,98 @@ on:
     paths:
       - "package.json"
       - "package-lock.json"
+      - "scripts/foundation-lock*.mjs"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/foundation-lock*.mjs"
+      - ".github/workflows/**"
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+
+concurrency:
+  group: foundation-sync-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify-pin:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Require immutable Foundation release tag
-        run: >
-          node --input-type=module -e "
-          import fs from 'node:fs';
-          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const dep = pkg.dependencies?.['@dolomitinordicski/dns-shared-data'];
-          if (!dep || !/^github:dolomitinordicski\/dns-shared-data#foundation-v\d+\.\d+\.\d+$/.test(dep)) {
-            throw new Error('DNS Workspace must pin an immutable Foundation release; found: ' + (dep ?? 'missing'));
-          }
-          "
-
-  update:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Test stale-lock regression protection
+        run: node --test scripts/foundation-lock.test.mjs
+      - name: Verify manifest, lockfile version and exact release commit
+        run: node scripts/foundation-lock.mjs
+      - name: Install exactly the committed lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify installed Foundation
+        run: node scripts/foundation-lock.mjs --installed
+      - name: Run consumer checks
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.validate ? 0 : 1)"; then
+            npm run validate
+          else
+            npm run build
+          fi
+          npm run test --if-present
+          npm run lint --if-present
 
-      - name: Read Foundation release
+  update:
+    if: github.event_name != 'pull_request' && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regenerate Foundation lock entry, including stale same-tag locks
         id: latest
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          FOUNDATION_TAG: ${{ github.event.client_payload.tag }}
+        run: node scripts/foundation-lock.mjs --update
+      - name: Clean install and verify exact Foundation release
+        if: steps.latest.outputs.needs_update == 'true'
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "repository_dispatch" ]; then
-            node --input-type=module -e "import fs from 'node:fs'; const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8')); fs.writeFileSync(process.env.RUNNER_TEMP+'/foundation-release.json', JSON.stringify({tag_name:event.client_payload?.tag??''}));"
+          npm ci --no-audit --no-fund
+          node --test scripts/foundation-lock.test.mjs
+          node scripts/foundation-lock.mjs --installed
+      - name: Run consumer checks
+        if: steps.latest.outputs.needs_update == 'true'
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.validate ? 0 : 1)"; then
+            npm run validate
           else
-            curl -fsSL -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/dolomitinordicski/dns-shared-data/releases/latest -o "$RUNNER_TEMP/foundation-release.json"
+            npm run build
           fi
-          node --input-type=module -e "import fs from 'node:fs'; const release=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/foundation-release.json','utf8')); const tag=release.tag_name??''; const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); const key='@dolomitinordicski/dns-shared-data'; const target='github:dolomitinordicski/dns-shared-data#'+tag; console.log('tag='+tag); console.log('needs_update='+(pkg.dependencies?.[key]===target?'false':'true'));" >> "$GITHUB_OUTPUT"
-
-      - name: Update Foundation and Workspace patch version
-        if: steps.latest.outputs.needs_update == 'true'
-        env:
-          FOUNDATION_TAG: ${{ steps.latest.outputs.tag }}
-        run: >
-          node --input-type=module -e "
-          import fs from 'node:fs';
-          const path='package.json';
-          const pkg=JSON.parse(fs.readFileSync(path,'utf8'));
-          pkg.dependencies['@dolomitinordicski/dns-shared-data']='github:dolomitinordicski/dns-shared-data#'+process.env.FOUNDATION_TAG;
-          const parts=String(pkg.version).split('.');
-          if(parts.length!==3) throw new Error('Workspace version must be X.Y.Z');
-          parts[2]=String(Number(parts[2])+1);
-          pkg.version=parts.join('.');
-          fs.writeFileSync(path,JSON.stringify(pkg,null,2)+'\\n');
-          "
-
-      - name: Validate Workspace
-        if: steps.latest.outputs.needs_update == 'true'
-        run: |
-          npm install
-          npm run validate
-
-      - name: Open Foundation update PR
+          npm run test --if-present
+          npm run lint --if-present
+      - name: Open or refresh verified Foundation update PR
         if: steps.latest.outputs.needs_update == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           branch: automation/foundation-update
-          add-paths: package.json,package-lock.json
+          delete-branch: false
+          add-paths: |
+            package.json
+            package-lock.json
           commit-message: "chore: update DNS Foundation to ${{ steps.latest.outputs.tag }}"
           title: "chore: update DNS Foundation to ${{ steps.latest.outputs.tag }}"
           body: |
-            Automated DNS Workspace Foundation update.
-            Validation passed before this PR was opened.
+            Updates the Foundation manifest and regenerates its npm lock entry.
+            Verifies the release tag's dereferenced commit, locked version, and installed package.
+            A clean npm ci and consumer validation/build, test and lint scripts passed before this PR was opened.
+            Also repairs stale locks when package.json already declares the target release.
+            The consumer patch version is bumped for deployment tracking.
