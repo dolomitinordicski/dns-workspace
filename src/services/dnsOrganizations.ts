@@ -64,6 +64,7 @@ export async function getDNSWorkspaceOrganizations(): Promise<DNSWorkspaceOrgani
   return result.docs.map(record => ({ ...record.data(), id: record.id }) as DNSWorkspaceOrganization & { active?: boolean })
     .filter(org => org.active !== false &&
       (org.organizationType === 'tourism-organisation' ||
+       (org.organizationType === 'sports-organisation' && org.id === 'biathlon-antholz') ||
        (org.organizationType === 'network-operator' && org.id === 'dolomiti-nordicski')))
     .map(org => ({ ...org, brandLogoUrl: resolveManifestLogo(org, logoManifest) }))
     .sort((a, b) => a.id === 'dolomiti-nordicski' ? -1 :
