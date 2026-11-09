@@ -1642,3 +1642,14 @@
     text-align: center;
   }
 }
+
+/* Foundation dark mode: avoid fixed white iframe surfaces and light-only cockpit accents. */
+html[data-dns-theme="dark"] .workspace-tool-view,
+html[data-dns-theme="dark"] .workspace-tool-frame {
+  background: var(--color-dns-surface, #172A32);
+  border-color: var(--color-dns-border, #47636B);
+}
+html[data-dns-theme="dark"] .workspace-region-accent,
+html[data-dns-theme="dark"] .workspace-permission-choice[aria-pressed="true"] {
+  color: var(--color-dns-dark-text, #EAF1F2);
+}
