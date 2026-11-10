@@ -8,11 +8,11 @@ import type { WorkspaceTool } from '../workspace/registry';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 import { loadWorkspaceDashboardData, type WorkspaceDashboardData } from '../services/workspaceDashboardData';
 import { DNS_QUALITY_MILESTONES } from '../workspace/qualityMilestones';
+import { DigitalPassOperator } from './DigitalPassOperator';
 
 type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
   organization: DNSWorkspaceOrganization; organizations: DNSWorkspaceOrganization[];
-  tools: WorkspaceTool[]; onOrganizationChange: (id: string) => void;
-  onOpenDigitalPassOperator: () => void };
+  tools: WorkspaceTool[]; onOrganizationChange: (id: string) => void };
 
 const integer = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
 const money = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -37,9 +37,10 @@ function donutColor(tone: ReturnType<typeof trailTone>) {
 }
 
 export function WorkspaceCockpit(props: Props) {
-  const { language, identity, organization, organizations, tools, onOrganizationChange, onOpenDigitalPassOperator } = props;
+  const { language, identity, organization, organizations, tools, onOrganizationChange } = props;
   const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
   const [showAllNews, setShowAllNews] = useState(false);
+  const [passExpanded, setPassExpanded] = useState(false);
   const [releases, setReleases] = useState<DNSRelease[]>([]);
   const [newsError, setNewsError] = useState(false);
   const [pulse, setPulse] = useState<WorkspaceDashboardData | null>(null);
@@ -148,16 +149,22 @@ export function WorkspaceCockpit(props: Props) {
   return (
     <div className="workspace-cockpit-layout py-4">
       <div className="workspace-cockpit-content">
-        <button type="button" className="workspace-digital-pass-launcher" onClick={onOpenDigitalPassOperator}
-          aria-label={language === 'de' ? 'DNS Saisonkarte: Betreiberoberfläche öffnen' : 'Stagionale DNS: apri interfaccia operatore'}>
-          <span className="workspace-digital-pass-launcher-icon" aria-hidden="true">▣</span>
-          <span className="workspace-digital-pass-launcher-copy">
-            <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
-            <strong>{language === 'de' ? 'Saisonkarte aktivieren' : 'Attiva uno stagionale'}</strong>
-            <small>{language === 'de' ? 'Kartennummer eingeben und Aktivierungscode erstellen · Pilotphase' : 'Inserisci il numero della tessera e genera il codice di attivazione · Fase pilota'}</small>
-          </span>
-          <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true">→</span>
-        </button>
+        <section className="workspace-digital-pass-panel">
+          <button type="button" className="workspace-digital-pass-launcher" onClick={() => setPassExpanded(value => !value)}
+            aria-expanded={passExpanded} aria-controls="workspace-digital-pass-content"
+            aria-label={language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}>
+            <span className="workspace-digital-pass-launcher-icon" aria-hidden="true">▣</span>
+            <span className="workspace-digital-pass-launcher-copy">
+              <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
+              <strong>{language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}</strong>
+              <small>{language === 'de' ? 'Kartennummer eingeben und Verkauf bestätigen · Pilotphase' : 'Inserisci il numero della tessera e conferma la vendita · Fase pilota'}</small>
+            </span>
+            <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true">{passExpanded ? '⌃' : '⌄'}</span>
+          </button>
+          {passExpanded && <div id="workspace-digital-pass-content" className="workspace-digital-pass-content">
+            <DigitalPassOperator language={language} inline />
+          </div>}
+        </section>
 
         <section className="workspace-home-hero">
           <div className="workspace-home-identity">
