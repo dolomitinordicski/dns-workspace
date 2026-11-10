@@ -173,7 +173,7 @@ async function firestorePatch(collectionId, documentId, payload, accessToken) {
 export async function main() {
   const today = isoDay(new Date());
   const start = START, end = process.env.DNS_AI_IMPACT_END || today;
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(start) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(end) || start > end || end > today) throw new Error('INVALID_PERIOD');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end || end > today) throw new Error('INVALID_PERIOD');
   if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN_REQUIRED');
   const repoNames = await listRepos();
   const commits = [], pulls = [], runs = [];
