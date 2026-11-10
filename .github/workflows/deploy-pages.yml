@@ -3,6 +3,8 @@ name: Deploy DNS Workspace to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '17 5 * * *'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -15,6 +17,8 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
   pages: write
   id-token: write
 
@@ -68,6 +72,15 @@ jobs:
           VITE_DNS_PASS_ACTIVATION_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.digital_pass_pilot && vars.DNS_PASS_PILOT_APPROVED == 'true' && 'true' || 'false' }}
           VITE_DNS_DIGITAL_PASS_PRIVACY_URL: ${{ vars.DNS_PASS_PRIVACY_URL }}
         run: npm run build
+      - name: Collect verified public development summary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DNS_AI_IMPACT_PUBLISH: 'false'
+          DNS_AI_IMPACT_START: ${{ vars.DNS_AI_IMPACT_START }}
+        run: |
+          node scripts/ai-impact-collector.mjs
+          mkdir -p dist/ai-impact
+          cp ai-impact-output/public-summary.json dist/ai-impact/latest.json
       - uses: actions/configure-pages@v5
         with:
           enablement: true
