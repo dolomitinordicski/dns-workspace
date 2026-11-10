@@ -272,7 +272,7 @@ export function WorkspaceCockpit(props: Props) {
 
         </section>
 
-        {isAdmin && <WorkspaceAIImpact language={language} />}
+        <WorkspaceAIImpact language={language} isAdmin={isAdmin} />
 
         <section className="workspace-action-section" aria-labelledby="workspace-actions-title">
           <div className="workspace-dashboard-heading">
