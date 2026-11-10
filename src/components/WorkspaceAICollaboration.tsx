@@ -2,7 +2,6 @@ import baseline from '../data/ai-collaboration-preliminary.json';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
 
 const integer = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
-const oneDecimal = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 });
 
 /**
  * Manually supplied, unverified planning estimate.
@@ -22,7 +21,6 @@ export function WorkspaceAICollaboration({ language }: { language: DNSWorkspaceL
     water: 'Wasserverbrauch',
     pending: 'Noch zu ermitteln',
     period: 'Bezugszeitraum',
-    days: 'etwa 21 Arbeitstage à 8 Stunden',
     estimate: 'Zentralwert; geschätzte Spanne',
     next: 'Nach der Auswertung des ChatGPT-Exports aktualisierbar. GitHub-Daten sind separat erfasst und bleiben unverändert.',
   } : {
@@ -36,7 +34,6 @@ export function WorkspaceAICollaboration({ language }: { language: DNSWorkspaceL
     water: 'Acqua',
     pending: 'Da determinare',
     period: 'Periodo di riferimento',
-    days: 'circa 21 giornate lavorative da 8 ore',
     estimate: 'Stima centrale; intervallo preliminare',
     next: 'Valori aggiornabili dopo l’analisi dell’esportazione ChatGPT. I dati GitHub rimangono separati e invariati.',
   };
@@ -93,7 +90,7 @@ export function WorkspaceAICollaboration({ language }: { language: DNSWorkspaceL
         ))}
       </div>
       <p className="workspace-source-note">
-        {oneDecimal.format(hours.central / baseline.hoursPerWorkday)} {de ? 'Arbeitstage (rechnerisch)' : 'giornate equivalenti (calcolo)'} · {t.days}.
+        {de ? 'Entspricht ungefähr' : 'Equivalente a circa'} {Math.round(hours.central / baseline.hoursPerWorkday)} {de ? 'Arbeitstagen à' : 'giornate lavorative da'} {baseline.hoursPerWorkday} {de ? 'Stunden' : 'ore'}.
       </p>
       <p className="workspace-source-note">{t.next}</p>
     </section>
