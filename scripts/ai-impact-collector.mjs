@@ -130,8 +130,30 @@ async function collectRepo(repo, start, end) {
   }
   return { commits, pulls, runs };
 }
-async function firestorePatch(documentId, payload, accessToken) {
-  const url = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/adminAiImpactSnapshots/${documentId}`;
+export function publicSummary(latest) {
+  // Explicit, minimal field allowlist. NEVER copy arbitrary admin metadata.
+  return {
+    schemaVersion: 1,
+    generatedAt: latest.generatedAt,
+    periodStart: latest.periodStart,
+    periodEnd: latest.periodEnd,
+    observed: {
+      repositories: latest.observed.repositories,
+      commits: latest.observed.commits,
+      pullRequests: latest.observed.pullRequests,
+      actionsMinutes: null,
+    },
+    estimated: {
+      aiHours: null,
+      humanEquivalentHours: null,
+      electricityKwh: null,
+      waterLitres: null,
+    },
+    provenance: 'github-rest-api',
+  };
+}
+async function firestorePatch(collectionId, documentId, payload, accessToken) {
+  const url = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/${collectionId}/${documentId}`;
   const value = obj => {
     if (obj === null) return { nullValue: null };
     if (typeof obj === 'string') return { stringValue: obj };
@@ -171,9 +193,10 @@ export async function main() {
     if (!token) throw new Error('GOOGLE_OAUTH_ACCESS_TOKEN_REQUIRED');
     // Daily immutable day documents and latest; atomicity is not guaranteed.
     for (const day of result.daily) {
-      await firestorePatch(`day-${day.date}`, {schemaVersion:1,generatedAt:result.latest.generatedAt,...day}, token);
+      await firestorePatch('adminAiImpactSnapshots', `day-${day.date}`, {schemaVersion:1,generatedAt:result.latest.generatedAt,...day}, token);
     }
-    await firestorePatch('latest', result.latest, token);
+    await firestorePatch('adminAiImpactSnapshots', 'latest', result.latest, token);
+    await firestorePatch('memberAiImpactSnapshots', 'latest', publicSummary(result.latest), token);
     console.log('Published AI Impact snapshot to Firestore');
   } else console.log('DRY RUN: no Firestore write');
 }
