@@ -1,83 +1,107 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import QRCode from 'qrcode';
+import { onAuthStateChanged } from 'firebase/auth';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
-import './DigitalPassOperator.css';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { identityAuth } from '../services/identityFirebase';
-import { operatorSignIn, operatorPassRequest, operatorApiConfigured } from '../services/digitalPassOperatorApi';
+import { operatorPassRequest, operatorApiConfigured } from '../services/digitalPassOperatorApi';
+import './DigitalPassOperator.css';
 
-type Prepared = { physicalPassId: string; preparationId: string; code: string; expiresAt: number };
-type Props = { language: DNSWorkspaceLanguage; onClose?: () => void; inline?: boolean };
-const t = {
-  de: { title: 'Saisonkartenverkauf bestätigen', intro: 'Kartennummer eingeben, Bestätigungscode erstellen und den Verkauf bestätigen.',
-    number: 'Saisonkartennummer', prepare: 'Bestätigung vorbereiten', code: 'Code für den Gast', read: 'Diesen Code dem Gast mündlich mitteilen',
-    validate: 'Verkauf bestätigen', success: 'Verkauf bestätigt', offline: 'Aktivierungsservice nicht verbunden',
-    close: 'Zurück', busy: 'Verarbeitung…', error: 'Aktivierung fehlgeschlagen. Bitte später erneut versuchen.',
-    unavailable: 'Nicht verfügbar: Die gesicherte Backend-Verbindung ist noch nicht eingerichtet.',
-    note: 'Kein Verkauf und kein QR wird ohne autorisierte Serverbestätigung aktiviert.',
-  },
-  it: { title: 'Conferma vendita stagionale DNS', intro: 'Inserisci il numero, genera il codice per il cliente e conferma la vendita.',
-    number: 'Numero stagionale', prepare: 'Prepara conferma', code: 'Codice per il cliente', read: 'Comunica verbalmente questo codice al cliente',
-    validate: 'Conferma vendita', success: 'Vendita confermata', offline: 'Servizio di attivazione non collegato',
-    close: 'Indietro', busy: 'Elaborazione…', error: 'Attivazione non riuscita. Riprova più tardi.',
-    unavailable: 'Non disponibile: il backend autenticato non è ancora configurato.',
-    note: 'Nessuna vendita e nessun QR vengono attivati senza conferma autorizzata del server.',
-  },
+type Prepared = { physicalPassId: string; preparationId: string; code: string; expiresAt: number; handoffUrl?: string };
+type SaleStatus = { status: 'PENDING' | 'PREPARED' | 'SOLD_ATTESTED' | 'EXPIRED' | 'CANCELLED' };
+type Props = { language: DNSWorkspaceLanguage; inline?: boolean; onClose?: () => void };
+const copy = {
+  it: { title:'Conferma vendita stagionale', intro:'Inserisci il numero dello stagionale e mostra il QR al cliente.',
+    number:'Numero stagionale', prepare:'Genera QR', code:'Codice alternativo', scan:'Il cliente scansiona il QR con il proprio telefono.',
+    pending:'In attesa di conferma dal server', confirmed:'Vendita confermata', expired:'Sessione scaduta. Genera un nuovo QR.',
+    missing:'Servizio non disponibile: backend non ancora configurato.', error:'Impossibile completare la richiesta.',
+    close:'Indietro', invalid:'Numero non valido', pilot:'Fase pilota · nessuna conferma senza validazione server',
+    reset:'Nuova vendita' },
+  de: { title:'Saisonkartenverkauf bestätigen', intro:'Kartennummer eingeben und dem Gast den QR-Code zeigen.',
+    number:'Saisonkartennummer', prepare:'QR-Code erzeugen', code:'Alternativer Code', scan:'Der Gast scannt den QR-Code mit seinem Smartphone.',
+    pending:'Warten auf Serverbestätigung', confirmed:'Verkauf bestätigt', expired:'Sitzung abgelaufen. Neuen QR-Code erzeugen.',
+    missing:'Dienst nicht verfügbar: Backend noch nicht eingerichtet.', error:'Vorgang konnte nicht abgeschlossen werden.',
+    close:'Zurück', invalid:'Ungültige Nummer', pilot:'Pilotphase · keine Bestätigung ohne Servervalidierung',
+    reset:'Nächster Verkauf' },
 };
 
+export function DigitalPassOperator({ language, inline = false, onClose }: Props) {
+  const c=copy[language];
+  const [user,setUser]=useState(identityAuth.currentUser);
+  const [number,setNumber]=useState('');
+  const [prepared,setPrepared]=useState<Prepared|null>(null);
+  const [qr,setQr]=useState('');
+  const [status,setStatus]=useState<'idle'|'busy'|'pending'|'confirmed'|'expired'|'error'>('idle');
+  const [error,setError]=useState('');
+  useEffect(()=>onAuthStateChanged(identityAuth,next=>{setUser(next);setPrepared(null);setQr('');setStatus('idle');}),[]);
+  const enabled=operatorApiConfigured && Boolean(user);
 
-export function DigitalPassOperator({ language, onClose, inline = false }: Props) {
-  const c = t[language];
-  const [user, setUser] = useState(identityAuth.currentUser);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  useEffect(() => onAuthStateChanged(identityAuth, value => { setUser(value); setPrepared(null); setStatus('idle'); }), []);
-  async function login(event: FormEvent) { event.preventDefault(); setStatus('busy'); try { await operatorSignIn(email, password); setPassword(''); setStatus('idle'); } catch { setError(c.error); setStatus('error'); } }
-  const [number, setNumber] = useState('');
-  const [prepared, setPrepared] = useState<Prepared | null>(null);
-  const [status, setStatus] = useState<'idle'|'busy'|'confirmed'|'error'>('idle');
-  const [error, setError] = useState('');
-  const hasBackend = operatorApiConfigured && Boolean(user);
-  async function prepare(event: FormEvent) {
-    event.preventDefault();
-    if (!hasBackend || !/^\d{1,12}$/.test(number.trim()) || status === 'busy') return;
-    setStatus('busy'); setError(''); setPrepared(null);
+  async function prepare(e:FormEvent) {
+    e.preventDefault();
+    if (!enabled || !/^\d{1,12}$/.test(number.trim()) || status==='busy') return;
+    setStatus('busy');setError('');setPrepared(null);setQr('');
     try {
-      const result = await operatorPassRequest<Prepared>('/v1/pass-activations/prepare', { passNumber: number.trim() });
-      if (!result.physicalPassId || !result.preparationId || !/^[A-HJ-NP-Z2-9]{6}$/.test(result.code) || result.expiresAt <= Date.now()) throw new Error('INVALID_RESPONSE');
-      setPrepared(result); setStatus('idle');
-    } catch {
-      setError(c.unavailable); setStatus('error');
-    }
+      const result=await operatorPassRequest<Prepared>('/v1/pass-activations/prepare',{passNumber:number.trim()});
+      if(!result.physicalPassId||!result.preparationId||!/^[A-HJ-NP-Z2-9]{6}$/.test(result.code)||result.expiresAt<=Date.now())throw Error('BAD_PREPARATION');
+      // This is a same-origin customer handoff. Hash parameters do not enter HTTP request logs.
+      // The server remains the sole authority for sale attestation.
+      const url=new URL('/dns-workspace/pass.html',window.location.origin);
+      url.hash='activation?'+new URLSearchParams({number:number.trim(),code:result.code}).toString();
+      const safeHandoff=result.handoffUrl?new URL(result.handoffUrl):url;
+      if(safeHandoff.origin!==window.location.origin||safeHandoff.pathname!=='/dns-workspace/pass.html')throw Error('UNTRUSTED_HANDOFF');
+      const encoded=await QRCode.toDataURL(safeHandoff.toString(),{width:296,margin:3,errorCorrectionLevel:'M'});
+      setPrepared(result);setQr(encoded);setStatus('pending');
+    }catch {setStatus('error');setError(c.error);}
   }
-  async function validate() {
-    if (!hasBackend || !prepared || status === 'busy') return;
-    setStatus('busy'); setError('');
-    try {
-      const result = await operatorPassRequest<{ status: string }>('/v1/pass-activations/validate', { physicalPassId: prepared.physicalPassId, preparationId: prepared.preparationId });
-      if (result.status !== 'SOLD_ATTESTED') throw new Error('INVALID_RESPONSE');
-      setPrepared(null); setStatus('confirmed');
-    } catch { setError(c.error); setStatus('error'); }
-  }
-  return <section className={inline ? "dns-pass-operator dns-pass-operator-inline" : "dns-pass-operator dns-card"} aria-label={c.title}>
+  useEffect(()=>{
+    if(!prepared||status!=='pending'||!enabled)return;
+    let cancelled=false; let active=false;
+    const tick=async()=>{
+      if(cancelled||active)return;
+      if(Date.now()>=prepared.expiresAt){setStatus('expired');return;}
+      active=true;
+      try {
+        // A backend-authenticated status check is required. Never infer a sale from QR rendering.
+        const result=await operatorPassRequest<SaleStatus>('/v1/pass-activations/status',{
+          physicalPassId:prepared.physicalPassId, preparationId:prepared.preparationId
+        });
+        if(cancelled)return;
+        if(result.status==='SOLD_ATTESTED')setStatus('confirmed');
+        else if(result.status==='EXPIRED'||result.status==='CANCELLED')setStatus('expired');
+      }catch {if(!cancelled)setError(c.missing);}
+      finally {active=false;}
+    };
+    void tick();
+    const timer=window.setInterval(()=>void tick(),4000);
+    return()=>{cancelled=true;window.clearInterval(timer);};
+  },[prepared,status,enabled,c.missing]);
+  function reset(){setNumber('');setPrepared(null);setQr('');setError('');setStatus('idle');}
+  return <section className={inline?'dns-pass-operator dns-pass-operator-inline':'dns-pass-operator dns-card'} aria-label={c.title}>
     <div className="dns-pass-head">
-      <div><span className="dns-kicker">DNS WORKSPACE / DIGITAL PASS</span><h2>{c.title}</h2><p>{c.intro}</p></div>
-      {!inline && onClose && <button type="button" className="dns-button" data-variant="secondary" onClick={onClose}>{c.close}</button>}
+      <div><h2>{c.title}</h2><p>{c.intro}</p></div>
+      {!inline&&onClose&&<button type="button" className="dns-button" data-variant="secondary" onClick={onClose}>{c.close}</button>}
     </div>
-    {!user && <form onSubmit={login} className="dns-pass-form"><label>Email<input type="email" required autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} /></label><label>Password<input type="password" required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} /></label><button type="submit" className="dns-button" disabled={status === 'busy'}>{language === 'it' ? 'Accedi' : 'Anmelden'}</button></form>}
-    {user && <button className="dns-button" onClick={() => { void signOut(identityAuth); }}>{language === 'it' ? 'Esci' : 'Abmelden'}</button>}
-    <form onSubmit={prepare} className="dns-pass-form">
+    <form className="dns-pass-form" onSubmit={prepare}>
       <label htmlFor="dns-pass-number">{c.number}</label>
-      <input id="dns-pass-number" inputMode="numeric" autoComplete="off" value={number}
-        onChange={e => { setNumber(e.target.value); setPrepared(null); setStatus('idle'); setError(''); }}
-        placeholder="000123" maxLength={12} disabled={status === 'busy'} />
-      <button className="dns-button" type="submit" disabled={!hasBackend || !/^\d{1,12}$/.test(number.trim()) || status === 'busy'}>{status==='busy'?c.busy:c.prepare}</button>
+      <div className="dns-pass-entry">
+        <input id="dns-pass-number" inputMode="numeric" autoComplete="off" placeholder="000123"
+          value={number} maxLength={12} disabled={status==='busy'||status==='pending'}
+          onChange={e=>{setNumber(e.target.value);setPrepared(null);setQr('');setStatus('idle');setError('');}} />
+        <button type="submit" className="dns-button" disabled={!enabled||!/^[0-9]{1,12}$/.test(number.trim())||status==='busy'||status==='pending'}>{c.prepare}</button>
+      </div>
     </form>
-    {prepared && <div className="dns-pass-secret"><small>{c.code}</small><strong>{prepared.code}</strong><p>{c.read}</p>
-      <button type="button" className="dns-button" onClick={validate} disabled={!hasBackend || status==='busy'}>{c.validate}</button></div>}
-    {status === 'confirmed' && <p role="status">{c.success}</p>}
-    {error && <p role="alert">{error}</p>}
-    {!hasBackend && <p role="status" className="dns-pass-warning">{c.offline}. {c.unavailable}</p>}
-    <p className="dns-pass-note">{c.note}</p>
+    {prepared&&qr&&<div className="dns-pass-handoff">
+      <img src={qr} width="296" height="296" alt={language==='de'?'QR-Code für den Gast':'QR da mostrare al cliente'} />
+      <div className="dns-pass-handoff-details">
+        <p>{c.scan}</p>
+        <small>{c.code}</small><strong className="dns-pass-code">{prepared.code}</strong>
+        {status==='confirmed'?<p className="dns-pass-confirmed" role="status">✓ {c.confirmed}</p>:
+          <p role="status">{status==='expired'?c.expired:c.pending}</p>}
+        {status!=='pending'&&<button type="button" className="dns-button" data-variant="secondary" onClick={reset}>{c.reset}</button>}
+      </div>
+    </div>}
+    {!enabled&&<p className="dns-pass-warning" role="status">{c.missing}</p>}
+    {error&&<p className="dns-pass-warning" role="alert">{error}</p>}
+    <p className="dns-pass-note">{c.pilot}</p>
   </section>;
 }
