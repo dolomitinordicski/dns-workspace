@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "status": "preliminary_unverified",
+  "source": "manual_preliminary_estimate",
+  "updatedAt": "2026-11-11",
+  "periodStart": "2026-10-01",
+  "periodEnd": "2026-11-10",
+  "collaborationHours": {
+    "low": 120,
+    "central": 170,
+    "high": 220
+  },
+  "hoursPerWorkday": 8,
+  "traditionalEquivalentHours": null,
+  "timeSavedHours": null,
+  "energyKwh": null,
+  "waterLitres": null,
+  "chatgptExport": {
+    "available": false,
+    "importedAt": null
+  }
+}

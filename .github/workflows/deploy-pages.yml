@@ -40,6 +40,7 @@ jobs:
       - name: Verify installed Foundation
         run: node scripts/foundation-lock.mjs --installed
       - run: npm run validate
+      - run: node --test tests/ai-collaboration-preliminary.test.mjs
       - run: node --test tests/digital-pass-pilot-build.test.mjs
 
   deploy:
