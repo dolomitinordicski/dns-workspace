@@ -53,6 +53,8 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
   const uniqueCommits = new Set();
   const uniquePRs = new Set();
   const uniqueRuns = new Set();
+  let actionsElapsedMs = 0;
+  let measuredRunDurations = 0;
   for (const item of commits) {
     if (!byDate(item.date, start, end)) continue;
     const id = `${item.repo}:${item.sha}`;
@@ -73,6 +75,13 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
     if (uniqueRuns.has(id)) continue;
     uniqueRuns.add(id);
     ensure(isoDay(item.date)).observed.actionsRuns++;
+    if (item.startedAt && item.completedAt) {
+      const ms = Date.parse(item.completedAt) - Date.parse(item.startedAt);
+      if (Number.isFinite(ms) && ms >= 0 && ms < 7 * 86_400_000) {
+        actionsElapsedMs += ms;
+        measuredRunDurations++;
+      }
+    }
   }
   const estimated = {
     aiHours: null, humanEquivalentHours: null,
@@ -86,6 +95,8 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
       pullRequests: uniquePRs.size,
       actionsRuns: uniqueRuns.size,
       actionsMinutes: null,
+      actionsElapsedHours: measuredRunDurations ? Math.round(actionsElapsedMs/3_600_000*10)/10 : null,
+      actionsElapsedCoverage: uniqueRuns.size ? Math.round(measuredRunDurations/uniqueRuns.size*100) : null,
     },
     estimated,
     provenance: 'github-rest-api',
@@ -123,7 +134,7 @@ async function collectRepo(repo, start, end) {
       if (page === 100) throw new Error('RUNS_PAGINATION_LIMIT');
     }
     for (const x of workflowRuns) {
-      if (byDate(x.created_at,start,end)) runs.push({repo,id:x.id,date:x.created_at});
+      if (byDate(x.created_at,start,end)) runs.push({repo,id:x.id,date:x.created_at,startedAt:x.run_started_at,completedAt:x.updated_at, status:x.status});
     }
   } catch (error) {
     // Do not silently replace unavailable GitHub Actions data with zero.
@@ -143,6 +154,8 @@ export function publicSummary(latest) {
       commits: latest.observed.commits,
       pullRequests: latest.observed.pullRequests,
       actionsMinutes: null,
+      actionsElapsedHours: latest.observed.actionsElapsedHours,
+      actionsElapsedCoverage: latest.observed.actionsElapsedCoverage,
     },
     estimated: {
       aiHours: null,
