@@ -32,7 +32,7 @@ test('different repositories can contain same SHA', () => {
   assert.equal(result.latest.observed.commits,2);
 });
 
-test('member snapshot cannot expose admin-only details or estimates', () => {
+test('member snapshot cannot expose admin-only data or unlabeled estimates', () => {
   const source = summarize(['a'],[{repo:'a',sha:'1',date:'2026-11-10T10:00:00Z'}],[],[],
     '2026-10-01','2026-11-10','2026-11-10T20:00:00Z').latest;
   source.privateToken = 'NEVER_EXPOSE';
@@ -44,4 +44,21 @@ test('member snapshot cannot expose admin-only details or estimates', () => {
   assert.equal(publicDoc.estimated.aiHours, null);
   assert.equal(publicDoc.estimated.electricityKwh, null);
   assert.equal(publicDoc.observed.actionsMinutes, null);
+});
+
+test('member snapshot exposes modelled energy only with explicit provenance', () => {
+  const source = summarize(['a'], [], [], [], '2026-10-01', '2026-11-10',
+    '2026-11-10T20:00:00Z').latest;
+  source.estimated.electricityKwh = {low: 0.1, central: 2, high: 10};
+  source.estimated.waterLitres = {low: 0.1, central: 4, high: 20};
+  source.estimated.aiHours = 42;
+  source.environmentModel = {
+    modelId: 'ai-inference-exploratory-v1',
+    label: 'exploratory_scenario_not_measured',
+  };
+  const publicDoc = publicSummary(source);
+  assert.deepEqual(publicDoc.estimated.electricityKwh, source.estimated.electricityKwh);
+  assert.deepEqual(publicDoc.estimated.waterLitres, source.estimated.waterLitres);
+  assert.equal(publicDoc.estimated.aiHours, null);
+  assert.equal(publicDoc.environmentModel.label, 'exploratory_scenario_not_measured');
 });
