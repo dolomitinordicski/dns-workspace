@@ -10,3 +10,6 @@
 .dns-pass-warning { padding: 14px; border: 1px solid #c8b58c; border-radius: 8px; }
 .dns-pass-note { opacity: .75; font-size: .85rem; }
 @media(max-width:600px) { .dns-pass-operator { padding: 16px; } .dns-pass-head { flex-direction: column; } }
+
+.dns-pass-operator-inline { max-width:none; margin:0; padding:1rem 1.25rem 1.25rem; }
+.dns-pass-operator-inline .dns-pass-form { max-width:440px; margin:1rem 0; }
