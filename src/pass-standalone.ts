@@ -5,6 +5,7 @@ import { parseOperatorHandoffQr } from './services/digitalPassHandoff';
 import { storePassHandoff, readPassHandoff, clearPassHandoff } from './services/passHandoff';
 import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finishEmailLink, hasEmailLink, passRequest, signOut} from './services/digitalPassApi';
 
+import { setupPassInstall } from './services/passInstall';
 type Lang='it'|'de'|'en';
 type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number};
 // Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
@@ -103,8 +104,9 @@ const marketing={
 };
 function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
  for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
- for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
+ for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
 }
+const passInstall=setupPassInstall({button:$('install-pass') as HTMLButtonElement,hint:$('home-tip') as HTMLElement,getLang:()=>lang});
 function render(){
  for(const id of ['privacy-label','privacy-notice']) {
   const link=$(id) as HTMLAnchorElement;
@@ -125,6 +127,7 @@ function render(){
  $('handoff-hint').classList.toggle('hide',!registrationVisible||Boolean(readPassHandoff(sessionStorage)));
  ($('registration') as HTMLFormElement).hidden=!registrationVisible;
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
+ passInstall.refresh(Boolean(pass&&(authorized||offline)));
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
  $('save-offline').classList.add('hide');
  $('logout').classList.toggle('hide',!authorized);

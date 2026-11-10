@@ -60,3 +60,8 @@ a{color:var(--color-dns-deep)}.dns-note{color:var(--color-dns-muted);font:12px/1
 .pass-scan-camera .dns-note { margin: 10px 0 0; }
 .pass-scan-cancel { display: block; width: 100%; margin-top: 12px; background: var(--color-dns-surface); color: var(--color-dns-deep); border: 1px solid var(--color-dns-border); }
 #scan-status:not(:empty) { margin: 12px 0 0; line-height: 1.5; }
+
+/* Optional PWA installation, independent of pass activation and QR validity. */
+.pass-install-controls{max-width:390px;margin:14px auto 0;text-align:center}
+#install-pass{display:block;width:100%;margin:12px 0 8px}
+#home-tip{margin:12px auto 0;max-width:360px}
