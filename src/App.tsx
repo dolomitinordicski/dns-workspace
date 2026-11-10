@@ -3,7 +3,6 @@ import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { WorkspaceAccount } from './components/WorkspaceAccount';
 import { WorkspaceAccessRequest } from './components/WorkspaceAccessRequest';
 import { WorkspaceCockpit } from './components/WorkspaceCockpit';
-import { DigitalPassOperator } from './components/DigitalPassOperator';
 import { WorkspaceAdminManagement } from './components/WorkspaceAdminManagement';
 import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeader';
 import { WorkspaceNavigator } from './components/WorkspaceNavigator';
@@ -27,7 +26,6 @@ export default function App() {
   const [organizationId, setOrganizationId] = useState('');
   const [activeView, setActiveView] = useState<WorkspaceView>('cockpit');
   const [openTool, setOpenTool] = useState<WorkspaceTool | null>(null);
-  const [digitalPassOperatorOpen, setDigitalPassOperatorOpen] = useState(false);
   const [adminAreaPolicy, setAdminAreaPolicy] = useState<{
     organizationId: string;
     status: 'ready' | 'missing' | 'error';
@@ -109,13 +107,11 @@ export default function App() {
   const changeOrganization = (id: string) => {
     setOrganizationId(id);
     setOpenTool(null);
-    setDigitalPassOperatorOpen(false);
     setActiveView('cockpit');
   };
   const openAllowedTool = (tool: WorkspaceTool) => {
     if (availableTools.some(allowed => allowed.id === tool.id) && tool.url) {
-      setDigitalPassOperatorOpen(false);
-      recordWorkspaceToolOpen(tool.id);
+        recordWorkspaceToolOpen(tool.id);
       setOpenTool(tool);
     }
   };
@@ -127,7 +123,7 @@ export default function App() {
       <WorkspaceHeader language={language} activeView={activeView}
         showNavigation={false} adminNavigation={isAdmin}
         onLanguageChange={setDNSWorkspaceLanguage}
-        onViewChange={view => { setActiveView(view); setOpenTool(null); setDigitalPassOperatorOpen(false); }} />
+        onViewChange={view => { setActiveView(view); setOpenTool(null); }} />
       <main data-dns-shell-main className={showWorkspaceShell ? 'workspace-main workspace-main-authenticated' : 'workspace-main'}>
         {new URLSearchParams(location.search).get('access') === 'request' ? (
           <WorkspaceAccessRequest language={language} organizations={organizations} />
@@ -138,13 +134,11 @@ export default function App() {
             <WorkspaceSidebar language={language} identity={identity}
               organization={organization} tools={availableTools} toolViewStatus={areaToolViewStatus} openTool={openTool}
               activeView={activeView}
-              onDashboard={() => { setOpenTool(null); setDigitalPassOperatorOpen(false); setActiveView('cockpit'); }}
+              onDashboard={() => { setOpenTool(null); setActiveView('cockpit'); }}
               onOpenTool={openAllowedTool}
-              onAdminView={view => { setOpenTool(null); setDigitalPassOperatorOpen(false); setActiveView(view); }} />
+              onAdminView={view => { setOpenTool(null); setActiveView(view); }} />
             <div className="workspace-shell-content">
-              {digitalPassOperatorOpen ? (
-                <div className="py-4"><DigitalPassOperator language={language} onClose={() => setDigitalPassOperatorOpen(false)} /></div>
-              ) : openTool ? (
+              {openTool ? (
                 <WorkspaceToolView language={language} tool={openTool}
                   onClose={() => { setOpenTool(null); setActiveView('cockpit'); }} />
               ) : activeView === 'organizations-access' && isAdmin ? (
@@ -153,7 +147,7 @@ export default function App() {
                 <WorkspaceCockpit language={language} identity={identity}
                   organization={organization} organizations={organizations}
                   tools={availableTools} onOrganizationChange={changeOrganization}
-                  onOpenDigitalPassOperator={() => setDigitalPassOperatorOpen(true)} />
+                  />
               ) : (
                 <WorkspaceNavigator key={registryRevision} language={language} view={activeView}
                   onOpenTool={openAllowedTool} />
