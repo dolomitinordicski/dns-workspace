@@ -92,6 +92,11 @@ $('login').addEventListener('submit',async(e)=>{e.preventDefault();if(!passActiv
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loading=true;render();setText('status','');try{
  if(!passActivationEnabled)throw new Error('PASS_ACTIVATION_DISABLED');
+ // The same verified claim path is used for manual fallback and QR handoff.
+ // A claim must succeed before the customer can register the digital credential.
+ const passNumber=($('number') as HTMLInputElement).value.trim();
+ const activationCode=($('code') as HTMLInputElement).value.trim().toUpperCase();
+ await passRequest<{status:string}>('/v1/pass-activations/claim',{passNumber,code:activationCode});
  const result=await passRequest<{registrationId:string}>('/v1/pass-registrations/complete',{
  passNumber:($('number') as HTMLInputElement).value.trim(),code:($('code') as HTMLInputElement).value.trim().toUpperCase(),
  givenName:($('given') as HTMLInputElement).value.trim(),familyName:($('family') as HTMLInputElement).value.trim(),language:lang});
