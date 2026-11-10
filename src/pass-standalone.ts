@@ -13,16 +13,40 @@ const translations={
  en:{heading:'Your DNS Digital Pass',intro:'Digital registration is optional. Your physical pass remains valid.',email:'Email',send:'Send sign-in link',confirm:'Verify email',number:'Pass number',code:'Activation code',given:'First name',family:'Last name',privacy:'I have read the privacy notice',register:'Activate Digital Pass',logout:'Sign out',unavailable:'Digital Pass activation will be available soon. Your physical pass remains valid.',home:'Use your browser menu to add this page to your Home Screen.',foot:'Registration does not affect your physical pass.',sent:'Check your email. If you opened the link on another device, enter the same email address here.',error:'Unable to complete. Check details and connection.',offline:'OFFLINE COPY · Status not updated',online:'PASS SAVED · Online verification available',save:'Save on this device for offline use',saved:'Offline copy saved on this device.',authenticated:'Email successfully verified! Your account is ready. Digital Pass activation will be available soon.'}
 };
 let lang:Lang='it',pass:Pass|null=null,loading=false,offline=false;
+const handoffKey='dns-digital-pass-handoff-v1';
 function applyHandoff() {
-  const hash=window.location.hash;
-  if(!hash.startsWith('#activation?'))return;
+ const hash=window.location.hash;
+ if(hash.startsWith('#activation?')) {
   const params=new URLSearchParams(hash.slice('#activation?'.length));
-  const number=params.get('number')||'';
-  const code=params.get('code')||'';
-  if(!/^\d{1,12}$/.test(number)||! /^[A-HJ-NP-Z2-9]{6}$/.test(code))return;
-  ($('number') as HTMLInputElement).value=number;
-  ($('code') as HTMLInputElement).value=code;
+  const number=params.get('number')||'',code=params.get('code')||'';
+  if(/^\d{1,12}$/.test(number)&&/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
+   sessionStorage.setItem(handoffKey,JSON.stringify({number,code,expires:Date.now()+10*60*1000}));
+  }
   history.replaceState(null,'',location.pathname+location.search+'#activation');
+ }
+ try {
+  const stored=JSON.parse(sessionStorage.getItem(handoffKey)||'null');
+  if(!stored||stored.expires<=Date.now()||!/^\d{1,12}$/.test(stored.number)||!/^[A-HJ-NP-Z2-9]{6}$/.test(stored.code)) {
+   sessionStorage.removeItem(handoffKey);return;
+  }
+  ($('number') as HTMLInputElement).value=stored.number;
+  ($('code') as HTMLInputElement).value=stored.code;
+ }catch {sessionStorage.removeItem(handoffKey)}
+}
+let claiming=false;
+async function claimScannedPass() {
+ if(claiming||!passActivationEnabled||!passAuth.currentUser?.emailVerified)return;
+ let stored:{number:string;code:string;expires:number}|null=null;
+ try{stored=JSON.parse(sessionStorage.getItem(handoffKey)||'null')}catch{return}
+ if(!stored||stored.expires<=Date.now()){sessionStorage.removeItem(handoffKey);return}
+ claiming=true;
+ try {
+  const response=await passRequest<{status:string}>('/v1/pass-activations/claim',{passNumber:stored.number,code:stored.code});
+  if(response.status!=='SOLD_ATTESTED')throw Error('CLAIM_NOT_CONFIRMED');
+  sessionStorage.removeItem(handoffKey);
+  setText('status',lang==='de'?'Verkauf bestätigt. Du kannst deinen Digital Pass jetzt registrieren.':lang==='en'?'Sale confirmed. You can now register your Digital Pass.':'Vendita confermata. Ora puoi registrare il Digital Pass.');
+ }catch {setText('status',translations[lang].error)}
+ finally {claiming=false}
 }
 
 const setText=(id:string,value:string)=>{$(id).textContent=value;};
@@ -74,8 +98,8 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  ($('code') as HTMLInputElement).value='';
  pass=await passRequest<Pass>('/v1/me/digital-pass',{physicalPassId:result.registrationId});await showPass();
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
-$('logout').addEventListener('click',()=>{pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
-onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(!navigator.onLine)void restoreOffline();else void loadPass()});
+$('logout').addEventListener('click',()=>{sessionStorage.removeItem(handoffKey);pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
+onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;applyHandoff();render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(user?.emailVerified)void claimScannedPass();if(!navigator.onLine)void restoreOffline();else void loadPass()});
 translate();applyHandoff();render();
 
 if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/',updateViaCache:'none'}).catch(()=>{})});
