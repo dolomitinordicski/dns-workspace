@@ -9,6 +9,7 @@ import type { DNSWorkspaceLanguage } from '../services/foundation';
 import { loadWorkspaceDashboardData, type WorkspaceDashboardData } from '../services/workspaceDashboardData';
 import { DNS_QUALITY_MILESTONES } from '../workspace/qualityMilestones';
 import { DigitalPassOperator } from './DigitalPassOperator';
+import { WorkspaceAIImpact } from './WorkspaceAIImpact';
 
 type Props = { language: DNSWorkspaceLanguage; identity: DNSIdentity;
   organization: DNSWorkspaceOrganization; organizations: DNSWorkspaceOrganization[];
@@ -270,6 +271,8 @@ export function WorkspaceCockpit(props: Props) {
           </article>
 
         </section>
+
+        {isAdmin && <WorkspaceAIImpact language={language} />}
 
         <section className="workspace-action-section" aria-labelledby="workspace-actions-title">
           <div className="workspace-dashboard-heading">
