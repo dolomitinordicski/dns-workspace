@@ -173,7 +173,7 @@ async function firestorePatch(collectionId, documentId, payload, accessToken) {
 export async function main() {
   const today = isoDay(new Date());
   const start = START, end = process.env.DNS_AI_IMPACT_END || today;
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(start) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(end) || start > end || end > today) throw new Error('INVALID_PERIOD');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end || end > today) throw new Error('INVALID_PERIOD');
   if (!process.env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN_REQUIRED');
   const repoNames = await listRepos();
   const commits = [], pulls = [], runs = [];
@@ -186,6 +186,7 @@ export async function main() {
   const result = summarize(repoNames, commits, pulls, runs, start, end, new Date().toISOString());
   await mkdir('ai-impact-output', {recursive:true});
   await writeFile('ai-impact-output/snapshot.json', JSON.stringify(result,null,2) + '\n');
+  await writeFile('ai-impact-output/public-summary.json', JSON.stringify(publicSummary(result.latest),null,2) + '\n');
   console.log(JSON.stringify({repositories:repoNames.length,commits:result.latest.observed.commits,
     pullRequests:result.latest.observed.pullRequests,actionsRuns:result.latest.observed.actionsRuns}));
   if (process.env.DNS_AI_IMPACT_PUBLISH === 'true') {

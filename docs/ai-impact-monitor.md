@@ -95,3 +95,16 @@ Before enabling publication, the owner of the real `dns-core` Firestore rules mu
 ### Product communication
 
 Use explanatory copy instead of a raw engineering dashboard: GitHub statistics are evidence of development activity, not a proxy for AI hours. Publish water, electricity and hours only after a defensible methodology and verified source telemetry, using uncertainty ranges. Provide an accessible bilingual DE/IT explanation.
+
+## Public GitHub Pages data bridge — 2026-11-10
+
+To avoid leaving the member dashboard empty while the privileged Firestore WIF and rules are being configured:
+
+- The existing Pages deploy workflow now runs every day at **05:17 UTC** and upon merge to main.
+- After building Workspace, it runs the GitHub collector in **read-only** mode and copies ONLY `publicSummary(latest)` to `dist/ai-impact/latest.json`.
+- The member dashboard reads this unprivileged summary using the same-origin `/dns-workspace/ai-impact/latest.json` path; DNS Admin first tries the private Firestore snapshot, falling back to this same public aggregate.
+- The separate collector workflow remains manually dispatchable for later privileged Firestore publication, but no longer runs a redundant daily schedule.
+- Public data is genuinely public to anyone with the Pages URL, even without signing in. This is intentional for these minimal repository/commit/PR totals; NEVER expand the public allowlist to personnel, costs, usage logs, or private financial data.
+- GitHub token must have sufficient **read** scope for each included repository. Failed collection fails the Pages deployment rather than serving fabricated zeros. The last deployed snapshot remains until a successful deployment.
+- Estimated model energy, water and AI hours remain unavailable until supported by usage telemetry. This fix is about **observed GitHub activity only**.
+- The pre-existing Firestore security requirements for admin data are unchanged.

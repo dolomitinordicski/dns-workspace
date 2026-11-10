@@ -52,18 +52,35 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
   useEffect(() => {
     let active = true;
     setState('loading');
-    // Read-only. Firestore security rules MUST restrict this document to DNS admin.
-    getDoc(doc(getFirestore(identityAuth.app), isAdmin ? 'adminAiImpactSnapshots' : 'memberAiImpactSnapshots', 'latest'))
-      .then(result => {
-        if (!active) return;
-        const parsed = result.exists() ? parseSnapshot(result.data()) : null;
-        setSnapshot(parsed);
-        setState(parsed ? 'ready' : 'missing');
-      }).catch(() => {
-        if (!active) return;
-        setSnapshot(null);
-        setState('error');
-      });
+    async function load() {
+      let parsed: Snapshot | null = null;
+      let hadError = false;
+      // Firestore remains authoritative for admin-only details.
+      if (isAdmin) {
+        try {
+          const result = await getDoc(doc(getFirestore(identityAuth.app), 'adminAiImpactSnapshots', 'latest'));
+          parsed = result.exists() ? parseSnapshot(result.data()) : null;
+        } catch { hadError = true; }
+      }
+      // Publicly shareable aggregates are intentionally distinct from private telemetry.
+      if (!parsed) {
+        try {
+          const response = await fetch(`${import.meta.env.BASE_URL}ai-impact/latest.json`, { cache: 'no-store' });
+          if (!response.ok) throw new Error('PUBLIC_SUMMARY_UNAVAILABLE');
+          parsed = parseSnapshot(await response.json());
+        } catch { hadError = true; }
+      }
+      if (!parsed && !isAdmin) {
+        try {
+          const result = await getDoc(doc(getFirestore(identityAuth.app), 'memberAiImpactSnapshots', 'latest'));
+          parsed = result.exists() ? parseSnapshot(result.data()) : null;
+        } catch { hadError = true; }
+      }
+      if (!active) return;
+      setSnapshot(parsed);
+      setState(parsed ? 'ready' : hadError ? 'error' : 'missing');
+    }
+    void load();
     return () => { active = false; };
   }, [revision, isAdmin]);
 
