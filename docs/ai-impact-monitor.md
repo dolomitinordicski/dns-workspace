@@ -108,3 +108,17 @@ To avoid leaving the member dashboard empty while the privileged Firestore WIF a
 - GitHub token must have sufficient **read** scope for each included repository. Failed collection fails the Pages deployment rather than serving fabricated zeros. The last deployed snapshot remains until a successful deployment.
 - Estimated model energy, water and AI hours remain unavailable until supported by usage telemetry. This fix is about **observed GitHub activity only**.
 - The pre-existing Firestore security requirements for admin data are unchanged.
+
+## Development-time and environment scenarios — experimental v1 (2026-11-11)
+
+**Three non-interchangeable indicators:**
+
+- GitHub Actions *elapsed run hours*: timestamp difference between `run_started_at` and `updated_at` for completed workflow runs, aggregated across included repositories. Overlaps are summed, so this is not staff effort or precise GitHub-billable minutes. Coverage is displayed.
+- GitHub-observable *development activity hours*: session heuristic from commit timestamps across all repositories, UTC-day boundary, at most 90 minutes gap. Each cluster is assigned low/central/high = 5/15/30 minutes plus 35%/70%/100% of between-commit span. **It is not actual AI-hours or human-hours;** it misses uncommitted work and may include autonomous time.
+- Electricity and cooling-water *exploratory modeled scenarios*, not measured emissions or verified usage: from estimated GitHub sessions, assume 2/8/25 AI-equivalent operations per session (low/central/high), 0.24/3/20 Wh per operation, respectively, and 0.2/1.1/3 litres of **direct cooling water** per kWh. Formulas: sessions × operations/session × Wh/operation ÷ 1000 = modeled kWh; kWh × L/kWh = modeled litres. All three dimensions are assumptions, not empirical estimates for DNS, and upper/lower do **not** constitute statistical confidence bounds.
+
+The **0.24 Wh** starting point is based on Google's 2025 median Gemini text-prompt estimate, not a measurement of OpenAI, ChatGPT, Codex or agentic coding sessions: https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf . The 3 Wh and 20 Wh and operation counts are illustrative scenario assumptions, not published provider metrics. Direct cooling-water factors are model assumptions and exclude water used in electricity generation, fabrication, development PCs and CI infrastructure.
+
+Publish the scenario assumptions and a prominent non-measured disclaimer alongside the numbers in both Admin and member views. The "AI hours" and "human equivalent hours" metrics remain unavailable until comparable model/tool-usage and task-effort data are obtained. Do not use the modeled energy or water figures in formal sustainability claims.
+
+**Quality limitations:** GitHub workflows can be pruned by retention, the collector currently scans the default branch, and the start date is provisional 2026-10-01. The data set is incomplete if repository history or permissions are incomplete. The collector generates every day from currently available history; this is not a measurement of all earlier user conversations.
