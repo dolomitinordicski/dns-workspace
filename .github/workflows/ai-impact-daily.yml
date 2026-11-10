@@ -1,0 +1,85 @@
+name: DNS AI Impact daily collector
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Write Firestore (requires approved WIF and read rules)'
+        type: boolean
+        required: true
+        default: false
+  pull_request:
+    paths:
+      - 'scripts/ai-impact-collector.mjs'
+      - 'tests/ai-impact-collector.test.mjs'
+      - '.github/workflows/ai-impact-daily.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: dns-ai-impact-daily
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/ai-impact-collector.test.mjs
+
+  collect:
+    if: github.event_name != 'pull_request'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: dns-ai-impact-collector
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify publication configuration
+        id: publication
+        env:
+          PUBLISH_REQUESTED: ${{ github.event_name == 'schedule' || inputs.publish == true }}
+          ENABLED: ${{ vars.DNS_AI_IMPACT_PUBLISH_ENABLED }}
+          WIF_PROVIDER: ${{ vars.DNS_AI_IMPACT_WIF_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.DNS_AI_IMPACT_SERVICE_ACCOUNT }}
+        run: |
+          if [[ "$PUBLISH_REQUESTED" == "true" && "$ENABLED" == "true" ]]; then
+            if [[ -z "$WIF_PROVIDER" || -z "$SERVICE_ACCOUNT" ]]; then
+              echo "Missing WIF provider or service account"; exit 1
+            fi
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: google-github-actions/auth@v2
+        id: gcp_auth
+        if: steps.publication.outputs.publish == 'true'
+        with:
+          workload_identity_provider: ${{ vars.DNS_AI_IMPACT_WIF_PROVIDER }}
+          service_account: ${{ vars.DNS_AI_IMPACT_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/datastore
+      - name: Collect GitHub events
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DNS_AI_IMPACT_PUBLISH: ${{ steps.publication.outputs.publish }}
+          DNS_AI_IMPACT_START: ${{ vars.DNS_AI_IMPACT_START }}
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.gcp_auth.outputs.access_token }}
+        run: node scripts/ai-impact-collector.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-impact-data
+          path: ai-impact-output/snapshot.json
+          if-no-files-found: ignore
+          retention-days: 30
