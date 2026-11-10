@@ -7,18 +7,18 @@ import { identityAuth } from '../services/identityFirebase';
 import { operatorSignIn, operatorPassRequest, operatorApiConfigured } from '../services/digitalPassOperatorApi';
 
 type Prepared = { physicalPassId: string; preparationId: string; code: string; expiresAt: number };
-type Props = { language: DNSWorkspaceLanguage; onClose: () => void };
+type Props = { language: DNSWorkspaceLanguage; onClose?: () => void; inline?: boolean };
 const t = {
-  de: { title: 'DNS Saisonkarte aktivieren', intro: 'Kartennummer eingeben, kurzen Code mitteilen und den Verkauf bestätigen.',
-    number: 'Saisonkartennummer', prepare: 'Code generieren', code: 'Aktivierungscode', read: 'Code dem Gast mündlich mitteilen',
-    validate: 'Validate · Verkauf bestätigen', success: 'Verkauf bestätigt', offline: 'Aktivierungsservice nicht verbunden',
+  de: { title: 'Saisonkartenverkauf bestätigen', intro: 'Kartennummer eingeben, Bestätigungscode erstellen und den Verkauf bestätigen.',
+    number: 'Saisonkartennummer', prepare: 'Bestätigung vorbereiten', code: 'Code für den Gast', read: 'Diesen Code dem Gast mündlich mitteilen',
+    validate: 'Verkauf bestätigen', success: 'Verkauf bestätigt', offline: 'Aktivierungsservice nicht verbunden',
     close: 'Zurück', busy: 'Verarbeitung…', error: 'Aktivierung fehlgeschlagen. Bitte später erneut versuchen.',
     unavailable: 'Nicht verfügbar: Die gesicherte Backend-Verbindung ist noch nicht eingerichtet.',
     note: 'Kein Verkauf und kein QR wird ohne autorisierte Serverbestätigung aktiviert.',
   },
-  it: { title: 'Attivazione stagionale DNS', intro: 'Inserisci il numero, comunica il codice breve e conferma la vendita.',
-    number: 'Numero stagionale', prepare: 'Genera codice', code: 'Codice di attivazione', read: 'Comunica verbalmente il codice al cliente',
-    validate: 'Validate · Conferma vendita', success: 'Vendita confermata', offline: 'Servizio di attivazione non collegato',
+  it: { title: 'Conferma vendita stagionale DNS', intro: 'Inserisci il numero, genera il codice per il cliente e conferma la vendita.',
+    number: 'Numero stagionale', prepare: 'Prepara conferma', code: 'Codice per il cliente', read: 'Comunica verbalmente questo codice al cliente',
+    validate: 'Conferma vendita', success: 'Vendita confermata', offline: 'Servizio di attivazione non collegato',
     close: 'Indietro', busy: 'Elaborazione…', error: 'Attivazione non riuscita. Riprova più tardi.',
     unavailable: 'Non disponibile: il backend autenticato non è ancora configurato.',
     note: 'Nessuna vendita e nessun QR vengono attivati senza conferma autorizzata del server.',
@@ -26,7 +26,7 @@ const t = {
 };
 
 
-export function DigitalPassOperator({ language, onClose }: Props) {
+export function DigitalPassOperator({ language, onClose, inline = false }: Props) {
   const c = t[language];
   const [user, setUser] = useState(identityAuth.currentUser);
   const [email, setEmail] = useState('');
@@ -59,10 +59,10 @@ export function DigitalPassOperator({ language, onClose }: Props) {
       setPrepared(null); setStatus('confirmed');
     } catch { setError(c.error); setStatus('error'); }
   }
-  return <section className="dns-pass-operator dns-card" aria-label={c.title}>
+  return <section className={inline ? "dns-pass-operator dns-pass-operator-inline" : "dns-pass-operator dns-card"} aria-label={c.title}>
     <div className="dns-pass-head">
       <div><span className="dns-kicker">DNS WORKSPACE / DIGITAL PASS</span><h2>{c.title}</h2><p>{c.intro}</p></div>
-      <button type="button" className="dns-button" data-variant="secondary" onClick={onClose}>{c.close}</button>
+      {!inline && onClose && <button type="button" className="dns-button" data-variant="secondary" onClick={onClose}>{c.close}</button>}
     </div>
     {!user && <form onSubmit={login} className="dns-pass-form"><label>Email<input type="email" required autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} /></label><label>Password<input type="password" required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} /></label><button type="submit" className="dns-button" disabled={status === 'busy'}>{language === 'it' ? 'Accedi' : 'Anmelden'}</button></form>}
     {user && <button className="dns-button" onClick={() => { void signOut(identityAuth); }}>{language === 'it' ? 'Esci' : 'Abmelden'}</button>}
