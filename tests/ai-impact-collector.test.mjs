@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summarize } from '../scripts/ai-impact-collector.mjs';
+import { summarize, publicSummary } from '../scripts/ai-impact-collector.mjs';
 
 test('deduplicates GitHub activity and preserves daily buckets', () => {
   const rows = summarize(['shared-data','workspace'], [
@@ -30,4 +30,18 @@ test('different repositories can contain same SHA', () => {
     {repo:'b',sha:'x',date:'2026-11-10T00:00:00Z'},
   ],[],[],'2026-11-10','2026-11-10','2026-11-10T21:00:00Z');
   assert.equal(result.latest.observed.commits,2);
+});
+
+test('member snapshot cannot expose admin-only details or estimates', () => {
+  const source = summarize(['a'],[{repo:'a',sha:'1',date:'2026-11-10T10:00:00Z'}],[],[],
+    '2026-10-01','2026-11-10','2026-11-10T20:00:00Z').latest;
+  source.privateToken = 'NEVER_EXPOSE';
+  source.estimated.aiHours = 100;
+  source.estimated.electricityKwh = {low:1,central:2,high:3};
+  const publicDoc = publicSummary(source);
+  assert.equal(publicDoc.privateToken, undefined);
+  assert.equal(publicDoc.observed.commits, 1);
+  assert.equal(publicDoc.estimated.aiHours, null);
+  assert.equal(publicDoc.estimated.electricityKwh, null);
+  assert.equal(publicDoc.observed.actionsMinutes, null);
 });
