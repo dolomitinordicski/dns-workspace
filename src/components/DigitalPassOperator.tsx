@@ -72,7 +72,7 @@ export function DigitalPassOperator({ language, inline = false, onClose }: Props
       finally {active=false;}
     };
     void tick();
-    const timer=window.setInterval(()=>void tick(),4000);
+    const timer=window.setInterval(()=>void tick(),30000);
     return()=>{cancelled=true;window.clearInterval(timer);};
   },[prepared,status,enabled,c.missing]);
   function reset(){setNumber('');setPrepared(null);setQr('');setError('');setStatus('idle');}
