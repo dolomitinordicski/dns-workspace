@@ -153,13 +153,13 @@ export function WorkspaceCockpit(props: Props) {
           <button type="button" className="workspace-digital-pass-launcher" onClick={() => setPassExpanded(value => !value)}
             aria-expanded={passExpanded} aria-controls="workspace-digital-pass-content"
             aria-label={language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}>
-            <span className="workspace-digital-pass-launcher-icon" aria-hidden="true"><svg width="33" height="33" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="7" width="22" height="18" rx="3"/><path d="M9 12h14M9 17h7M20 17h3v4h-3z"/></svg></span>
+            <span className="workspace-digital-pass-launcher-icon" aria-hidden="true"><svg className="lucide lucide-wallet-cards" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M7 15h4"/></svg></span>
             <span className="workspace-digital-pass-launcher-copy">
               <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
               <strong>{language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}</strong>
-              <small>{language === 'de' ? 'Kartennummer eingeben und Verkauf bestätigen · Pilotphase' : 'Inserisci il numero della tessera e conferma la vendita · Fase pilota'}</small>
+              <small>{language === 'de' ? 'Kartennummer eingeben und QR-Code anzeigen' : 'Inserisci il numero della tessera e mostra il QR al cliente'}</small>
             </span>
-            <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true">{passExpanded ? '⌃' : '⌄'}</span>
+            <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={passExpanded ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6"}/></svg></span>
           </button>
           {passExpanded && <div id="workspace-digital-pass-content" className="workspace-digital-pass-content">
             <DigitalPassOperator language={language} inline />
