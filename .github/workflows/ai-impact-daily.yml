@@ -1,8 +1,6 @@
 name: DNS AI Impact daily collector
 
 on:
-  schedule:
-    - cron: '17 5 * * *'
   workflow_dispatch:
     inputs:
       publish:
@@ -50,7 +48,7 @@ jobs:
       - name: Verify publication configuration
         id: publication
         env:
-          PUBLISH_REQUESTED: ${{ github.event_name == 'schedule' || inputs.publish == true }}
+          PUBLISH_REQUESTED: ${{ inputs.publish == true }}
           ENABLED: ${{ vars.DNS_AI_IMPACT_PUBLISH_ENABLED }}
           WIF_PROVIDER: ${{ vars.DNS_AI_IMPACT_WIF_PROVIDER }}
           SERVICE_ACCOUNT: ${{ vars.DNS_AI_IMPACT_SERVICE_ACCOUNT }}
