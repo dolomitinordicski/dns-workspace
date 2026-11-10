@@ -5,6 +5,7 @@
  * requires a short-lived OAuth access token issued via GitHub OIDC / Google WIF.
  */
 import { writeFile, mkdir } from 'node:fs/promises';
+import { estimateDevelopmentSessions } from './ai-impact-session-estimator.mjs';
 
 export const OWNER = 'dolomitinordicski';
 export const START = process.env.DNS_AI_IMPACT_START || '2026-10-01';
@@ -150,6 +151,7 @@ export function publicSummary(latest) {
       waterLitres: null,
     },
     provenance: 'github-rest-api',
+    developmentActivity: latest.developmentActivity ?? null,
   };
 }
 async function firestorePatch(collectionId, documentId, payload, accessToken) {
@@ -184,6 +186,7 @@ export async function main() {
     runs.push(...events.runs);
   }
   const result = summarize(repoNames, commits, pulls, runs, start, end, new Date().toISOString());
+  result.latest.developmentActivity = estimateDevelopmentSessions(commits.filter(x => x.date && x.date.slice(0,10) >= start && x.date.slice(0,10) <= end));
   await mkdir('ai-impact-output', {recursive:true});
   await writeFile('ai-impact-output/snapshot.json', JSON.stringify(result,null,2) + '\n');
   await writeFile('ai-impact-output/public-summary.json', JSON.stringify(publicSummary(result.latest),null,2) + '\n');
