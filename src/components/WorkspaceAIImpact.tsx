@@ -8,7 +8,7 @@ type Snapshot = {
   generatedAt: string;
   periodStart: string;
   periodEnd: string;
-  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number };
+  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number; actionsElapsedHours?: number | null; actionsElapsedCoverage?: number | null };
   estimated: {
     aiHours: number | null;
     humanEquivalentHours: number | null;
@@ -124,6 +124,13 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
           <small>{snapshot?.developmentActivity?.estimateHours
             ? `${format(snapshot.developmentActivity.estimateHours.low)}–${format(snapshot.developmentActivity.estimateHours.high)} h · ${snapshot.developmentActivity.sessions} ${de ? 'Sitzungen' : 'sessioni'}`
             : (de ? 'Nicht verfügbar' : 'Non disponibile')}</small>
+        </article>
+        <article className="workspace-kpi">
+          <span>{de ? 'Actions-Laufzeit (beobachtet)' : 'Tempo workflow (rilevato)'}</span>
+          <strong>{format(snapshot?.observed.actionsElapsedHours, ' h')}</strong>
+          <small>{de ? 'Verstrichene Zeit, keine abrechenbaren Minuten' : 'Tempo trascorso, non minuti fatturabili'}
+            {snapshot?.observed.actionsElapsedCoverage != null ? ` · ${snapshot.observed.actionsElapsedCoverage}%` : ''}
+          </small>
         </article>
         {summary ? <article className="workspace-kpi">
           <span>{de ? 'Pull Requests' : 'Pull request'}</span>
