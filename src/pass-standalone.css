@@ -51,3 +51,12 @@ a{color:var(--color-dns-deep)}.dns-note{color:var(--color-dns-muted);font:12px/1
 
 #pass-number{font:800 clamp(23px,6vw,34px)/1.2 var(--font-display);letter-spacing:.015em;color:var(--color-dns-deep);overflow-wrap:anywhere}
 #save-offline{display:block;margin:18px auto 8px}
+
+/* Customer QR camera: browser permission is requested only after the user taps Scan. */
+.pass-scan-entry { margin: 18px 0 20px; padding: 16px; border: 1px solid var(--color-dns-border); border-radius: var(--dns-card-radius); background: var(--color-dns-bg); }
+.pass-scan-start { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px; margin: 0; }
+.pass-scan-camera { margin-top: 14px; }
+.pass-scan-camera video { display: block; width: 100%; max-height: 400px; border-radius: var(--dns-control-radius); background: var(--color-dns-deep); object-fit: cover; aspect-ratio: 4 / 3; }
+.pass-scan-camera .dns-note { margin: 10px 0 0; }
+.pass-scan-cancel { display: block; width: 100%; margin-top: 12px; background: var(--color-dns-surface); color: var(--color-dns-deep); border: 1px solid var(--color-dns-border); }
+#scan-status:not(:empty) { margin: 12px 0 0; line-height: 1.5; }

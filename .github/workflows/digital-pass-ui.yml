@@ -13,5 +13,6 @@ jobs:
         with:
           node-version: '22'
       - run: npm install
+      - run: npx tsx --test tests/digital-pass-customer-scanner.test.ts
       - run: npm run build
       - run: node scripts/check-digital-pass-standalone.mjs

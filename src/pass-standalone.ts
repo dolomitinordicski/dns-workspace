@@ -1,5 +1,6 @@
 import {saveOfflinePass,readOfflinePass,clearOfflinePass} from './services/offlinePass';
 import QRCode from 'qrcode';
+import { parseOperatorHandoffQr } from './services/digitalPassHandoff';
 import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finishEmailLink, hasEmailLink, passRequest, signOut} from './services/digitalPassApi';
 
 type Lang='it'|'de'|'en';
@@ -8,30 +9,77 @@ type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;
 const passActivationEnabled = passApiConfigured && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
 const $=(id:string)=>document.getElementById(id)!;
 const translations={
- it:{heading:'Il tuo Digital Pass DNS',intro:'La registrazione digitale è facoltativa. La tessera fisica rimane valida.',email:'Email',send:'Invia link di accesso',confirm:'Conferma email',number:'Numero tessera',code:'Codice di attivazione',given:'Nome',family:'Cognome',privacy:'Ho letto l’informativa privacy',register:'Attiva Digital Pass',logout:'Esci',unavailable:'L’attivazione del Digital Pass sarà disponibile prossimamente. La tessera fisica rimane valida.',home:'Dal menu del browser puoi aggiungere questa pagina alla schermata Home.',foot:'La registrazione non modifica la validità della tessera cartacea.',sent:'Controlla la tua email. Se hai aperto il link su un altro dispositivo, inserisci qui lo stesso indirizzo.',error:'Operazione non completata. Verifica dati e connessione.',offline:'COPIA OFFLINE · Stato non aggiornato',online:'TESSERA SALVATA · Verifica online possibile',save:'Salva sul dispositivo per uso offline',saved:'Copia offline salvata su questo dispositivo.',authenticated:'Email verificata correttamente! Il tuo account è pronto. L’attivazione del Digital Pass sarà disponibile prossimamente.'},
- de:{heading:'Dein DNS Digital Pass',intro:'Die digitale Registrierung ist freiwillig. Deine physische Karte bleibt gültig.',email:'E-Mail',send:'Anmeldelink senden',confirm:'E-Mail bestätigen',number:'Kartennummer',code:'Aktivierungscode',given:'Vorname',family:'Nachname',privacy:'Ich habe die Datenschutzhinweise gelesen',register:'Digital Pass aktivieren',logout:'Abmelden',unavailable:'Die Aktivierung des Digital Pass wird demnächst verfügbar sein. Deine physische Karte bleibt gültig.',home:'Über das Browsermenü kannst du diese Seite zum Home-Bildschirm hinzufügen.',foot:'Die Registrierung ändert die Gültigkeit deiner physischen Karte nicht.',sent:'Prüfe deine E-Mail. Bei einem anderen Gerät bitte dieselbe Adresse hier eingeben.',error:'Vorgang fehlgeschlagen. Bitte Daten und Verbindung überprüfen.',offline:'OFFLINE-KOPIE · Status nicht aktualisiert',online:'KARTE GESPEICHERT · Online-Prüfung möglich',save:'Für Offline-Nutzung auf diesem Gerät speichern',saved:'Offline-Kopie auf diesem Gerät gespeichert.',authenticated:'E-Mail erfolgreich bestätigt! Dein Konto ist bereit. Die Aktivierung des Digital Pass wird demnächst verfügbar sein.'},
- en:{heading:'Your DNS Digital Pass',intro:'Digital registration is optional. Your physical pass remains valid.',email:'Email',send:'Send sign-in link',confirm:'Verify email',number:'Pass number',code:'Activation code',given:'First name',family:'Last name',privacy:'I have read the privacy notice',register:'Activate Digital Pass',logout:'Sign out',unavailable:'Digital Pass activation will be available soon. Your physical pass remains valid.',home:'Use your browser menu to add this page to your Home Screen.',foot:'Registration does not affect your physical pass.',sent:'Check your email. If you opened the link on another device, enter the same email address here.',error:'Unable to complete. Check details and connection.',offline:'OFFLINE COPY · Status not updated',online:'PASS SAVED · Online verification available',save:'Save on this device for offline use',saved:'Offline copy saved on this device.',authenticated:'Email successfully verified! Your account is ready. Digital Pass activation will be available soon.'}
+ it:{heading:'Il tuo Digital Pass DNS',intro:'La registrazione digitale è facoltativa. La tessera fisica rimane valida.',email:'Email',send:'Invia link di accesso',confirm:'Conferma email',number:'Numero tessera',code:'Codice di attivazione',given:'Nome',family:'Cognome',privacy:'Ho letto l’informativa privacy',register:'Attiva Digital Pass',logout:'Esci',unavailable:'L’attivazione del Digital Pass sarà disponibile prossimamente. La tessera fisica rimane valida.',home:'Dal menu del browser puoi aggiungere questa pagina alla schermata Home.',foot:'La registrazione non modifica la validità della tessera cartacea.',sent:'Controlla la tua email. Se hai aperto il link su un altro dispositivo, inserisci qui lo stesso indirizzo.',error:'Operazione non completata. Verifica dati e connessione.',offline:'COPIA OFFLINE · Stato non aggiornato',online:'TESSERA SALVATA · Verifica online possibile',save:'Salva sul dispositivo per uso offline',saved:'Copia offline salvata su questo dispositivo.',authenticated:'Email verificata correttamente! Il tuo account è pronto. L’attivazione del Digital Pass sarà disponibile prossimamente.',scan:'Scansiona QR operatore',scanHint:'Inquadra il QR mostrato dall’operatore.',scanStop:'Chiudi fotocamera',scanReady:'QR acquisito. Verifica la tua email per confermare la vendita.',scanInvalid:'Questo non è un QR di attivazione DNS valido.',scanError:'Fotocamera non disponibile. Verifica i permessi oppure inserisci il codice manualmente.',scanBusy:'Attivazione fotocamera…'},
+ de:{heading:'Dein DNS Digital Pass',intro:'Die digitale Registrierung ist freiwillig. Deine physische Karte bleibt gültig.',email:'E-Mail',send:'Anmeldelink senden',confirm:'E-Mail bestätigen',number:'Kartennummer',code:'Aktivierungscode',given:'Vorname',family:'Nachname',privacy:'Ich habe die Datenschutzhinweise gelesen',register:'Digital Pass aktivieren',logout:'Abmelden',unavailable:'Die Aktivierung des Digital Pass wird demnächst verfügbar sein. Deine physische Karte bleibt gültig.',home:'Über das Browsermenü kannst du diese Seite zum Home-Bildschirm hinzufügen.',foot:'Die Registrierung ändert die Gültigkeit deiner physischen Karte nicht.',sent:'Prüfe deine E-Mail. Bei einem anderen Gerät bitte dieselbe Adresse hier eingeben.',error:'Vorgang fehlgeschlagen. Bitte Daten und Verbindung überprüfen.',offline:'OFFLINE-KOPIE · Status nicht aktualisiert',online:'KARTE GESPEICHERT · Online-Prüfung möglich',save:'Für Offline-Nutzung auf diesem Gerät speichern',saved:'Offline-Kopie auf diesem Gerät gespeichert.',authenticated:'E-Mail erfolgreich bestätigt! Dein Konto ist bereit. Die Aktivierung des Digital Pass wird demnächst verfügbar sein.',scan:'QR-Code des Mitarbeiters scannen',scanHint:'Richte die Kamera auf den QR-Code des Mitarbeiters.',scanStop:'Kamera schließen',scanReady:'QR-Code erfasst. Bestätige deine E-Mail, um den Verkauf zu bestätigen.',scanInvalid:'Dies ist kein gültiger DNS-Aktivierungs-QR-Code.',scanError:'Kamera nicht verfügbar. Bitte Berechtigungen prüfen oder Code manuell eingeben.',scanBusy:'Kamera wird gestartet…'},
+ en:{heading:'Your DNS Digital Pass',intro:'Digital registration is optional. Your physical pass remains valid.',email:'Email',send:'Send sign-in link',confirm:'Verify email',number:'Pass number',code:'Activation code',given:'First name',family:'Last name',privacy:'I have read the privacy notice',register:'Activate Digital Pass',logout:'Sign out',unavailable:'Digital Pass activation will be available soon. Your physical pass remains valid.',home:'Use your browser menu to add this page to your Home Screen.',foot:'Registration does not affect your physical pass.',sent:'Check your email. If you opened the link on another device, enter the same email address here.',error:'Unable to complete. Check details and connection.',offline:'OFFLINE COPY · Status not updated',online:'PASS SAVED · Online verification available',save:'Save on this device for offline use',saved:'Offline copy saved on this device.',authenticated:'Email successfully verified! Your account is ready. Digital Pass activation will be available soon.',scan:'Scan operator QR',scanHint:'Point your camera at the QR displayed by the operator.',scanStop:'Close camera',scanReady:'QR scanned. Verify your email to confirm the sale.',scanInvalid:'This is not a valid DNS activation QR.',scanError:'Camera unavailable. Check permissions or enter the code manually.',scanBusy:'Starting camera…'}
 };
 let lang:Lang='it',pass:Pass|null=null,loading=false,offline=false;
 const handoffKey='dns-digital-pass-handoff-v1';
+function keepHandoff(number:string,code:string) {
+ sessionStorage.setItem(handoffKey,JSON.stringify({number,code,expires:Date.now()+10*60*1000}));
+ ($('number') as HTMLInputElement).value=number;
+ ($('code') as HTMLInputElement).value=code;
+}
 function applyHandoff() {
- const hash=window.location.hash;
- if(hash.startsWith('#activation?')) {
-  const params=new URLSearchParams(hash.slice('#activation?'.length));
-  const number=params.get('number')||'',code=params.get('code')||'';
-  if(/^\d{1,12}$/.test(number)&&/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
-   sessionStorage.setItem(handoffKey,JSON.stringify({number,code,expires:Date.now()+10*60*1000}));
-  }
+ if(location.hash.startsWith('#activation?')){
+  const handoff=parseOperatorHandoffQr(location.href,location.origin);
+  if(handoff)keepHandoff(handoff.number,handoff.code);
   history.replaceState(null,'',location.pathname+location.search+'#activation');
  }
  try {
   const stored=JSON.parse(sessionStorage.getItem(handoffKey)||'null');
-  if(!stored||stored.expires<=Date.now()||!/^\d{1,12}$/.test(stored.number)||!/^[A-HJ-NP-Z2-9]{6}$/.test(stored.code)) {
+  if(!stored||stored.expires<=Date.now()||!/^[0-9]{1,12}$/.test(stored.number)||!/^[A-HJ-NP-Z2-9]{6}$/.test(stored.code)) {
    sessionStorage.removeItem(handoffKey);return;
   }
   ($('number') as HTMLInputElement).value=stored.number;
   ($('code') as HTMLInputElement).value=stored.code;
  }catch {sessionStorage.removeItem(handoffKey)}
+}
+type ScanControls={stop:()=>void|Promise<void>};
+let scanControls:ScanControls|null=null,scanOpen=false,scanStarting=false,scanAccepted=false;
+function stopScanner() {
+ scanOpen=false;scanStarting=false;
+ const controls=scanControls;scanControls=null;
+ if(controls)void Promise.resolve(controls.stop()).catch(()=>{});
+ $('scan-camera').classList.add('hide');
+ ($('scan-camera') as HTMLElement).hidden=true;
+ ($('scan-start') as HTMLButtonElement).disabled=false;
+ const video=$('scan-video') as HTMLVideoElement;
+ video.pause();
+ video.srcObject=null;
+}
+async function startScanner() {
+ if(!passActivationEnabled||scanOpen||scanStarting||pass)return;
+ if(!navigator.mediaDevices?.getUserMedia||!window.isSecureContext){
+  setText('scan-status',translations[lang].scanError);return;
+ }
+ scanOpen=true;scanStarting=true;scanAccepted=false;
+ setText('scan-status',translations[lang].scanBusy);
+ $('scan-camera').classList.remove('hide');
+ ($('scan-camera') as HTMLElement).hidden=false;
+ ($('scan-start') as HTMLButtonElement).disabled=true;
+ try {
+  const { BrowserQRCodeReader }=await import('@zxing/browser');
+  if(!scanOpen)return;
+  const reader=new BrowserQRCodeReader();
+  const controls=await reader.decodeFromVideoDevice(undefined,$('scan-video') as HTMLVideoElement,(result,_err,activeControls)=>{
+   if(!scanOpen||scanAccepted||!result)return;
+   const handoff=parseOperatorHandoffQr(result.getText(),location.origin);
+   if(!handoff){setText('scan-status',translations[lang].scanInvalid);return;}
+   scanAccepted=true;
+   void Promise.resolve(activeControls.stop()).catch(()=>{});
+   keepHandoff(handoff.number,handoff.code);
+   stopScanner();
+   if(passAuth.currentUser?.emailVerified)void claimScannedPass();
+   else setText('scan-status',translations[lang].scanReady);
+  });
+  if(!scanOpen||scanAccepted){void Promise.resolve(controls.stop()).catch(()=>{});return;}
+  scanControls=controls;
+  setText('scan-status','');
+ }catch {
+  stopScanner();
+  setText('scan-status',translations[lang].scanError);
+ }finally{scanStarting=false}
 }
 let claiming=false;
 async function claimScannedPass() {
@@ -57,9 +105,13 @@ const marketing={
 };
 function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
  for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
- for(const [id,key] of Object.entries({'heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save'}))setText(id,t[key as keyof typeof t]);
+ for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save'}))setText(id,t[key as keyof typeof t]);
 }
 function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
+ const showScan=passActivationEnabled&&!pass;
+ $('scan-entry').classList.toggle('hide',!showScan);
+ ($('scan-entry') as HTMLElement).hidden=!showScan;
+ if(!showScan&&scanOpen)stopScanner();
  $('unavailable').classList.toggle('hide',passActivationEnabled||authorized);
  $('login').classList.toggle('hide', authorized || !passActivationEnabled);
  ($('login') as HTMLFormElement).hidden = authorized || !passActivationEnabled;
@@ -84,6 +136,10 @@ async function showPass(){if(!pass||pass.status!=='ACTIVE'||!/^dns-pass:v1:[A-Za
  ($('qr') as HTMLImageElement).src=await QRCode.toDataURL(base+'/v/'+pass.qrPayload.slice('dns-pass:v1:'.length),{width:320,margin:3});
 }
 async function restoreOffline(){const saved=await readOfflinePass();if(saved){pass=saved;offline=true;await showPass();render()}}
+$('scan-start').addEventListener('click',()=>void startScanner());
+$('scan-stop').addEventListener('click',()=>{stopScanner();setText('scan-status','');});
+window.addEventListener('pagehide',stopScanner);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&scanOpen)stopScanner()});
 $('save-offline').addEventListener('click',async()=>{if(!pass||offline)return;try{await saveOfflinePass(pass);setText('status',translations[lang].saved)}catch{setText('status',translations[lang].error)}});
 $('lang').addEventListener('change',()=>{lang=($('lang') as HTMLSelectElement).value as Lang;translate();render();if(passAuth.currentUser?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated)});
 $('login').addEventListener('submit',async(e)=>{e.preventDefault();if(!passActivationEnabled)return;loading=true;render();setText('status','');try{
@@ -103,7 +159,7 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  ($('code') as HTMLInputElement).value='';
  pass=await passRequest<Pass>('/v1/me/digital-pass',{physicalPassId:result.registrationId});await showPass();
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
-$('logout').addEventListener('click',()=>{sessionStorage.removeItem(handoffKey);pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
+$('logout').addEventListener('click',()=>{stopScanner();sessionStorage.removeItem(handoffKey);pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
 onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;applyHandoff();render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(user?.emailVerified)void claimScannedPass();if(!navigator.onLine)void restoreOffline();else void loadPass()});
 translate();applyHandoff();render();
 
