@@ -9,6 +9,7 @@
 <section id="scan-entry" class="pass-scan-entry hide" hidden aria-label="QR operatore"><button id="scan-start" class="dns-button pass-scan-start" type="button">Scansiona QR operatore</button><div id="scan-camera" class="pass-scan-camera hide" hidden><video id="scan-video" autoplay muted playsinline aria-label="Inquadra il QR dell’operatore"></video><p id="scan-hint" class="dns-note">Inquadra il QR mostrato dall’operatore.</p><button id="scan-stop" type="button" class="dns-button pass-scan-cancel">Chiudi fotocamera</button></div><p id="scan-status" class="dns-note" role="status" aria-live="polite"></p></section>
 <form id="login"><label id="email-label" for="email">Email</label><input id="email" type="email" autocomplete="email" required><button class="dns-button" type="submit" id="login-button">Invia link di accesso</button></form>
 <form id="registration" class="hide" hidden>
+<p id="handoff-hint" class="dns-note hide"></p>
 <label for="number" id="number-label">Numero tessera</label><input id="number" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" required>
 <label for="code" id="code-label">Codice di attivazione</label><input id="code" maxlength="6" minlength="6" autocomplete="off" required>
 <label for="given" id="given-label">Nome</label><input id="given" autocomplete="given-name" required maxlength="100">
