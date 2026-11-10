@@ -1,5 +1,6 @@
 import {saveOfflinePass,readOfflinePass,clearOfflinePass} from './services/offlinePass';
 import QRCode from 'qrcode';
+import { digitalPassPrivacyUrl } from './services/digitalPassPrivacy';
 import { parseOperatorHandoffQr } from './services/digitalPassHandoff';
 import { storePassHandoff, readPassHandoff, clearPassHandoff } from './services/passHandoff';
 import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finishEmailLink, hasEmailLink, passRequest, signOut} from './services/digitalPassApi';
@@ -7,7 +8,8 @@ import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finis
 type Lang='it'|'de'|'en';
 type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string};
 // Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
-const passActivationEnabled = passApiConfigured && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
+const privacyUrl = digitalPassPrivacyUrl(import.meta.env.VITE_DNS_DIGITAL_PASS_PRIVACY_URL);
+const passActivationEnabled = passApiConfigured && Boolean(privacyUrl) && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
 const $=(id:string)=>document.getElementById(id)!;
 const translations={
  it:{heading:'Il tuo Digital Pass DNS',intro:'La registrazione digitale è facoltativa. La tessera fisica rimane valida.',email:'Email',send:'Invia link di accesso',confirm:'Conferma email',number:'Numero tessera',code:'Codice di attivazione',given:'Nome',family:'Cognome',privacy:'Ho letto l’informativa privacy',register:'Attiva Digital Pass',handoff:'Se hai aperto il link su un altro dispositivo, scansiona di nuovo il QR oppure inserisci numero tessera e codice.',logout:'Esci',unavailable:'L’attivazione del Digital Pass sarà disponibile prossimamente. La tessera fisica rimane valida.',home:'Dal menu del browser puoi aggiungere questa pagina alla schermata Home.',foot:'La registrazione non modifica la validità della tessera cartacea.',sent:'Controlla la tua email. Se apri il link su un altro dispositivo, usa la stessa email e scansiona di nuovo il QR o inserisci numero tessera e codice.',error:'Operazione non completata. Verifica dati e connessione.',offline:'COPIA OFFLINE · Stato non aggiornato',online:'TESSERA SALVATA · Verifica online possibile',save:'Salva sul dispositivo per uso offline',saved:'Copia offline salvata su questo dispositivo.',authenticated:'Email verificata correttamente! Il tuo account è pronto. L’attivazione del Digital Pass sarà disponibile prossimamente.',scan:'Scansiona QR operatore',scanHint:'Inquadra il QR mostrato dall’operatore.',scanStop:'Chiudi fotocamera',scanReady:'QR acquisito. Verifica la tua email per confermare la vendita.',scanInvalid:'Questo non è un QR di attivazione DNS valido.',scanError:'Fotocamera non disponibile. Verifica i permessi oppure inserisci il codice manualmente.',scanBusy:'Attivazione fotocamera…'},
@@ -102,7 +104,14 @@ function translate(){const t=translations[lang];const m=marketing[lang];document
  for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
  for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
 }
-function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
+function render(){
+ for(const id of ['privacy-label','privacy-notice']) {
+  const link=$(id) as HTMLAnchorElement;
+  if(privacyUrl)link.href=privacyUrl;else link.removeAttribute('href');
+  link.hidden=!privacyUrl;
+ }
+ setText('privacy-notice',lang==='de'?'Datenschutzhinweise zum Digital Pass':lang==='en'?'Digital Pass privacy notice':'Informativa privacy del Digital Pass');
+ const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
  const showScan=passActivationEnabled&&!pass;
  $('scan-entry').classList.toggle('hide',!showScan);
  ($('scan-entry') as HTMLElement).hidden=!showScan;
