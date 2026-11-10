@@ -8,13 +8,15 @@ type Snapshot = {
   generatedAt: string;
   periodStart: string;
   periodEnd: string;
-  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number };
+  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number; actionsElapsedHours?: number | null; actionsElapsedCoverage?: number | null };
   estimated: {
     aiHours: number | null;
     humanEquivalentHours: number | null;
     electricityKwh: { low: number; central: number; high: number } | null;
     waterLitres: { low: number; central: number; high: number } | null;
   };
+  environmentModel?: { label: string; modelId: string; benchmarkUrl?: string } | null;
+  developmentActivity?: { sessions: number; estimateHours: { low: number; central: number; high: number }; methodology: string } | null;
   methodologyUrl?: string;
 };
 
@@ -117,6 +119,20 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
           <strong>{snapshot ? integer.format(snapshot.observed.commits) : '—'}</strong>
           <small>{snapshot ? `${snapshot.observed.repositories} repository` : empty}</small>
         </article>
+        <article className="workspace-kpi">
+          <span>{de ? 'Entwicklungsaktivität (Schätzung)' : 'Attività di sviluppo (stima)'}</span>
+          <strong>{snapshot?.developmentActivity?.estimateHours ? `${format(snapshot.developmentActivity.estimateHours.central)} h` : '—'}</strong>
+          <small>{snapshot?.developmentActivity?.estimateHours
+            ? `${format(snapshot.developmentActivity.estimateHours.low)}–${format(snapshot.developmentActivity.estimateHours.high)} h · ${snapshot.developmentActivity.sessions} ${de ? 'Sitzungen' : 'sessioni'}`
+            : (de ? 'Nicht verfügbar' : 'Non disponibile')}</small>
+        </article>
+        <article className="workspace-kpi">
+          <span>{de ? 'Actions-Laufzeit (beobachtet)' : 'Tempo workflow (rilevato)'}</span>
+          <strong>{format(snapshot?.observed.actionsElapsedHours, ' h')}</strong>
+          <small>{de ? 'Verstrichene Zeit, keine abrechenbaren Minuten' : 'Tempo trascorso, non minuti fatturabili'}
+            {snapshot?.observed.actionsElapsedCoverage != null ? ` · ${snapshot.observed.actionsElapsedCoverage}%` : ''}
+          </small>
+        </article>
         {summary ? <article className="workspace-kpi">
           <span>{de ? 'Pull Requests' : 'Pull request'}</span>
           <strong>{snapshot ? integer.format(snapshot.observed.pullRequests) : '—'}</strong>
@@ -126,17 +142,28 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
           <strong>{format(snapshot?.estimated.aiHours, ' h')}</strong>
           <small>{de ? 'Keine Ableitung aus Commits allein' : 'Non deducibili dai soli commit'}</small>
         </article>}
-        {!summary && <article className="workspace-kpi">
+        <article className="workspace-kpi">
           <span>{de ? 'Stromverbrauch (Schätzung)' : 'Energia (stima)'}</span>
           <strong>{format(snapshot?.estimated.electricityKwh?.central, ' kWh')}</strong>
           <small>{range(snapshot?.estimated.electricityKwh ?? null)} kWh</small>
-        </article>}
-        {!summary && <article className="workspace-kpi">
+        </article>
+        <article className="workspace-kpi">
           <span>{de ? 'Wasserverbrauch (Schätzung)' : 'Acqua (stima)'}</span>
           <strong>{format(snapshot?.estimated.waterLitres?.central, ' L')}</strong>
           <small>{range(snapshot?.estimated.waterLitres ?? null)} L</small>
-        </article>}
+        </article>
       </div>
+      <p className="workspace-source-note">
+        {de ? 'Zeitwerte sind Heuristiken aus GitHub-Zeitstempeln, keine gemessenen KI- oder Arbeitsstunden.'
+          : 'Le ore di attività derivano dagli orari GitHub: non sono ore AI né ore umane misurate.'}
+      </p>
+      {snapshot?.environmentModel && <p className="workspace-source-note">
+        {de
+          ? 'Strom und Wasser: explorative Szenarien aus angenommenen KI-Operationen je GitHub-Sitzung; kein gemessener Verbrauch. Wasser: nur direkte Kühlung.'
+          : 'Energia e acqua: scenari esplorativi basati su operazioni AI ipotizzate per sessione GitHub; non sono consumi misurati. Acqua: solo raffreddamento diretto.'}
+        {' · '}<a href="https://github.com/dolomitinordicski/dns-workspace/blob/main/docs/ai-impact-monitor.md"
+          target="_blank" rel="noopener noreferrer">{de ? 'Annahmen' : 'Ipotesi e fonti'}</a>
+      </p>}
       <p className="workspace-source-note" role="status">
         {state === 'loading' ? (de ? 'Daten werden geladen…' : 'Caricamento dati…')
           : state === 'error' ? (de ? 'Daten nicht zugänglich; Berechtigungen prüfen.' : 'Dati non accessibili: verificare i permessi.')

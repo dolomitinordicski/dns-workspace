@@ -5,6 +5,8 @@
  * requires a short-lived OAuth access token issued via GitHub OIDC / Google WIF.
  */
 import { writeFile, mkdir } from 'node:fs/promises';
+import { estimateDevelopmentSessions } from './ai-impact-session-estimator.mjs';
+import { modelEnvironmentalScenarios } from './ai-impact-environment-model.mjs';
 
 export const OWNER = 'dolomitinordicski';
 export const START = process.env.DNS_AI_IMPACT_START || '2026-10-01';
@@ -52,6 +54,8 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
   const uniqueCommits = new Set();
   const uniquePRs = new Set();
   const uniqueRuns = new Set();
+  let actionsElapsedMs = 0;
+  let measuredRunDurations = 0;
   for (const item of commits) {
     if (!byDate(item.date, start, end)) continue;
     const id = `${item.repo}:${item.sha}`;
@@ -72,6 +76,13 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
     if (uniqueRuns.has(id)) continue;
     uniqueRuns.add(id);
     ensure(isoDay(item.date)).observed.actionsRuns++;
+    if (item.status === 'completed' && item.startedAt && item.completedAt) {
+      const ms = Date.parse(item.completedAt) - Date.parse(item.startedAt);
+      if (Number.isFinite(ms) && ms >= 0 && ms < 7 * 86_400_000) {
+        actionsElapsedMs += ms;
+        measuredRunDurations++;
+      }
+    }
   }
   const estimated = {
     aiHours: null, humanEquivalentHours: null,
@@ -85,6 +96,8 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
       pullRequests: uniquePRs.size,
       actionsRuns: uniqueRuns.size,
       actionsMinutes: null,
+      actionsElapsedHours: measuredRunDurations ? Math.round(actionsElapsedMs/3_600_000*10)/10 : null,
+      actionsElapsedCoverage: uniqueRuns.size ? Math.round(measuredRunDurations/uniqueRuns.size*100) : null,
     },
     estimated,
     provenance: 'github-rest-api',
@@ -122,7 +135,7 @@ async function collectRepo(repo, start, end) {
       if (page === 100) throw new Error('RUNS_PAGINATION_LIMIT');
     }
     for (const x of workflowRuns) {
-      if (byDate(x.created_at,start,end)) runs.push({repo,id:x.id,date:x.created_at});
+      if (byDate(x.created_at,start,end)) runs.push({repo,id:x.id,date:x.created_at,startedAt:x.run_started_at,completedAt:x.updated_at, status:x.status});
     }
   } catch (error) {
     // Do not silently replace unavailable GitHub Actions data with zero.
@@ -131,7 +144,10 @@ async function collectRepo(repo, start, end) {
   return { commits, pulls, runs };
 }
 export function publicSummary(latest) {
-  // Explicit, minimal field allowlist. NEVER copy arbitrary admin metadata.
+  // Publish environmental values ONLY with their explicitly labelled scenario model.
+  // Unvalidated admin estimates must never leak to the public summary.
+  const approvedScenario = latest.environmentModel?.modelId === 'ai-inference-exploratory-v1'
+    && latest.environmentModel?.label === 'exploratory_scenario_not_measured';
   return {
     schemaVersion: 1,
     generatedAt: latest.generatedAt,
@@ -142,14 +158,18 @@ export function publicSummary(latest) {
       commits: latest.observed.commits,
       pullRequests: latest.observed.pullRequests,
       actionsMinutes: null,
+      actionsElapsedHours: latest.observed.actionsElapsedHours,
+      actionsElapsedCoverage: latest.observed.actionsElapsedCoverage,
     },
     estimated: {
       aiHours: null,
       humanEquivalentHours: null,
-      electricityKwh: null,
-      waterLitres: null,
+      electricityKwh: approvedScenario ? latest.estimated.electricityKwh : null,
+      waterLitres: approvedScenario ? latest.estimated.waterLitres : null,
     },
+    environmentModel: approvedScenario ? latest.environmentModel : null,
     provenance: 'github-rest-api',
+    developmentActivity: latest.developmentActivity ?? null,
   };
 }
 async function firestorePatch(collectionId, documentId, payload, accessToken) {
@@ -184,6 +204,11 @@ export async function main() {
     runs.push(...events.runs);
   }
   const result = summarize(repoNames, commits, pulls, runs, start, end, new Date().toISOString());
+  result.latest.developmentActivity = estimateDevelopmentSessions(commits.filter(x => x.date && x.date.slice(0,10) >= start && x.date.slice(0,10) <= end));
+  const model = modelEnvironmentalScenarios(result.latest.developmentActivity.sessions);
+  result.latest.estimated.electricityKwh = model.electricityKwh;
+  result.latest.estimated.waterLitres = model.waterLitres;
+  result.latest.environmentModel = model;
   await mkdir('ai-impact-output', {recursive:true});
   await writeFile('ai-impact-output/snapshot.json', JSON.stringify(result,null,2) + '\n');
   await writeFile('ai-impact-output/public-summary.json', JSON.stringify(publicSummary(result.latest),null,2) + '\n');
