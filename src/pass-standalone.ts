@@ -13,6 +13,18 @@ const translations={
  en:{heading:'Your DNS Digital Pass',intro:'Digital registration is optional. Your physical pass remains valid.',email:'Email',send:'Send sign-in link',confirm:'Verify email',number:'Pass number',code:'Activation code',given:'First name',family:'Last name',privacy:'I have read the privacy notice',register:'Activate Digital Pass',logout:'Sign out',unavailable:'Digital Pass activation will be available soon. Your physical pass remains valid.',home:'Use your browser menu to add this page to your Home Screen.',foot:'Registration does not affect your physical pass.',sent:'Check your email. If you opened the link on another device, enter the same email address here.',error:'Unable to complete. Check details and connection.',offline:'OFFLINE COPY · Status not updated',online:'PASS SAVED · Online verification available',save:'Save on this device for offline use',saved:'Offline copy saved on this device.',authenticated:'Email successfully verified! Your account is ready. Digital Pass activation will be available soon.'}
 };
 let lang:Lang='it',pass:Pass|null=null,loading=false,offline=false;
+function applyHandoff() {
+  const hash=window.location.hash;
+  if(!hash.startsWith('#activation?'))return;
+  const params=new URLSearchParams(hash.slice('#activation?'.length));
+  const number=params.get('number')||'';
+  const code=params.get('code')||'';
+  if(!/^\d{1,12}$/.test(number)||! /^[A-HJ-NP-Z2-9]{6}$/.test(code))return;
+  ($('number') as HTMLInputElement).value=number;
+  ($('code') as HTMLInputElement).value=code;
+  history.replaceState(null,'',location.pathname+location.search+'#activation');
+}
+
 const setText=(id:string,value:string)=>{$(id).textContent=value;};
 const marketing={
  it:{hero:'Le tue piste. Il tuo pass. Sempre con te.',subtitle:'Porta lo stagionale sul telefono, in modo semplice e volontario.',action:'Attiva il Digital Pass ↓',one:'✓ Nessuna app da scaricare',two:'✓ Attivazione facoltativa',three:'✓ Tessera fisica sempre valida',step:'01 — ATTIVAZIONE',ticket:'IL TUO DIGITAL PASS'},
@@ -64,6 +76,6 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('logout').addEventListener('click',()=>{pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
 onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(!navigator.onLine)void restoreOffline();else void loadPass()});
-translate();render();
+translate();applyHandoff();render();
 
 if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/',updateViaCache:'none'}).catch(()=>{})});
