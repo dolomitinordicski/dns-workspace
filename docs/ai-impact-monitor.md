@@ -73,3 +73,25 @@ Source: `scripts/ai-impact-collector.mjs`. GitHub Actions checks out the code, r
 - A successful workflow run in dry-run mode does **not** prove that Firestore publishing is configured.
 - No anonymous/public access to these metrics is required.
 
+
+## Two visibility tiers — member summary versus DNS Admin (2026-11-10)
+
+**Member dashboard (all authenticated organizations):** the same AI & Sustainability section renders from `memberAiImpactSnapshots/latest`. It shows only total repository, commit and PR counts; no costs, staff hours, provider/model identity, detailed runs, or unpublished environmental estimates. These are aggregate ecosystem statistics, not measurements of individual organizations' contributions.
+
+**DNS Admin dashboard:** reads `adminAiImpactSnapshots/latest` with detailed observed activity and explicit, currently unavailable estimated measures. Do not treat UI conditional display as a security barrier.
+
+The collector uses `publicSummary()` as an explicit field allowlist and writes two distinct documents. It must **never** clone the admin payload into the member document.
+
+### Security deployment blocker
+
+Before enabling publication, the owner of the real `dns-core` Firestore rules must add least-privilege rules:
+
+- `adminAiImpactSnapshots/{documentId}`: get/list only DNS Admin per the existing verified identity contract; no client writes.
+- `memberAiImpactSnapshots/latest`: get only to a signed-in, ACTIVE DNS Workspace organization member or DNS Admin; no list and no client writes. No access to arbitrary document IDs.
+- Read access for both collections must be tested with active admin, active member and unauthenticated accounts. Do **not** set `allow read: if true`.
+- Service account uses server-side IAM write access. A Firestore SDK client should never receive server credentials.
+- If rules are not implemented, both dashboard panels must remain unavailable; this is safer than making privileged data public.
+
+### Product communication
+
+Use explanatory copy instead of a raw engineering dashboard: GitHub statistics are evidence of development activity, not a proxy for AI hours. Publish water, electricity and hours only after a defensible methodology and verified source telemetry, using uncertainty ranges. Provide an accessible bilingual DE/IT explanation.
