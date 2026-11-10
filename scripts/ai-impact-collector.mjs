@@ -6,6 +6,7 @@
  */
 import { writeFile, mkdir } from 'node:fs/promises';
 import { estimateDevelopmentSessions } from './ai-impact-session-estimator.mjs';
+import { modelEnvironmentalScenarios } from './ai-impact-environment-model.mjs';
 
 export const OWNER = 'dolomitinordicski';
 export const START = process.env.DNS_AI_IMPACT_START || '2026-10-01';
@@ -160,9 +161,10 @@ export function publicSummary(latest) {
     estimated: {
       aiHours: null,
       humanEquivalentHours: null,
-      electricityKwh: null,
-      waterLitres: null,
+      electricityKwh: latest.estimated.electricityKwh,
+      waterLitres: latest.estimated.waterLitres,
     },
+    environmentModel: latest.environmentModel ?? null,
     provenance: 'github-rest-api',
     developmentActivity: latest.developmentActivity ?? null,
   };
@@ -200,6 +202,10 @@ export async function main() {
   }
   const result = summarize(repoNames, commits, pulls, runs, start, end, new Date().toISOString());
   result.latest.developmentActivity = estimateDevelopmentSessions(commits.filter(x => x.date && x.date.slice(0,10) >= start && x.date.slice(0,10) <= end));
+  const model = modelEnvironmentalScenarios(result.latest.developmentActivity.sessions);
+  result.latest.estimated.electricityKwh = model.electricityKwh;
+  result.latest.estimated.waterLitres = model.waterLitres;
+  result.latest.environmentModel = model;
   await mkdir('ai-impact-output', {recursive:true});
   await writeFile('ai-impact-output/snapshot.json', JSON.stringify(result,null,2) + '\n');
   await writeFile('ai-impact-output/public-summary.json', JSON.stringify(publicSummary(result.latest),null,2) + '\n');
