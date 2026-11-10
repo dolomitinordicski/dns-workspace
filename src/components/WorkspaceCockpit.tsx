@@ -40,7 +40,7 @@ export function WorkspaceCockpit(props: Props) {
   const { language, identity, organization, organizations, tools, onOrganizationChange } = props;
   const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
   const [showAllNews, setShowAllNews] = useState(false);
-  const [passExpanded, setPassExpanded] = useState(false);
+  const [passExpanded, setPassExpanded] = useState(true);
   const [releases, setReleases] = useState<DNSRelease[]>([]);
   const [newsError, setNewsError] = useState(false);
   const [pulse, setPulse] = useState<WorkspaceDashboardData | null>(null);
@@ -152,12 +152,12 @@ export function WorkspaceCockpit(props: Props) {
         <section className="workspace-digital-pass-panel">
           <button type="button" className="workspace-digital-pass-launcher" onClick={() => setPassExpanded(value => !value)}
             aria-expanded={passExpanded} aria-controls="workspace-digital-pass-content"
-            aria-label={language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}>
+            aria-label={language === 'de' ? 'Physische Saisonkarte zuordnen' : 'Associa tessera fisica'}>
             <span className="workspace-digital-pass-launcher-icon" aria-hidden="true"><svg className="lucide lucide-wallet-cards" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M7 15h4"/></svg></span>
             <span className="workspace-digital-pass-launcher-copy">
               <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
-              <strong>{language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}</strong>
-              <small>{language === 'de' ? 'Kartennummer eingeben und QR-Code anzeigen' : 'Inserisci il numero della tessera e mostra il QR al cliente'}</small>
+              <strong>{language === 'de' ? 'Physische Saisonkarte zuordnen' : 'Associa tessera fisica'}</strong>
+              <small>{language === 'de' ? 'Kartennummer prüfen und Aktivierungs-QR erzeugen' : 'Verifica la tessera e genera il QR di attivazione'}</small>
             </span>
             <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={passExpanded ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6"}/></svg></span>
           </button>
