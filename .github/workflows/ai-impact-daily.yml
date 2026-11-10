@@ -12,6 +12,8 @@ on:
     paths:
       - 'scripts/ai-impact-collector.mjs'
       - 'tests/ai-impact-collector.test.mjs'
+      - 'scripts/ai-impact-session-estimator.mjs'
+      - 'tests/ai-impact-session-estimator.test.mjs'
       - '.github/workflows/ai-impact-daily.yml'
 
 permissions:
@@ -32,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/ai-impact-collector.test.mjs
+      - run: node --test tests/ai-impact-collector.test.mjs tests/ai-impact-session-estimator.test.mjs
 
   collect:
     if: github.event_name != 'pull_request'
