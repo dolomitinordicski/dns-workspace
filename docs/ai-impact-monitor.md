@@ -49,3 +49,27 @@ Status: first read-only Workspace integration; **no collector, scheduled sync or
 ## Deployment gate
 
 This branch does not change Firestore rules, billing, Firebase functions, IAM or production infrastructure. Do not merge or deploy until explicit approval under DNS release governance.
+
+## Daily collector implementation (phase 2)
+
+Workflow: `.github/workflows/ai-impact-daily.yml`, scheduled daily at **05:17 UTC** (plus manual workflow_dispatch).
+Source: `scripts/ai-impact-collector.mjs`. GitHub Actions checks out the code, runs unit tests, then collects owner repositories, commits from the default branch, PRs by creation date, and workflow-run counts. Each invocation reconstructs the period and idempotently updates `day-YYYY-MM-DD` and `latest`. GitHub may retain only limited workflow history; this is an incomplete historical data source.
+
+### Activation prerequisites — mandatory
+
+1. Create a dedicated Google Cloud service account for the collector with **only** the Firestore write permissions required for `dns-core`, preferably a resource-scoped/custom role where supported. No service-account JSON keys.
+2. Configure GitHub OIDC → Google Workload Identity Federation trust restricted to the canonical DNS Workspace repository, default branch and approved `dns-ai-impact-collector` GitHub environment.
+3. Set GitHub **environment variables** `DNS_AI_IMPACT_WIF_PROVIDER`, `DNS_AI_IMPACT_SERVICE_ACCOUNT` and `DNS_AI_IMPACT_PUBLISH_ENABLED=true` after verification. Optional `DNS_AI_IMPACT_START` defaults to `2026-10-01` as a **provisional cutoff** only; replace with independently verified Foundation milestone before claiming whole-project historical coverage.
+4. In the actual **dns-core Firestore rules source of truth**, allow reads of `adminAiImpactSnapshots/{id}` only for authenticated DNS Admin principals as defined by existing DNS Identity rules. Ensure ordinary area users cannot read, list or write the collection, and client writes are always denied. This repository does not own or deploy those rules.
+5. Run manual `workflow_dispatch` with `publish=false` first; verify the generated snapshot artifact, cutoff and source counts; then enable publishing. Never add WIF tokens/keys to the frontend.
+6. Verify that Workspace Admin can read `latest`, non-admin cannot, daily snapshots have the expected provenance, and latest timestamp advances between days.
+
+### Methodological constraints
+
+- Counts of GitHub commits/PRs/runs are observed activity, not AI hours.
+- `actionsMinutes: null` is intentional: count of runs does not establish actual billed minutes.
+- All AI hours, human equivalents, electricity and water remain `null` until an auditable workload dataset and approved conversion methodology exist.
+- The admin dashboard's refresh button reloads Firestore; it does **not** manually start this job. Manual collection is available via GitHub Actions.
+- A successful workflow run in dry-run mode does **not** prove that Firestore publishing is configured.
+- No anonymous/public access to these metrics is required.
+
