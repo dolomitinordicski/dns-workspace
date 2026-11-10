@@ -186,6 +186,7 @@ export async function main() {
   const result = summarize(repoNames, commits, pulls, runs, start, end, new Date().toISOString());
   await mkdir('ai-impact-output', {recursive:true});
   await writeFile('ai-impact-output/snapshot.json', JSON.stringify(result,null,2) + '\n');
+  await writeFile('ai-impact-output/public-summary.json', JSON.stringify(publicSummary(result.latest),null,2) + '\n');
   console.log(JSON.stringify({repositories:repoNames.length,commits:result.latest.observed.commits,
     pullRequests:result.latest.observed.pullRequests,actionsRuns:result.latest.observed.actionsRuns}));
   if (process.env.DNS_AI_IMPACT_PUBLISH === 'true') {
