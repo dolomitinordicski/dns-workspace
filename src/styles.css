@@ -1664,3 +1664,7 @@ html[data-dns-theme="dark"] .workspace-permission-choice[aria-pressed="true"] {
 .workspace-digital-pass-launcher-copy small { opacity:.8; line-height:1.4; }
 .workspace-digital-pass-launcher-arrow { font-size:1.45rem; color:var(--app-accent); }
 @media(max-width:600px) { .workspace-digital-pass-launcher { padding:1rem; gap:.7rem; } .workspace-digital-pass-launcher-icon { width:2.5rem; height:2.5rem; } }
+
+.workspace-digital-pass-panel { margin:1rem 0 1.25rem; border:1px solid color-mix(in srgb, var(--app-accent) 45%, transparent); border-radius:var(--dns-radius-lg, 14px); overflow:hidden; }
+.workspace-digital-pass-panel .workspace-digital-pass-launcher { margin:0; border:0; border-radius:0; }
+.workspace-digital-pass-content { border-top:1px solid color-mix(in srgb, var(--app-accent) 30%, transparent); background:var(--color-dns-surface, var(--dns-surface, #fff)); }
