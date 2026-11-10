@@ -148,6 +148,17 @@ export function WorkspaceCockpit(props: Props) {
   return (
     <div className="workspace-cockpit-layout py-4">
       <div className="workspace-cockpit-content">
+        <button type="button" className="workspace-digital-pass-launcher" onClick={onOpenDigitalPassOperator}
+          aria-label={language === 'de' ? 'DNS Saisonkarte: Betreiberoberfläche öffnen' : 'Stagionale DNS: apri interfaccia operatore'}>
+          <span className="workspace-digital-pass-launcher-icon" aria-hidden="true">▣</span>
+          <span className="workspace-digital-pass-launcher-copy">
+            <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
+            <strong>{language === 'de' ? 'Saisonkarte aktivieren' : 'Attiva uno stagionale'}</strong>
+            <small>{language === 'de' ? 'Kartennummer eingeben und Aktivierungscode erstellen · Pilotphase' : 'Inserisci il numero della tessera e genera il codice di attivazione · Fase pilota'}</small>
+          </span>
+          <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true">→</span>
+        </button>
+
         <section className="workspace-home-hero">
           <div className="workspace-home-identity">
             <div className="dns-kicker">{c.subtitle}</div>
@@ -166,17 +177,6 @@ export function WorkspaceCockpit(props: Props) {
               onClick={() => void signOutDNS()}>{c.signOut}</button>
           </div>
         </section>
-
-        <button type="button" className="workspace-digital-pass-launcher" onClick={onOpenDigitalPassOperator}
-          aria-label={language === 'de' ? 'DNS Saisonkarte: Betreiberoberfläche öffnen' : 'Stagionale DNS: apri interfaccia operatore'}>
-          <span className="workspace-digital-pass-launcher-icon" aria-hidden="true">▣</span>
-          <span className="workspace-digital-pass-launcher-copy">
-            <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
-            <strong>{language === 'de' ? 'Saisonkarte aktivieren' : 'Attiva uno stagionale'}</strong>
-            <small>{language === 'de' ? 'Kartennummer eingeben und Aktivierungscode erstellen · Pilotphase' : 'Inserisci il numero della tessera e genera il codice di attivazione · Fase pilota'}</small>
-          </span>
-          <span className="workspace-digital-pass-launcher-arrow" aria-hidden="true">→</span>
-        </button>
 
         <section className="workspace-dashboard-section" aria-labelledby="workspace-pulse-title">
           <div className="workspace-dashboard-heading">
