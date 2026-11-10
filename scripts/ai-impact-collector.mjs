@@ -113,18 +113,15 @@ async function collectRepo(repo, start, end) {
   // Workflow run metadata. No inference of billed minutes from elapsed run time.
   const runs = [];
   try {
-    for (const x of await pages(`${path}/actions/runs?created=${start}..${end}`, 30)
-      .then(xs => xs).catch(async () => {
-        // Endpoint returns an object, unlike standard list endpoints.
-        const results = [];
-        for (let page = 1; page <= 30; page++) {
-          const x = await github(`${path}/actions/runs?created=${start}..${end}&per_page=100&page=${page}`);
-          if (!Array.isArray(x.workflow_runs)) throw new Error('RUNS_RESPONSE_INVALID');
-          results.push(...x.workflow_runs);
-          if (x.workflow_runs.length < 100) return results;
-        }
-        throw new Error('RUNS_PAGINATION_LIMIT');
-      })) {
+    const workflowRuns = [];
+    for (let page = 1; page <= 100; page++) {
+      const batch = await github(`${path}/actions/runs?created=${start}..${end}&per_page=100&page=${page}`);
+      if (!Array.isArray(batch.workflow_runs)) throw new Error('RUNS_RESPONSE_INVALID');
+      workflowRuns.push(...batch.workflow_runs);
+      if (batch.workflow_runs.length < 100) break;
+      if (page === 100) throw new Error('RUNS_PAGINATION_LIMIT');
+    }
+    for (const x of workflowRuns) {
       if (byDate(x.created_at,start,end)) runs.push({repo,id:x.id,date:x.created_at});
     }
   } catch (error) {
