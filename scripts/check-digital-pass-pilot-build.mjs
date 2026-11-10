@@ -11,7 +11,7 @@ const privacy=process.env.DNS_PASS_PRIVACY_URL||'';
 let url,notice;
 try{url=new URL(api);notice=new URL(privacy)}catch{throw Error('PILOT_URL_CONFIGURATION_REQUIRED')}
 if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/digitalPassApi'||
-  !(/\\.cloudfunctions\\.net$/.test(url.hostname)||/\\.run\\.app$/.test(url.hostname)))
+  !(/\.cloudfunctions\.net$/.test(url.hostname)||/\.run\.app$/.test(url.hostname)))
   throw Error('PILOT_API_URL_NOT_APPROVED');
 if(/staging|demo/i.test(url.hostname))throw Error('SYNTHETIC_STAGING_NOT_FOR_REAL_PILOT');
 if(notice.protocol!=='https:'||notice.username||notice.password||notice.hash)throw Error('PILOT_PRIVACY_URL_NOT_APPROVED');
