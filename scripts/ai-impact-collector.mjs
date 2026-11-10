@@ -144,7 +144,10 @@ async function collectRepo(repo, start, end) {
   return { commits, pulls, runs };
 }
 export function publicSummary(latest) {
-  // Explicit, minimal field allowlist. NEVER copy arbitrary admin metadata.
+  // Publish environmental values ONLY with their explicitly labelled scenario model.
+  // Unvalidated admin estimates must never leak to the public summary.
+  const approvedScenario = latest.environmentModel?.modelId === 'ai-inference-exploratory-v1'
+    && latest.environmentModel?.label === 'exploratory_scenario_not_measured';
   return {
     schemaVersion: 1,
     generatedAt: latest.generatedAt,
@@ -161,10 +164,10 @@ export function publicSummary(latest) {
     estimated: {
       aiHours: null,
       humanEquivalentHours: null,
-      electricityKwh: latest.estimated.electricityKwh,
-      waterLitres: latest.estimated.waterLitres,
+      electricityKwh: approvedScenario ? latest.estimated.electricityKwh : null,
+      waterLitres: approvedScenario ? latest.estimated.waterLitres : null,
     },
-    environmentModel: latest.environmentModel ?? null,
+    environmentModel: approvedScenario ? latest.environmentModel : null,
     provenance: 'github-rest-api',
     developmentActivity: latest.developmentActivity ?? null,
   };
