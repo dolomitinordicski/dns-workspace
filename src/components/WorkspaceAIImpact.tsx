@@ -8,7 +8,7 @@ type Snapshot = {
   generatedAt: string;
   periodStart: string;
   periodEnd: string;
-  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number };
+  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number };
   estimated: {
     aiHours: number | null;
     humanEquivalentHours: number | null;
@@ -36,14 +36,15 @@ function parseSnapshot(raw: unknown): Snapshot | null {
       typeof s.generatedAt !== 'string' || Number.isNaN(Date.parse(s.generatedAt)) ||
       typeof s.periodStart !== 'string' || typeof s.periodEnd !== 'string' ||
       !validNumber(s.observed.repositories) || !validNumber(s.observed.commits) ||
-      !validNumber(s.observed.pullRequests) || !validNumber(s.observed.actionsMinutes)) return null;
+      !validNumber(s.observed.pullRequests) ||
+      !(s.observed.actionsMinutes === null || validNumber(s.observed.actionsMinutes))) return null;
   const e = s.estimated;
   if (![e.aiHours, e.humanEquivalentHours].every(v => v === null || validNumber(v))) return null;
   if (![e.electricityKwh, e.waterLitres].every(v => v === null || validRange(v))) return null;
   return s as Snapshot;
 }
 
-export function WorkspaceAIImpact({ language }: { language: DNSWorkspaceLanguage }) {
+export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspaceLanguage; isAdmin: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [revision, setRevision] = useState(0);
@@ -52,7 +53,7 @@ export function WorkspaceAIImpact({ language }: { language: DNSWorkspaceLanguage
     let active = true;
     setState('loading');
     // Read-only. Firestore security rules MUST restrict this document to DNS admin.
-    getDoc(doc(getFirestore(identityAuth.app), 'adminAiImpactSnapshots', 'latest'))
+    getDoc(doc(getFirestore(identityAuth.app), isAdmin ? 'adminAiImpactSnapshots' : 'memberAiImpactSnapshots', 'latest'))
       .then(result => {
         if (!active) return;
         const parsed = result.exists() ? parseSnapshot(result.data()) : null;
@@ -64,7 +65,7 @@ export function WorkspaceAIImpact({ language }: { language: DNSWorkspaceLanguage
         setState('error');
       });
     return () => { active = false; };
-  }, [revision]);
+  }, [revision, isAdmin]);
 
   const de = language === 'de';
   const empty = de ? 'Noch keine verifizierten Daten' : 'Dati verificati non ancora disponibili';
@@ -73,6 +74,7 @@ export function WorkspaceAIImpact({ language }: { language: DNSWorkspaceLanguage
   const range = (v: { low: number; central: number; high: number } | null) =>
     v ? `${format(v.central)} (${format(v.low)}–${format(v.high)})` : '—';
 
+  const summary = !isAdmin;
   return (
     <section className="workspace-dashboard-section" aria-labelledby="workspace-ai-impact-title">
       <div className="workspace-dashboard-heading">
@@ -86,8 +88,11 @@ export function WorkspaceAIImpact({ language }: { language: DNSWorkspaceLanguage
         </button>
       </div>
       <p className="workspace-source-note">
-        {de ? 'Beobachtete GitHub-Daten und getrennt ausgewiesene Schätzungen.'
-          : 'Attività GitHub osservata e stime ambientali esplicitamente distinte.'}
+        {summary
+          ? (de ? 'So wächst das gemeinsame DNS Ecosystem: dokumentierte Entwicklung auf GitHub. KI- und Umweltwerte werden erst nach methodischer Prüfung veröffentlicht.'
+                : 'Come cresce il DNS Ecosystem: attività di sviluppo documentata su GitHub. Le stime AI e ambientali saranno condivise dopo la validazione metodologica.')
+          : (de ? 'Beobachtete GitHub-Daten und getrennt ausgewiesene Schätzungen.'
+                : 'Attività GitHub osservata e stime ambientali esplicitamente distinte.')}
       </p>
       <div className="workspace-kpi-grid">
         <article className="workspace-kpi">
@@ -95,28 +100,32 @@ export function WorkspaceAIImpact({ language }: { language: DNSWorkspaceLanguage
           <strong>{snapshot ? integer.format(snapshot.observed.commits) : '—'}</strong>
           <small>{snapshot ? `${snapshot.observed.repositories} repository` : empty}</small>
         </article>
-        <article className="workspace-kpi">
+        {summary ? <article className="workspace-kpi">
+          <span>{de ? 'Pull Requests' : 'Pull request'}</span>
+          <strong>{snapshot ? integer.format(snapshot.observed.pullRequests) : '—'}</strong>
+          <small>{de ? 'Änderungen und Verbesserungen' : 'Modifiche e miglioramenti'}</small>
+        </article> : <article className="workspace-kpi">
           <span>{de ? 'KI-Stunden (Schätzung)' : 'Ore AI (stima)'}</span>
           <strong>{format(snapshot?.estimated.aiHours, ' h')}</strong>
           <small>{de ? 'Keine Ableitung aus Commits allein' : 'Non deducibili dai soli commit'}</small>
-        </article>
-        <article className="workspace-kpi">
+        </article>}
+        {!summary && <article className="workspace-kpi">
           <span>{de ? 'Stromverbrauch (Schätzung)' : 'Energia (stima)'}</span>
           <strong>{format(snapshot?.estimated.electricityKwh?.central, ' kWh')}</strong>
           <small>{range(snapshot?.estimated.electricityKwh ?? null)} kWh</small>
-        </article>
-        <article className="workspace-kpi">
+        </article>}
+        {!summary && <article className="workspace-kpi">
           <span>{de ? 'Wasserverbrauch (Schätzung)' : 'Acqua (stima)'}</span>
           <strong>{format(snapshot?.estimated.waterLitres?.central, ' L')}</strong>
           <small>{range(snapshot?.estimated.waterLitres ?? null)} L</small>
-        </article>
+        </article>}
       </div>
       <p className="workspace-source-note" role="status">
         {state === 'loading' ? (de ? 'Daten werden geladen…' : 'Caricamento dati…')
           : state === 'error' ? (de ? 'Daten nicht zugänglich; Berechtigungen prüfen.' : 'Dati non accessibili: verificare i permessi.')
           : state === 'missing' ? empty
           : `${de ? 'Stand' : 'Aggiornato'}: ${new Date(snapshot!.generatedAt).toLocaleString(de ? 'de-DE' : 'it-IT')}`}
-        {snapshot ? ` · ${snapshot.periodStart} – ${snapshot.periodEnd} · ${snapshot.observed.pullRequests} PR · ${format(snapshot.observed.actionsMinutes)} CI min` : ''}
+        {snapshot ? ` · ${snapshot.periodStart} – ${snapshot.periodEnd} · ${summary ? '' : `${snapshot.observed.pullRequests} PR · ${format(snapshot.observed.actionsMinutes)} CI min`}` : ''}
       </p>
       {snapshot?.methodologyUrl?.startsWith('https://') &&
         <p className="workspace-source-note"><a href={snapshot.methodologyUrl} target="_blank" rel="noopener noreferrer">
