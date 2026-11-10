@@ -36,6 +36,7 @@ jobs:
       - name: Verify installed Foundation
         run: node scripts/foundation-lock.mjs --installed
       - run: npm run validate
+      - run: node --test tests/digital-pass-pilot-build.test.mjs
 
   deploy:
     if: github.event_name != 'pull_request'
