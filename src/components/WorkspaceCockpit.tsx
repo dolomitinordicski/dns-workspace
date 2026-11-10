@@ -153,7 +153,7 @@ export function WorkspaceCockpit(props: Props) {
           <button type="button" className="workspace-digital-pass-launcher" onClick={() => setPassExpanded(value => !value)}
             aria-expanded={passExpanded} aria-controls="workspace-digital-pass-content"
             aria-label={language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}>
-            <span className="workspace-digital-pass-launcher-icon" aria-hidden="true">▣</span>
+            <span className="workspace-digital-pass-launcher-icon" aria-hidden="true"><svg width="33" height="33" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="7" width="22" height="18" rx="3"/><path d="M9 12h14M9 17h7M20 17h3v4h-3z"/></svg></span>
             <span className="workspace-digital-pass-launcher-copy">
               <span className="dns-kicker">DNS DIGITAL PASS · 2026/27</span>
               <strong>{language === 'de' ? 'Saisonkartenverkauf bestätigen' : 'Conferma vendita stagionale'}</strong>
