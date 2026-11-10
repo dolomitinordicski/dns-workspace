@@ -1,6 +1,7 @@
 import {saveOfflinePass,readOfflinePass,clearOfflinePass} from './services/offlinePass';
 import QRCode from 'qrcode';
 import { parseOperatorHandoffQr } from './services/digitalPassHandoff';
+import { storePassHandoff, readPassHandoff, clearPassHandoff } from './services/passHandoff';
 import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finishEmailLink, hasEmailLink, passRequest, signOut} from './services/digitalPassApi';
 
 type Lang='it'|'de'|'en';
@@ -9,14 +10,13 @@ type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;
 const passActivationEnabled = passApiConfigured && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
 const $=(id:string)=>document.getElementById(id)!;
 const translations={
- it:{heading:'Il tuo Digital Pass DNS',intro:'La registrazione digitale è facoltativa. La tessera fisica rimane valida.',email:'Email',send:'Invia link di accesso',confirm:'Conferma email',number:'Numero tessera',code:'Codice di attivazione',given:'Nome',family:'Cognome',privacy:'Ho letto l’informativa privacy',register:'Attiva Digital Pass',logout:'Esci',unavailable:'L’attivazione del Digital Pass sarà disponibile prossimamente. La tessera fisica rimane valida.',home:'Dal menu del browser puoi aggiungere questa pagina alla schermata Home.',foot:'La registrazione non modifica la validità della tessera cartacea.',sent:'Controlla la tua email. Se hai aperto il link su un altro dispositivo, inserisci qui lo stesso indirizzo.',error:'Operazione non completata. Verifica dati e connessione.',offline:'COPIA OFFLINE · Stato non aggiornato',online:'TESSERA SALVATA · Verifica online possibile',save:'Salva sul dispositivo per uso offline',saved:'Copia offline salvata su questo dispositivo.',authenticated:'Email verificata correttamente! Il tuo account è pronto. L’attivazione del Digital Pass sarà disponibile prossimamente.',scan:'Scansiona QR operatore',scanHint:'Inquadra il QR mostrato dall’operatore.',scanStop:'Chiudi fotocamera',scanReady:'QR acquisito. Verifica la tua email per confermare la vendita.',scanInvalid:'Questo non è un QR di attivazione DNS valido.',scanError:'Fotocamera non disponibile. Verifica i permessi oppure inserisci il codice manualmente.',scanBusy:'Attivazione fotocamera…'},
- de:{heading:'Dein DNS Digital Pass',intro:'Die digitale Registrierung ist freiwillig. Deine physische Karte bleibt gültig.',email:'E-Mail',send:'Anmeldelink senden',confirm:'E-Mail bestätigen',number:'Kartennummer',code:'Aktivierungscode',given:'Vorname',family:'Nachname',privacy:'Ich habe die Datenschutzhinweise gelesen',register:'Digital Pass aktivieren',logout:'Abmelden',unavailable:'Die Aktivierung des Digital Pass wird demnächst verfügbar sein. Deine physische Karte bleibt gültig.',home:'Über das Browsermenü kannst du diese Seite zum Home-Bildschirm hinzufügen.',foot:'Die Registrierung ändert die Gültigkeit deiner physischen Karte nicht.',sent:'Prüfe deine E-Mail. Bei einem anderen Gerät bitte dieselbe Adresse hier eingeben.',error:'Vorgang fehlgeschlagen. Bitte Daten und Verbindung überprüfen.',offline:'OFFLINE-KOPIE · Status nicht aktualisiert',online:'KARTE GESPEICHERT · Online-Prüfung möglich',save:'Für Offline-Nutzung auf diesem Gerät speichern',saved:'Offline-Kopie auf diesem Gerät gespeichert.',authenticated:'E-Mail erfolgreich bestätigt! Dein Konto ist bereit. Die Aktivierung des Digital Pass wird demnächst verfügbar sein.',scan:'QR-Code des Mitarbeiters scannen',scanHint:'Richte die Kamera auf den QR-Code des Mitarbeiters.',scanStop:'Kamera schließen',scanReady:'QR-Code erfasst. Bestätige deine E-Mail, um den Verkauf zu bestätigen.',scanInvalid:'Dies ist kein gültiger DNS-Aktivierungs-QR-Code.',scanError:'Kamera nicht verfügbar. Bitte Berechtigungen prüfen oder Code manuell eingeben.',scanBusy:'Kamera wird gestartet…'},
- en:{heading:'Your DNS Digital Pass',intro:'Digital registration is optional. Your physical pass remains valid.',email:'Email',send:'Send sign-in link',confirm:'Verify email',number:'Pass number',code:'Activation code',given:'First name',family:'Last name',privacy:'I have read the privacy notice',register:'Activate Digital Pass',logout:'Sign out',unavailable:'Digital Pass activation will be available soon. Your physical pass remains valid.',home:'Use your browser menu to add this page to your Home Screen.',foot:'Registration does not affect your physical pass.',sent:'Check your email. If you opened the link on another device, enter the same email address here.',error:'Unable to complete. Check details and connection.',offline:'OFFLINE COPY · Status not updated',online:'PASS SAVED · Online verification available',save:'Save on this device for offline use',saved:'Offline copy saved on this device.',authenticated:'Email successfully verified! Your account is ready. Digital Pass activation will be available soon.',scan:'Scan operator QR',scanHint:'Point your camera at the QR displayed by the operator.',scanStop:'Close camera',scanReady:'QR scanned. Verify your email to confirm the sale.',scanInvalid:'This is not a valid DNS activation QR.',scanError:'Camera unavailable. Check permissions or enter the code manually.',scanBusy:'Starting camera…'}
+ it:{heading:'Il tuo Digital Pass DNS',intro:'La registrazione digitale è facoltativa. La tessera fisica rimane valida.',email:'Email',send:'Invia link di accesso',confirm:'Conferma email',number:'Numero tessera',code:'Codice di attivazione',given:'Nome',family:'Cognome',privacy:'Ho letto l’informativa privacy',register:'Attiva Digital Pass',handoff:'Se hai aperto il link su un altro dispositivo, scansiona di nuovo il QR oppure inserisci numero tessera e codice.',logout:'Esci',unavailable:'L’attivazione del Digital Pass sarà disponibile prossimamente. La tessera fisica rimane valida.',home:'Dal menu del browser puoi aggiungere questa pagina alla schermata Home.',foot:'La registrazione non modifica la validità della tessera cartacea.',sent:'Controlla la tua email. Se apri il link su un altro dispositivo, usa la stessa email e scansiona di nuovo il QR o inserisci numero tessera e codice.',error:'Operazione non completata. Verifica dati e connessione.',offline:'COPIA OFFLINE · Stato non aggiornato',online:'TESSERA SALVATA · Verifica online possibile',save:'Salva sul dispositivo per uso offline',saved:'Copia offline salvata su questo dispositivo.',authenticated:'Email verificata correttamente! Il tuo account è pronto. L’attivazione del Digital Pass sarà disponibile prossimamente.',scan:'Scansiona QR operatore',scanHint:'Inquadra il QR mostrato dall’operatore.',scanStop:'Chiudi fotocamera',scanReady:'QR acquisito. Verifica la tua email per confermare la vendita.',scanInvalid:'Questo non è un QR di attivazione DNS valido.',scanError:'Fotocamera non disponibile. Verifica i permessi oppure inserisci il codice manualmente.',scanBusy:'Attivazione fotocamera…'},
+ de:{heading:'Dein DNS Digital Pass',intro:'Die digitale Registrierung ist freiwillig. Deine physische Karte bleibt gültig.',email:'E-Mail',send:'Anmeldelink senden',confirm:'E-Mail bestätigen',number:'Kartennummer',code:'Aktivierungscode',given:'Vorname',family:'Nachname',privacy:'Ich habe die Datenschutzhinweise gelesen',register:'Digital Pass aktivieren',handoff:'Falls du den E-Mail-Link auf einem anderen Gerät geöffnet hast, QR-Code erneut scannen oder Kartennummer und Code eingeben.',logout:'Abmelden',unavailable:'Die Aktivierung des Digital Pass wird demnächst verfügbar sein. Deine physische Karte bleibt gültig.',home:'Über das Browsermenü kannst du diese Seite zum Home-Bildschirm hinzufügen.',foot:'Die Registrierung ändert die Gültigkeit deiner physischen Karte nicht.',sent:'Prüfe deine E-Mail. Auf einem anderen Gerät dieselbe E-Mail-Adresse verwenden und QR-Code erneut scannen oder Kartennummer und Code eingeben.',error:'Vorgang fehlgeschlagen. Bitte Daten und Verbindung überprüfen.',offline:'OFFLINE-KOPIE · Status nicht aktualisiert',online:'KARTE GESPEICHERT · Online-Prüfung möglich',save:'Für Offline-Nutzung auf diesem Gerät speichern',saved:'Offline-Kopie auf diesem Gerät gespeichert.',authenticated:'E-Mail erfolgreich bestätigt! Dein Konto ist bereit. Die Aktivierung des Digital Pass wird demnächst verfügbar sein.',scan:'QR-Code des Mitarbeiters scannen',scanHint:'Richte die Kamera auf den QR-Code des Mitarbeiters.',scanStop:'Kamera schließen',scanReady:'QR-Code erfasst. Bestätige deine E-Mail, um den Verkauf zu bestätigen.',scanInvalid:'Dies ist kein gültiger DNS-Aktivierungs-QR-Code.',scanError:'Kamera nicht verfügbar. Bitte Berechtigungen prüfen oder Code manuell eingeben.',scanBusy:'Kamera wird gestartet…'},
+ en:{heading:'Your DNS Digital Pass',intro:'Digital registration is optional. Your physical pass remains valid.',email:'Email',send:'Send sign-in link',confirm:'Verify email',number:'Pass number',code:'Activation code',given:'First name',family:'Last name',privacy:'I have read the privacy notice',register:'Activate Digital Pass',handoff:'If you opened the email link on another device, scan the QR again or enter the pass number and code.',logout:'Sign out',unavailable:'Digital Pass activation will be available soon. Your physical pass remains valid.',home:'Use your browser menu to add this page to your Home Screen.',foot:'Registration does not affect your physical pass.',sent:'Check your email. On another device, use the same email, then scan the QR again or enter the pass number and code.',error:'Unable to complete. Check details and connection.',offline:'OFFLINE COPY · Status not updated',online:'PASS SAVED · Online verification available',save:'Save on this device for offline use',saved:'Offline copy saved on this device.',authenticated:'Email successfully verified! Your account is ready. Digital Pass activation will be available soon.',scan:'Scan operator QR',scanHint:'Point your camera at the QR displayed by the operator.',scanStop:'Close camera',scanReady:'QR scanned. Verify your email to confirm the sale.',scanInvalid:'This is not a valid DNS activation QR.',scanError:'Camera unavailable. Check permissions or enter the code manually.',scanBusy:'Starting camera…'}
 };
 let lang:Lang='it',pass:Pass|null=null,loading=false,offline=false;
-const handoffKey='dns-digital-pass-handoff-v1';
 function keepHandoff(number:string,code:string) {
- sessionStorage.setItem(handoffKey,JSON.stringify({number,code,expires:Date.now()+10*60*1000}));
+ storePassHandoff(number,code,sessionStorage);
  ($('number') as HTMLInputElement).value=number;
  ($('code') as HTMLInputElement).value=code;
 }
@@ -26,14 +26,10 @@ function applyHandoff() {
   if(handoff)keepHandoff(handoff.number,handoff.code);
   history.replaceState(null,'',location.pathname+location.search+'#activation');
  }
- try {
-  const stored=JSON.parse(sessionStorage.getItem(handoffKey)||'null');
-  if(!stored||stored.expires<=Date.now()||!/^[0-9]{1,12}$/.test(stored.number)||!/^[A-HJ-NP-Z2-9]{6}$/.test(stored.code)) {
-   sessionStorage.removeItem(handoffKey);return;
-  }
-  ($('number') as HTMLInputElement).value=stored.number;
-  ($('code') as HTMLInputElement).value=stored.code;
- }catch {sessionStorage.removeItem(handoffKey)}
+ const stored=readPassHandoff(sessionStorage);
+ if(!stored)return;
+ ($('number') as HTMLInputElement).value=stored.number;
+ ($('code') as HTMLInputElement).value=stored.code;
 }
 type ScanControls={stop:()=>void|Promise<void>};
 let scanControls:ScanControls|null=null,scanOpen=false,scanStarting=false,scanAccepted=false;
@@ -84,14 +80,13 @@ async function startScanner() {
 let claiming=false;
 async function claimScannedPass() {
  if(claiming||!passActivationEnabled||!passAuth.currentUser?.emailVerified)return;
- let stored:{number:string;code:string;expires:number}|null=null;
- try{stored=JSON.parse(sessionStorage.getItem(handoffKey)||'null')}catch{return}
- if(!stored||stored.expires<=Date.now()){sessionStorage.removeItem(handoffKey);return}
+ const stored=readPassHandoff(sessionStorage);
+ if(!stored)return;
  claiming=true;
  try {
   const response=await passRequest<{status:string}>('/v1/pass-activations/claim',{passNumber:stored.number,code:stored.code});
   if(response.status!=='SOLD_ATTESTED')throw Error('CLAIM_NOT_CONFIRMED');
-  sessionStorage.removeItem(handoffKey);
+  clearPassHandoff(sessionStorage);
   setText('status',lang==='de'?'Verkauf bestätigt. Du kannst deinen Digital Pass jetzt registrieren.':lang==='en'?'Sale confirmed. You can now register your Digital Pass.':'Vendita confermata. Ora puoi registrare il Digital Pass.');
  }catch {setText('status',translations[lang].error)}
  finally {claiming=false}
@@ -105,7 +100,7 @@ const marketing={
 };
 function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
  for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
- for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save'}))setText(id,t[key as keyof typeof t]);
+ for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','home-tip':'home','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
 }
 function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
  const showScan=passActivationEnabled&&!pass;
@@ -117,6 +112,7 @@ function render(){const authorized=passAuth.currentUser?.emailVerified===true&&!
  ($('login') as HTMLFormElement).hidden = authorized || !passActivationEnabled;
  const registrationVisible=passActivationEnabled&&authorized&&!pass;
  $('registration').classList.toggle('hide',!registrationVisible);
+ $('handoff-hint').classList.toggle('hide',!registrationVisible||Boolean(readPassHandoff(sessionStorage)));
  ($('registration') as HTMLFormElement).hidden=!registrationVisible;
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
@@ -159,7 +155,7 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  ($('code') as HTMLInputElement).value='';
  pass=await passRequest<Pass>('/v1/me/digital-pass',{physicalPassId:result.registrationId});await showPass();
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
-$('logout').addEventListener('click',()=>{stopScanner();sessionStorage.removeItem(handoffKey);pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
+$('logout').addEventListener('click',()=>{stopScanner();clearPassHandoff(sessionStorage);pass=null;offline=false;void clearOfflinePass();void signOut(passAuth)});
 onAuthStateChanged(passAuth,(user)=>{pass=null;offline=false;applyHandoff();render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(user?.emailVerified)void claimScannedPass();if(!navigator.onLine)void restoreOffline();else void loadPass()});
 translate();applyHandoff();render();
 
