@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      digital_pass_pilot:
+        description: 'Enable the separately approved Digital Pass pilot (requires configured repo variables)'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,7 +54,19 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Verify installed Foundation
         run: node scripts/foundation-lock.mjs --installed
-      - run: npm run build
+      - name: Validate Digital Pass release gate
+        env:
+          DNS_PILOT_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.digital_pass_pilot && 'true' || 'false' }}
+          DNS_PASS_PILOT_APPROVED: ${{ vars.DNS_PASS_PILOT_APPROVED }}
+          DNS_PASS_API_BASE: ${{ vars.DNS_PASS_API_BASE }}
+          DNS_PASS_PRIVACY_URL: ${{ vars.DNS_PASS_PRIVACY_URL }}
+        run: node scripts/check-digital-pass-pilot-build.mjs
+      - name: Build Workspace
+        env:
+          VITE_DNS_DIGITAL_PASS_API_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.digital_pass_pilot && vars.DNS_PASS_PILOT_APPROVED == 'true' && vars.DNS_PASS_API_BASE || '' }}
+          VITE_DNS_PASS_ACTIVATION_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.digital_pass_pilot && vars.DNS_PASS_PILOT_APPROVED == 'true' && 'true' || 'false' }}
+          VITE_DNS_DIGITAL_PASS_PRIVACY_URL: ${{ vars.DNS_PASS_PRIVACY_URL }}
+        run: npm run build
       - uses: actions/configure-pages@v5
         with:
           enablement: true
