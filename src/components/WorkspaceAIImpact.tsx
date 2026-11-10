@@ -15,6 +15,7 @@ type Snapshot = {
     electricityKwh: { low: number; central: number; high: number } | null;
     waterLitres: { low: number; central: number; high: number } | null;
   };
+  environmentModel?: { label: string; modelId: string; benchmarkUrl?: string } | null;
   developmentActivity?: { sessions: number; estimateHours: { low: number; central: number; high: number }; methodology: string } | null;
   methodologyUrl?: string;
 };
@@ -141,21 +142,28 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
           <strong>{format(snapshot?.estimated.aiHours, ' h')}</strong>
           <small>{de ? 'Keine Ableitung aus Commits allein' : 'Non deducibili dai soli commit'}</small>
         </article>}
-        {!summary && <article className="workspace-kpi">
+        <article className="workspace-kpi">
           <span>{de ? 'Stromverbrauch (Schätzung)' : 'Energia (stima)'}</span>
           <strong>{format(snapshot?.estimated.electricityKwh?.central, ' kWh')}</strong>
           <small>{range(snapshot?.estimated.electricityKwh ?? null)} kWh</small>
-        </article>}
-        {!summary && <article className="workspace-kpi">
+        </article>
+        <article className="workspace-kpi">
           <span>{de ? 'Wasserverbrauch (Schätzung)' : 'Acqua (stima)'}</span>
           <strong>{format(snapshot?.estimated.waterLitres?.central, ' L')}</strong>
           <small>{range(snapshot?.estimated.waterLitres ?? null)} L</small>
-        </article>}
+        </article>
       </div>
       <p className="workspace-source-note">
         {de ? 'Zeitwerte sind Heuristiken aus GitHub-Zeitstempeln, keine gemessenen KI- oder Arbeitsstunden.'
           : 'Le ore di attività derivano dagli orari GitHub: non sono ore AI né ore umane misurate.'}
       </p>
+      {snapshot?.environmentModel && <p className="workspace-source-note">
+        {de
+          ? 'Strom und Wasser: explorative Szenarien aus angenommenen KI-Operationen je GitHub-Sitzung; kein gemessener Verbrauch. Wasser: nur direkte Kühlung.'
+          : 'Energia e acqua: scenari esplorativi basati su operazioni AI ipotizzate per sessione GitHub; non sono consumi misurati. Acqua: solo raffreddamento diretto.'}
+        {' · '}<a href="https://github.com/dolomitinordicski/dns-workspace/blob/main/docs/ai-impact-monitor.md"
+          target="_blank" rel="noopener noreferrer">{de ? 'Annahmen' : 'Ipotesi e fonti'}</a>
+      </p>}
       <p className="workspace-source-note" role="status">
         {state === 'loading' ? (de ? 'Daten werden geladen…' : 'Caricamento dati…')
           : state === 'error' ? (de ? 'Daten nicht zugänglich; Berechtigungen prüfen.' : 'Dati non accessibili: verificare i permessi.')
