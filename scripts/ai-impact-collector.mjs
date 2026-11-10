@@ -75,7 +75,7 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
     if (uniqueRuns.has(id)) continue;
     uniqueRuns.add(id);
     ensure(isoDay(item.date)).observed.actionsRuns++;
-    if (item.startedAt && item.completedAt) {
+    if (item.status === 'completed' && item.startedAt && item.completedAt) {
       const ms = Date.parse(item.completedAt) - Date.parse(item.startedAt);
       if (Number.isFinite(ms) && ms >= 0 && ms < 7 * 86_400_000) {
         actionsElapsedMs += ms;
