@@ -8,7 +8,7 @@ type Snapshot = {
   generatedAt: string;
   periodStart: string;
   periodEnd: string;
-  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number };
+  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number };
   estimated: {
     aiHours: number | null;
     humanEquivalentHours: number | null;
@@ -36,7 +36,8 @@ function parseSnapshot(raw: unknown): Snapshot | null {
       typeof s.generatedAt !== 'string' || Number.isNaN(Date.parse(s.generatedAt)) ||
       typeof s.periodStart !== 'string' || typeof s.periodEnd !== 'string' ||
       !validNumber(s.observed.repositories) || !validNumber(s.observed.commits) ||
-      !validNumber(s.observed.pullRequests) || !validNumber(s.observed.actionsMinutes)) return null;
+      !validNumber(s.observed.pullRequests) ||
+      !(s.observed.actionsMinutes === null || validNumber(s.observed.actionsMinutes))) return null;
   const e = s.estimated;
   if (![e.aiHours, e.humanEquivalentHours].every(v => v === null || validNumber(v))) return null;
   if (![e.electricityKwh, e.waterLitres].every(v => v === null || validRange(v))) return null;
