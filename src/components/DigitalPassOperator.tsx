@@ -8,21 +8,21 @@ import { operatorPassRequest, operatorApiConfigured } from '../services/digitalP
 import './DigitalPassOperator.css';
 
 type Prepared = { physicalPassId: string; preparationId: string; code: string; expiresAt: number; handoffUrl?: string };
-type SaleStatus = { status: 'PENDING' | 'PREPARED' | 'SOLD_ATTESTED' | 'EXPIRED' | 'CANCELLED' };
+type PossessionStatus = { status: 'PENDING' | 'PREPARED' | 'POSSESSION_CONFIRMED' | 'EXPIRED' | 'CANCELLED' };
 type Props = { language: DNSWorkspaceLanguage; inline?: boolean; onClose?: () => void };
 const copy = {
-  it: { title:'Conferma vendita stagionale', intro:'Inserisci il numero dello stagionale e mostra il QR al cliente.',
+  it: { title:'Associa tessera fisica', intro:'Verifica la tessera fisica del titolare, inserisci il numero e mostra il QR.',
     number:'Numero stagionale', prepare:'Genera QR', code:'Codice alternativo', scan:'Il cliente scansiona il QR con il proprio telefono.',
-    pending:'In attesa di conferma dal server', confirmed:'Vendita confermata', expired:'Sessione scaduta. Genera un nuovo QR.',
+    pending:'In attesa di conferma dal server', confirmed:'Possesso confermato', expired:'Sessione scaduta. Genera un nuovo QR.',
     missing:'Servizio non disponibile: backend non ancora configurato.', error:'Impossibile completare la richiesta.',
     close:'Indietro', invalid:'Numero non valido', pilot:'Fase pilota · nessuna conferma senza validazione server',
-    reset:'Nuova vendita' },
-  de: { title:'Saisonkartenverkauf bestätigen', intro:'Kartennummer eingeben und dem Gast den QR-Code zeigen.',
+    reset:'Nuova tessera' },
+  de: { title:'Physische Saisonkarte zuordnen', intro:'Physische Karte prüfen, Kartennummer eingeben und dem Inhaber den QR-Code zeigen.',
     number:'Saisonkartennummer', prepare:'QR-Code erzeugen', code:'Alternativer Code', scan:'Der Gast scannt den QR-Code mit seinem Smartphone.',
-    pending:'Warten auf Serverbestätigung', confirmed:'Verkauf bestätigt', expired:'Sitzung abgelaufen. Neuen QR-Code erzeugen.',
+    pending:'Warten auf Serverbestätigung', confirmed:'Kartenbesitz bestätigt', expired:'Sitzung abgelaufen. Neuen QR-Code erzeugen.',
     missing:'Dienst nicht verfügbar: Backend noch nicht eingerichtet.', error:'Vorgang konnte nicht abgeschlossen werden.',
     close:'Zurück', invalid:'Ungültige Nummer', pilot:'Pilotphase · keine Bestätigung ohne Servervalidierung',
-    reset:'Nächster Verkauf' },
+    reset:'Nächste Karte' },
 };
 
 export function DigitalPassOperator({ language, inline = false, onClose }: Props) {
@@ -44,7 +44,7 @@ export function DigitalPassOperator({ language, inline = false, onClose }: Props
       const result=await operatorPassRequest<Prepared>('/v1/pass-activations/prepare',{passNumber:number.trim()});
       if(!result.physicalPassId||!result.preparationId||!/^[A-HJ-NP-Z2-9]{6}$/.test(result.code)||result.expiresAt<=Date.now())throw Error('BAD_PREPARATION');
       // This is a same-origin customer handoff. Hash parameters do not enter HTTP request logs.
-      // The server remains the sole authority for sale attestation.
+      // The server remains the sole authority for physical possession.
       const url=new URL('/dns-workspace/pass.html',window.location.origin);
       url.hash='activation?'+new URLSearchParams({number:number.trim(),code:result.code}).toString();
       const safeHandoff=result.handoffUrl?new URL(result.handoffUrl):url;
@@ -61,12 +61,12 @@ export function DigitalPassOperator({ language, inline = false, onClose }: Props
       if(Date.now()>=prepared.expiresAt){setStatus('expired');return;}
       active=true;
       try {
-        // A backend-authenticated status check is required. Never infer a sale from QR rendering.
-        const result=await operatorPassRequest<SaleStatus>('/v1/pass-activations/status',{
+        // A backend-authenticated status check is required. Never infer possession from QR rendering.
+        const result=await operatorPassRequest<PossessionStatus>('/v1/pass-activations/status',{
           physicalPassId:prepared.physicalPassId, preparationId:prepared.preparationId
         });
         if(cancelled)return;
-        if(result.status==='SOLD_ATTESTED')setStatus('confirmed');
+        if(result.status==='POSSESSION_CONFIRMED')setStatus('confirmed');
         else if(result.status==='EXPIRED'||result.status==='CANCELLED')setStatus('expired');
       }catch {if(!cancelled)setError(c.missing);}
       finally {active=false;}
@@ -105,3 +105,4 @@ export function DigitalPassOperator({ language, inline = false, onClose }: Props
     <p className="dns-pass-note">{c.pilot}</p>
   </section>;
 }
+

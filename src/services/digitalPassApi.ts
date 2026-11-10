@@ -35,16 +35,19 @@ export async function finishEmailLink(email: string) {
 }
 export const hasEmailLink = () => isSignInWithEmailLink(passAuth, location.href);
 export async function passRequest<T>(path: string, body: unknown): Promise<T> {
-  if (!passApiConfigured || !passAuth.currentUser) throw new Error('SERVICE_UNAVAILABLE');
+  const user=passAuth.currentUser;
+  if (!passApiConfigured || !user) throw new Error('SERVICE_UNAVAILABLE');
   if (!navigator.onLine) throw new Error('NEEDS_ONLINE');
   const base = new URL(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE);
   if (base.protocol !== 'https:' && base.hostname !== 'localhost') throw new Error('INVALID_API_URL');
   const response = await fetch(base.toString().replace(/\/$/, '') + path, {
     method: 'POST', credentials: 'omit', cache: 'no-store',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await passAuth.currentUser.getIdToken() },
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await user.getIdToken() },
     body: JSON.stringify(body),
   });
   const data = await response.json();
+  if(passAuth.currentUser?.uid!==user.uid)throw new Error('UNAUTHORIZED');
   if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'REQUEST_NOT_COMPLETED');
   return data as T;
 }
+
