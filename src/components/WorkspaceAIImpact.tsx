@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { identityAuth } from '../services/identityFirebase';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
+import collaboration from '../data/ai-collaboration-preliminary.json';
 
 type Snapshot = {
   schemaVersion: 1;
@@ -91,7 +92,15 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
   const format = (n: number | null | undefined, suffix = '') =>
     n == null ? '—' : `${decimal.format(n)}${suffix}`;
 
-  const summary = !isAdmin;
+  const hours = collaboration.collaborationHours;
+  const periodEnd = new Date(`${collaboration.periodEnd}T12:00:00Z`).toLocaleDateString(de ? 'de-DE' : 'it-IT');
+  const numbers = [
+    { name: de ? 'Klassische Entwicklungszeit' : 'Sviluppo tradizionale' },
+    { name: de ? 'Zeitersparnis' : 'Risparmio di tempo' },
+    { name: de ? 'Energie' : 'Energia' },
+    { name: de ? 'Wasser' : 'Acqua' },
+  ];
+  const notVerified = de ? 'Zu überprüfen' : 'Da verificare';
   return (
     <section className="workspace-dashboard-section" aria-labelledby="workspace-ai-impact-title">
       <div className="workspace-dashboard-heading">
@@ -101,70 +110,62 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
         </div>
         <button type="button" className="dns-button" data-variant="secondary"
           onClick={refresh} disabled={state === 'loading'}>
-          {de ? 'Aktualisieren' : 'Aggiorna vista'}
+          {de ? 'Aktualisieren' : 'Aggiorna'}
         </button>
       </div>
       <p className="workspace-source-note">
-        {summary
-          ? (de ? 'So wächst das gemeinsame DNS Ecosystem: dokumentierte Entwicklung auf GitHub. KI- und Umweltwerte werden erst nach methodischer Prüfung veröffentlicht.'
-                : 'Come cresce il DNS Ecosystem: attività di sviluppo documentata su GitHub. Le stime AI e ambientali saranno condivise dopo la validazione metodologica.')
-          : (de ? 'Beobachtete GitHub-Daten und getrennt ausgewiesene Schätzungen.'
-                : 'Attività GitHub osservata e stime ambientali esplicitamente distinte.')}
+        <strong>{de ? 'Vorläufige Schätzungen – Daten noch nicht verifiziert'
+          : 'Stime preliminari – dati non ancora verificati'}</strong>
+        {' · '}{de ? 'Stand' : 'Riferite al'} {periodEnd}
       </p>
-      <div className="workspace-kpi-grid">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <article className="workspace-kpi">
-          <span>{de ? 'Commits erfasst' : 'Commit rilevati'}</span>
-          <strong>{snapshot ? integer.format(snapshot.observed.commits) : '—'}</strong>
-          <small>{snapshot ? `${snapshot.observed.repositories} repository` : empty}</small>
+          <span>{de ? 'Zusammenarbeit Mensch–KI' : 'Collaborazione uomo–AI'}</span>
+          <strong>{integer.format(hours.central)} h</strong>
+          <meter min={hours.low} max={hours.high} value={hours.central}
+            aria-label={de ? 'Zentralwert der geschätzten Stunden' : 'Valore centrale delle ore stimate'}
+            className="w-full" />
+          <small>{hours.low}–{hours.high} h · {de ? 'etwa' : 'circa'} {Math.round(hours.central / collaboration.hoursPerWorkday)}
+            {' '}{de ? 'Arbeitstage à 8 Stunden' : 'giornate da 8 ore'}</small>
         </article>
         <article className="workspace-kpi">
-          <span>{de ? 'Entwicklungsaktivität (Schätzung)' : 'Attività di sviluppo (stima)'}</span>
-          <strong>{snapshot?.developmentActivity?.estimateHours ? `${format(snapshot.developmentActivity.estimateHours.central)} h` : '—'}</strong>
-          <small>{snapshot?.developmentActivity?.estimateHours
-            ? `${format(snapshot.developmentActivity.estimateHours.low)}–${format(snapshot.developmentActivity.estimateHours.high)} h · ${snapshot.developmentActivity.sessions} ${de ? 'Sitzungen' : 'sessioni'}`
-            : (de ? 'Nicht verfügbar' : 'Non disponibile')}</small>
-        </article>
-        <article className="workspace-kpi">
-          <span>{de ? 'Actions-Laufzeit (beobachtet)' : 'Tempo workflow (rilevato)'}</span>
-          <strong>{format(snapshot?.observed.actionsElapsedHours, ' h')}</strong>
-          <small>{de ? 'Verstrichene Zeit, keine abrechenbaren Minuten' : 'Tempo trascorso, non minuti fatturabili'}
-            {snapshot?.observed.actionsElapsedCoverage != null ? ` · ${snapshot.observed.actionsElapsedCoverage}%` : ''}
-          </small>
-        </article>
-        {summary ? <article className="workspace-kpi">
-          <span>{de ? 'Pull Requests' : 'Pull request'}</span>
-          <strong>{snapshot ? integer.format(snapshot.observed.pullRequests) : '—'}</strong>
-          <small>{de ? 'Änderungen und Verbesserungen' : 'Modifiche e miglioramenti'}</small>
-        </article> : <article className="workspace-kpi">
-          <span>{de ? 'KI-Stunden (Schätzung)' : 'Ore AI (stima)'}</span>
-          <strong>{format(snapshot?.estimated.aiHours, ' h')}</strong>
-          <small>{de ? 'Keine Ableitung aus Commits allein' : 'Non deducibili dai soli commit'}</small>
-        </article>}
-        <article className="workspace-kpi">
-          <span>{de ? 'Energie' : 'Energia'}</span>
-          <strong>{de ? 'Zu überprüfen' : 'Da verificare'}</strong>
-          <small>{de ? 'Nicht validierte Schätzungen werden ausgeblendet.' : 'Stime non validate temporaneamente nascoste.'}</small>
-        </article>
-        <article className="workspace-kpi">
-          <span>{de ? 'Wasser' : 'Acqua'}</span>
-          <strong>{de ? 'Zu überprüfen' : 'Da verificare'}</strong>
-          <small>{de ? 'Nicht validierte Schätzungen werden ausgeblendet.' : 'Stime non validate temporaneamente nascoste.'}</small>
+          <span>{de ? 'GitHub-Entwicklungsaktivität' : 'Attività di sviluppo GitHub'}</span>
+          <strong>{snapshot ? integer.format(snapshot.observed.commits) : '—'} <small>commit</small></strong>
+          <small>{snapshot
+            ? `${integer.format(snapshot.observed.pullRequests)} PR · ${snapshot.periodStart} – ${snapshot.periodEnd}`
+            : empty}</small>
+          <small>{de ? 'Beobachtete Daten, keine Stundenschätzung' : 'Dati osservati, non una stima delle ore'}</small>
         </article>
       </div>
-      <p className="workspace-source-note">
-        {de ? 'Zeitwerte sind Heuristiken aus GitHub-Zeitstempeln, keine gemessenen KI- oder Arbeitsstunden.'
-          : 'Le ore di attività derivano dagli orari GitHub: non sono ore AI né ore umane misurate.'}
-      </p>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {numbers.map(item => (
+          <div className="workspace-source-note" key={item.name}>
+            <strong>{item.name}</strong>
+            <div>{notVerified}</div>
+          </div>
+        ))}
+      </div>
+      <details>
+        <summary className="workspace-source-note">
+          {de ? 'Technische Details und Methodik' : 'Dettagli tecnici e metodologia'}
+        </summary>
+        <div className="workspace-source-note">
+          <p>{de ? 'GitHub-Commit-Sitzungen (heuristische Stundenschätzung)' : 'Sessioni da commit GitHub (stima euristica)'}:
+            {' '}{format(snapshot?.developmentActivity?.estimateHours.central, ' h')}</p>
+          <p>{de ? 'Kumulierte GitHub-Actions-Laufzeit (nicht Arbeitsstunden)' : 'Tempo cumulativo GitHub Actions (non ore di lavoro)'}:
+            {' '}{format(snapshot?.observed.actionsElapsedHours, ' h')}</p>
+          <p>{de ? 'Mensch–KI-Stunden werden bei einer neuen begründeten Schätzung aktualisiert; sie wachsen nicht automatisch mit Commits.'
+            : 'Le ore uomo–AI si aggiornano quando viene formulata una nuova stima motivata, non automaticamente in base ai commit.'}</p>
+          {isAdmin && <p>{de ? 'Admin: KI-Rechenstunden und traditioneller Entwicklungsaufwand sind noch nicht quantifiziert.'
+            : 'Admin: ore di calcolo AI e sviluppo tradizionale non ancora quantificati.'}</p>}
+        </div>
+      </details>
       <p className="workspace-source-note" role="status">
-        {state === 'loading' ? (de ? 'Daten werden geladen…' : 'Caricamento dati…')
-          : state === 'error' ? (de ? 'Daten nicht zugänglich; Berechtigungen prüfen.' : 'Dati non accessibili: verificare i permessi.')
+        {state === 'loading' ? (de ? 'GitHub-Daten werden geladen…' : 'Caricamento dati GitHub…')
+          : state === 'error' ? (de ? 'GitHub-Daten nicht zugänglich.' : 'Dati GitHub non accessibili.')
           : state === 'missing' ? empty
-          : `${de ? 'Stand' : 'Aggiornato'}: ${new Date(snapshot!.generatedAt).toLocaleString(de ? 'de-DE' : 'it-IT')}`}
-        {snapshot ? ` · ${snapshot.periodStart} – ${snapshot.periodEnd} · ${summary ? '' : `${snapshot.observed.pullRequests} PR · ${format(snapshot.observed.actionsMinutes)} CI min`}` : ''}
+          : `${de ? 'GitHub aktualisiert' : 'GitHub aggiornato'}: ${new Date(snapshot!.generatedAt).toLocaleString(de ? 'de-DE' : 'it-IT')}`}
       </p>
-      {snapshot?.methodologyUrl?.startsWith('https://') &&
-        <p className="workspace-source-note"><a href={snapshot.methodologyUrl} target="_blank" rel="noopener noreferrer">
-          {de ? 'Methodik und Quellen' : 'Metodologia e fonti'}</a></p>}
     </section>
   );
 }
