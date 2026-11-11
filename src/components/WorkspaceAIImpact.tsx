@@ -1,101 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
-import { identityAuth } from '../services/identityFirebase';
 import type { DNSWorkspaceLanguage } from '../services/foundation';
-import collaboration from '../data/ai-collaboration-preliminary.json';
-
-type Snapshot = {
-  schemaVersion: 1;
-  generatedAt: string;
-  periodStart: string;
-  periodEnd: string;
-  observed: { repositories: number; commits: number; pullRequests: number; actionsMinutes: number | null; actionsRuns?: number; actionsElapsedHours?: number | null; actionsElapsedCoverage?: number | null };
-  estimated: {
-    aiHours: number | null;
-    humanEquivalentHours: number | null;
-    electricityKwh: { low: number; central: number; high: number } | null;
-    waterLitres: { low: number; central: number; high: number } | null;
-  };
-  environmentModel?: { label: string; modelId: string; benchmarkUrl?: string } | null;
-  developmentActivity?: { sessions: number; estimateHours: { low: number; central: number; high: number }; methodology: string } | null;
-  methodologyUrl?: string;
-};
+import { currentCollaborationEstimate } from '../ai-impact/collaboration';
+import { useAIImpactSnapshot } from '../ai-impact/useAIImpactSnapshot';
 
 const integer = new Intl.NumberFormat('it-IT');
 const decimal = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 });
-function validNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
-}
-function validRange(value: unknown): value is { low: number; central: number; high: number } {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  return validNumber(v.low) && validNumber(v.central) && validNumber(v.high)
-    && v.low <= v.central && v.central <= v.high;
-}
-function parseSnapshot(raw: unknown): Snapshot | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const s = raw as Partial<Snapshot>;
-  if (s.schemaVersion !== 1 || !s.observed || !s.estimated ||
-      typeof s.generatedAt !== 'string' || Number.isNaN(Date.parse(s.generatedAt)) ||
-      typeof s.periodStart !== 'string' || typeof s.periodEnd !== 'string' ||
-      !validNumber(s.observed.repositories) || !validNumber(s.observed.commits) ||
-      !validNumber(s.observed.pullRequests) ||
-      !(s.observed.actionsMinutes === null || validNumber(s.observed.actionsMinutes))) return null;
-  const e = s.estimated;
-  if (![e.aiHours, e.humanEquivalentHours].every(v => v === null || validNumber(v))) return null;
-  if (![e.electricityKwh, e.waterLitres].every(v => v === null || validRange(v))) return null;
-  return s as Snapshot;
-}
 
+/** View only. Loading, validation and estimate history live in src/ai-impact/. */
 export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspaceLanguage; isAdmin: boolean }) {
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
-  const [revision, setRevision] = useState(0);
-  const refresh = useCallback(() => setRevision(value => value + 1), []);
-  useEffect(() => {
-    let active = true;
-    setState('loading');
-    async function load() {
-      let parsed: Snapshot | null = null;
-      let hadError = false;
-      // Firestore remains authoritative for admin-only details.
-      if (isAdmin) {
-        try {
-          const result = await getDoc(doc(getFirestore(identityAuth.app), 'adminAiImpactSnapshots', 'latest'));
-          parsed = result.exists() ? parseSnapshot(result.data()) : null;
-        } catch { hadError = true; }
-      }
-      // Publicly shareable aggregates are intentionally distinct from private telemetry.
-      if (!parsed) {
-        try {
-          const response = await fetch(`${import.meta.env.BASE_URL}ai-impact/latest.json`, { cache: 'no-store' });
-          if (!response.ok) throw new Error('PUBLIC_SUMMARY_UNAVAILABLE');
-          parsed = parseSnapshot(await response.json());
-        } catch { hadError = true; }
-      }
-      if (!parsed && !isAdmin) {
-        try {
-          const result = await getDoc(doc(getFirestore(identityAuth.app), 'memberAiImpactSnapshots', 'latest'));
-          parsed = result.exists() ? parseSnapshot(result.data()) : null;
-        } catch { hadError = true; }
-      }
-      if (!active) return;
-      setSnapshot(parsed);
-      setState(parsed ? 'ready' : hadError ? 'error' : 'missing');
-    }
-    void load();
-    return () => { active = false; };
-  }, [revision, isAdmin]);
-
+  const { snapshot, state, refresh } = useAIImpactSnapshot(isAdmin);
   const de = language === 'de';
   const empty = de ? 'Noch keine verifizierten Daten' : 'Dati verificati non ancora disponibili';
   const format = (n: number | null | undefined, suffix = '') =>
     n == null ? '—' : `${decimal.format(n)}${suffix}`;
 
-  const revisions = collaboration.futureRevisions as Array<{ periodEnd: string; collaborationHours: { low: number; central: number; high: number } }>;
-  const currentRevision = revisions.length ? revisions[revisions.length - 1] : null;
-  const hours = currentRevision?.collaborationHours ?? collaboration.collaborationHours;
-  const periodEnd = new Date(`${currentRevision?.periodEnd ?? collaboration.periodEnd}T12:00:00Z`).toLocaleDateString(de ? 'de-DE' : 'it-IT');
+  const collaboration = currentCollaborationEstimate();
+  const hours = collaboration.hours;
+  const periodEnd = new Date(`${collaboration.periodEnd}T12:00:00Z`).toLocaleDateString(de ? 'de-DE' : 'it-IT');
   const numbers = [
     { name: de ? 'Klassische Entwicklungszeit' : 'Sviluppo tradizionale' },
     { name: de ? 'Zeitersparnis' : 'Risparmio di tempo' },

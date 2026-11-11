@@ -43,6 +43,7 @@ jobs:
       - run: node --test tests/ai-collaboration-preliminary.test.mjs
       - run: node --test tests/ai-impact-environment-visibility.test.mjs
       - run: node --test tests/ai-impact-compact-scoped.test.mjs
+      - run: node --test tests/ai-impact-modularity.test.mjs
       - run: node --test tests/digital-pass-pilot-build.test.mjs
 
   deploy:
