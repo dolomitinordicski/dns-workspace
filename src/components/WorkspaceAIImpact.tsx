@@ -92,8 +92,10 @@ export function WorkspaceAIImpact({ language, isAdmin }: { language: DNSWorkspac
   const format = (n: number | null | undefined, suffix = '') =>
     n == null ? '—' : `${decimal.format(n)}${suffix}`;
 
-  const hours = collaboration.collaborationHours;
-  const periodEnd = new Date(`${collaboration.periodEnd}T12:00:00Z`).toLocaleDateString(de ? 'de-DE' : 'it-IT');
+  const revisions = collaboration.futureRevisions as Array<{ periodEnd: string; collaborationHours: { low: number; central: number; high: number } }>;
+  const currentRevision = revisions.length ? revisions[revisions.length - 1] : null;
+  const hours = currentRevision?.collaborationHours ?? collaboration.collaborationHours;
+  const periodEnd = new Date(`${currentRevision?.periodEnd ?? collaboration.periodEnd}T12:00:00Z`).toLocaleDateString(de ? 'de-DE' : 'it-IT');
   const numbers = [
     { name: de ? 'Klassische Entwicklungszeit' : 'Sviluppo tradizionale' },
     { name: de ? 'Zeitersparnis' : 'Risparmio di tempo' },
