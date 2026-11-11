@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "scope": "dns-ecosystem-operational",
+  "repositories": [
+    "dns-workspace",
+    "dns-shared-data",
+    "DNS-Data-Entry",
+    "DNS-Flyer-Studio",
+    "analytics",
+    "fairmodel",
+    "DNS-Faktura",
+    "DNS-Polls-tool",
+    "dns-partner-hub",
+    "partnerportal",
+    "hub",
+    "dns-wiki"
+  ],
+  "excludedByScopeNote": "Dedicated historical/experimental projects such as strategy, smartslopes, 360ARtool and qrcodegen are not counted in the operational Workspace dashboard; their underlying GitHub history is unchanged.",
+  "reviewedAt": "2026-11-11"
+}

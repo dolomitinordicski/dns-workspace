@@ -4,7 +4,7 @@
  * Node >=22, no third-party dependencies. Firestore write is optional and
  * requires a short-lived OAuth access token issued via GitHub OIDC / Google WIF.
  */
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { estimateDevelopmentSessions } from './ai-impact-session-estimator.mjs';
 import { modelEnvironmentalScenarios } from './ai-impact-environment-model.mjs';
 
@@ -90,6 +90,7 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
   };
   const latest = {
     schemaVersion: 1, generatedAt, periodStart: start, periodEnd: end,
+    scope: 'dns-ecosystem-operational',
     observed: {
       repositories: repositories.length,
       commits: uniqueCommits.size,
@@ -105,13 +106,20 @@ export function summarize(repositories, commits, pulls, runs, start, end, genera
   };
   return { latest, daily: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)) };
 }
-async function listRepos() {
-  // Owner is currently a GitHub user account; if changed to org, support both.
-  let repos;
-  try { repos = await pages(`/users/${OWNER}/repos?type=owner&sort=full_name`); }
-  catch { repos = await pages(`/orgs/${OWNER}/repos?type=all&sort=full_name`); }
-  return repos.filter(r => !r.archived && !r.fork && r.name &&
-    !excluded.has(r.name.toLowerCase())).map(r => r.name);
+export async function listRepos() {
+  // Explicitly scoped to the operational DNS Ecosystem, rather than every owner repository.
+  const manifest = JSON.parse(await readFile(new URL('../config/ai-impact-repositories.json', import.meta.url), 'utf8'));
+  if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.repositories) || !manifest.repositories.length) {
+    throw Error('INVALID_AI_IMPACT_REPOSITORY_SCOPE');
+  }
+  const seen = new Set();
+  return manifest.repositories.filter(name => {
+    if (typeof name !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(name)) throw Error('INVALID_REPOSITORY_NAME');
+    const key = name.toLowerCase();
+    if (seen.has(key)) throw Error('DUPLICATE_REPOSITORY_IN_SCOPE');
+    seen.add(key);
+    return !excluded.has(key);
+  });
 }
 async function collectRepo(repo, start, end) {
   const path = `/repos/${OWNER}/${encodeURIComponent(repo)}`;
@@ -150,6 +158,7 @@ export function publicSummary(latest) {
     && latest.environmentModel?.label === 'exploratory_scenario_not_measured';
   return {
     schemaVersion: 1,
+    scope: 'dns-ecosystem-operational',
     generatedAt: latest.generatedAt,
     periodStart: latest.periodStart,
     periodEnd: latest.periodEnd,
