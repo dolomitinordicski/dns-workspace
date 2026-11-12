@@ -36,6 +36,7 @@ $('flip-pass').addEventListener('click',()=>showCardSide(!cardFlipped));
 
 let currentPassId:string|null=null;
 let lang:Lang='it',pass:Pass|null=null,loading=false,offline=false;
+let loginLinkRequested=false;
 function keepHandoff(number:string,code:string) {
  storePassHandoff(number,code,sessionStorage);
  ($('number') as HTMLInputElement).value=number;
@@ -143,7 +144,7 @@ function render(){
  $('unavailable').classList.toggle('hide',passActivationEnabled||authorized);
  $('login').classList.toggle('hide', authorized || !passActivationEnabled);
  ($('login') as HTMLFormElement).hidden = authorized || !passActivationEnabled;
- const progress=authorized&&!pass?'register':pass?'register':'email';
+ const progress=authorized?'register':(loginLinkRequested||hasEmailLink())?'verify':'email';
  for(const key of ['email','verify','register'])$('progress-'+key).classList.toggle('is-current',key===progress);
  const registrationVisible=passActivationEnabled&&authorized&&!pass;
  $('registration').classList.toggle('hide',!registrationVisible);
@@ -186,7 +187,7 @@ $('save-offline').addEventListener('click',async()=>{if(!pass||offline)return;tr
 $('lang').addEventListener('change',()=>{lang=($('lang') as HTMLSelectElement).value as Lang;translate();render();if(passAuth.currentUser?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated)});
 $('login').addEventListener('submit',async(e)=>{e.preventDefault();if(!passActivationEnabled)return;loading=true;render();setText('status','');try{
  const email=($('email') as HTMLInputElement).value.trim();
- if(hasEmailLink()){await finishEmailLink(email);if(!passActivationEnabled)setText('status',translations[lang].authenticated);}else{await requestEmailLink(email);setText('status',translations[lang].sent);}
+ if(hasEmailLink()){await finishEmailLink(email);if(!passActivationEnabled)setText('status',translations[lang].authenticated);}else{await requestEmailLink(email);loginLinkRequested=true;setText('status',translations[lang].sent);}
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loading=true;render();setText('status','');try{
  if(!passActivationEnabled)throw new Error('PASS_ACTIVATION_DISABLED');
@@ -202,7 +203,7 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  currentPassId=result.registrationId;pass=await passRequest<Pass>('/v1/me/digital-pass/presentation',{physicalPassId:currentPassId});await showPass();
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('logout').addEventListener('click',()=>{stopScanner();clearPassHandoff(sessionStorage);pass=null;currentPassId=null;offline=false;($('qr') as HTMLImageElement).removeAttribute('src');void clearOfflinePass();void signOut(passAuth)});
-onAuthStateChanged(passAuth,(user)=>{pass=null;currentPassId=null;offline=false;($('qr') as HTMLImageElement).removeAttribute('src');applyHandoff();render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(user?.emailVerified)void claimScannedPass();if(!navigator.onLine)void restoreOffline();else void loadPass()});
+onAuthStateChanged(passAuth,(user)=>{if(user?.emailVerified)loginLinkRequested=false;pass=null;currentPassId=null;offline=false;($('qr') as HTMLImageElement).removeAttribute('src');applyHandoff();render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(user?.emailVerified)void claimScannedPass();if(!navigator.onLine)void restoreOffline();else void loadPass()});
 translate();applyHandoff();render();
 
 if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/',updateViaCache:'none'}).catch(()=>{})});
