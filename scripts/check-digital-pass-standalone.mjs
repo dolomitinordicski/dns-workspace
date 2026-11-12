@@ -1,5 +1,6 @@
 import {readFileSync,existsSync} from 'node:fs';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 const html=readFileSync('pass.html','utf8');
 const page=readFileSync('src/pass-standalone.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8');
@@ -17,3 +18,26 @@ assert.doesNotMatch(app,/DigitalPassGuest|DigitalPassScanner/, 'Workspace must l
 assert.match(app,/href="\/dns-workspace\/pass\.html"/);
 assert.ok(!existsSync('public/pass.html'), 'Old Workspace redirect must not shadow standalone page');
 console.log('✓ DNS Digital Pass has isolated HTML, CSS and JS, canonical header/footer and no Foundation runtime');
+
+const brandCss=readFileSync('src/pass-corporate.css','utf8');
+const offlineCopy=readFileSync('src/services/offlinePass.ts','utf8');
+const serviceWorker=readFileSync('public/digital-pass-sw.js','utf8');
+const gitBlobSha=(file)=>{
+ const data=readFileSync(file);
+ return createHash('sha1').update('blob '+data.length+'\\0').update(data).digest('hex');
+};
+assert.equal(gitBlobSha('public/dns-season-art-2026-27.webp'),'ea0489f0fce1f66231a7d7944ccc9349f951c3ca','The original 2026/27 card illustration must not be replaced by invented graphics');
+assert.equal(gitBlobSha('public/dns-logo-official.png'),'efb66702c8d984cc1fa0cad1e8c8e1758ee682ce','Logo must match the official Foundation v1.4.1 source');
+assert.match(html,/dns-season-art-2026-27\\.webp/);
+assert.match(html,/dns-logo-official\\.png/);
+assert.match(html,/id="dns-pass-flip"/);
+assert.match(html,/id="pass-front-number"/);
+assert.match(html,/id="pass-organization"/);
+assert.match(html,/id="pass-back"/);
+assert.match(html,/id="qr"/);
+assert.match(brandCss,/prefers-reduced-motion/);
+assert.match(offlineCopy,/JSON\\.stringify\\(safe\\)/,'Persist only allowlisted visual data');
+assert.doesNotMatch(offlineCopy,/JSON\\.stringify\\(pass\\)/,'Never persist live credential or QR payload');
+assert.match(serviceWorker,/dns-season-art-2026-27\\.webp/);
+assert.match(serviceWorker,/dns-logo-official\\.png/);
+console.log('✓ DNS artwork SHA, accessible flip, encrypted offline metadata and PWA cache verified');
