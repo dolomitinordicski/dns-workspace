@@ -8,7 +8,7 @@
 <p class="dns-note"><a id="privacy-notice" target="_blank" rel="noopener noreferrer" hidden>Informativa privacy del Digital Pass</a></p>
 <p id="unavailable" class="dns-note hide">Servizio non ancora disponibile.</p>
 <section id="scan-entry" class="pass-scan-entry hide" hidden aria-label="QR operatore"><button id="scan-start" class="dns-button pass-scan-start" type="button">Scansiona QR operatore</button><div id="scan-camera" class="pass-scan-camera hide" hidden><video id="scan-video" autoplay muted playsinline aria-label="Inquadra il QR dell’operatore"></video><p id="scan-hint" class="dns-note">Inquadra il QR mostrato dall’operatore.</p><button id="scan-stop" type="button" class="dns-button pass-scan-cancel">Chiudi fotocamera</button></div><p id="scan-status" class="dns-note" role="status" aria-live="polite"></p></section>
-<div class="pass-onboarding-progress" aria-hidden="true"><span id="progress-email" class="is-current">01 · Email</span><span id="progress-verify">02 · Verifica</span><span id="progress-register">03 · Tessera</span></div><form id="login"><label id="email-label" for="email">Email</label><input id="email" type="email" autocomplete="email" required><button class="dns-button" type="submit" id="login-button">Invia link di accesso</button></form>
+<div class="pass-onboarding-progress" id="pass-onboarding-progress" aria-hidden="true"><span id="progress-email" class="is-current">01 · Email</span><span id="progress-verify">02 · Verifica</span><span id="progress-register">03 · Tessera</span></div><form id="login"><label id="email-label" for="email">Email</label><input id="email" type="email" autocomplete="email" required><button class="dns-button" type="submit" id="login-button">Invia link di accesso</button></form>
 <form id="registration" class="hide" hidden>
 <p id="handoff-hint" class="dns-note hide"></p>
 <label for="number" id="number-label">Numero tessera</label><input id="number" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" required>
@@ -22,15 +22,15 @@
  <p class="pass-flip-instruction" id="flip-hint">Tocca la tessera per vedere il retro</p>
  <div class="dns-pass-flip" id="dns-pass-flip">
   <button type="button" class="dns-pass-side dns-pass-front" id="pass-front" aria-label="Mostra retro della tessera" aria-pressed="false">
-   <span class="pass-original-heading"><img src="https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/foundation-v1.4.1/brand/logo-web.png" alt="Dolomiti NordicSki"></span>
+   <span class="pass-original-heading"><img src="/dns-workspace/dns-logo-official.png" alt="Dolomiti NordicSki"></span>
    <span class="pass-original-number"><span>N°</span> <strong id="pass-front-number"></strong></span>
    <img class="pass-season-art" src="/dns-workspace/dns-season-art-2026-27.webp" alt="">
   </button>
   <div class="dns-pass-side dns-pass-back" id="pass-back" aria-hidden="true">
-   <div class="pass-back-head"><img src="https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/foundation-v1.4.1/brand/logo-web.png" alt="Dolomiti NordicSki"><span>WINTER 2026/2027</span></div>
+   <div class="pass-back-head"><img src="/dns-workspace/dns-logo-official.png" alt="Dolomiti NordicSki"><span>WINTER 2026/2027</span></div>
    <div class="pass-back-main"><div class="pass-back-data"><span id="pass-holder-label">Intestatario</span><strong id="holder"></strong><span id="pass-org-label">Organizzazione di acquisto</span><strong id="pass-organization">—</strong><span id="pass-number-label">Numero tessera</span><strong id="pass-number"></strong></div>
    <div class="pass-qr-wrap"><img id="qr" alt="QR Digital Pass" hidden></div></div>
-   <span class="pass-status" id="ticket-status" role="status">QR TEMPORANEO · Verifica online</span>
+   <span class="pass-status" id="ticket-status" role="status">QR TEMPORANEO · Verifica online</span><span class="pass-sync-time" id="pass-updated"></span>
   </div>
  </div>
  <button id="flip-pass" class="dns-button pass-flip-button" type="button" aria-controls="dns-pass-flip" aria-expanded="false">Mostra retro</button>
