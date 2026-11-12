@@ -70,7 +70,7 @@ export async function readOfflinePass():Promise<OfflinePass|null>{
   const key=await get<CryptoKey>('key');
   const data=await get<{iv:Uint8Array;ciphertext:ArrayBuffer}>('pass');
   if(!key||!data)return null;
-  const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(data.iv),key,data.ciphertext});
+  const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(data.iv)},key,data.ciphertext);
   const pass=JSON.parse(new TextDecoder().decode(raw)) as unknown;
   return isValidRecord(pass)?pass:null;
  }catch{return null}
