@@ -25,7 +25,7 @@ const flipLabels={
 };
 function showCardSide(back:boolean){
  cardFlipped=back;
- $('dns-pass-flip').classList.toggle('is-flipped',back);
+ $('flip-body').classList.toggle('flipped',back);
  $('pass-back').setAttribute('aria-hidden',String(!back));
  ($('pass-front') as HTMLButtonElement).setAttribute('aria-pressed',String(back));
  ($('pass-front') as HTMLButtonElement).tabIndex=back?-1:0;
@@ -117,19 +117,26 @@ async function claimScannedPass() {
 
 const setText=(id:string,value:string)=>{$(id).textContent=value;};
 const marketing={
- it:{hero:'Le tue piste. Il tuo pass. Sempre con te.',subtitle:'Porta lo stagionale sul telefono, in modo semplice e volontario.',action:'Attiva il Digital Pass ↓',one:'✓ Nessuna app da scaricare',two:'✓ Attivazione facoltativa',three:'✓ Tessera fisica sempre valida',step:'01 — ATTIVAZIONE',ticket:'IL TUO DIGITAL PASS'},
- de:{hero:'Deine Loipen. Dein Pass. Immer dabei.',subtitle:'Nimm deine Saisonkarte ganz einfach digital mit – freiwillig und unkompliziert.',action:'Digital Pass aktivieren ↓',one:'✓ Keine App erforderlich',two:'✓ Freiwillige Aktivierung',three:'✓ Physische Karte bleibt gültig',step:'01 — AKTIVIERUNG',ticket:'DEIN DIGITAL PASS'},
- en:{hero:'Your trails. Your pass. Always with you.',subtitle:'Carry your season pass on your phone. Simple, convenient and optional.',action:'Activate Digital Pass ↓',one:'✓ No app download',two:'✓ Optional activation',three:'✓ Physical pass stays valid',step:'01 — ACTIVATION',ticket:'YOUR DIGITAL PASS'}
+ it:{hero:'La tua Saisonkarte, anche sul telefono.',subtitle:'Stessa identità della tessera cartacea. Attivazione facoltativa, senza app da scaricare. La tessera fisica rimane valida.',ticket:'IL TUO DIGITAL PASS'},
+ de:{hero:'Deine Saisonkarte, auch auf dem Smartphone.',subtitle:'Das vertraute Design der gedruckten Karte. Die digitale Aktivierung ist freiwillig. Die physische Karte bleibt gültig.',ticket:'DEIN DIGITAL PASS'},
+ en:{hero:'Your season pass, on your phone too.',subtitle:'The familiar design of the physical card. Digital activation is optional. Your physical card remains valid.',ticket:'YOUR DIGITAL PASS'}
 };
 function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
  const card=flipLabels[lang];
  setText('flip-hint',card.hint);setText('pass-holder-label',card.holder);setText('pass-org-label',card.organization);setText('pass-number-label',card.number);setText('pass-check-notice',card.notice);
- (['email','verify','register'] as const).forEach((step,i)=>setText('progress-'+step,({it:['01 · Email','02 · Verifica','03 · Tessera'],de:['01 · E-Mail','02 · Bestätigung','03 · Karte'],en:['01 · Email','02 · Verify','03 · Pass']} as Record<Lang,string[]>)[lang][i]));
+ // Progress bars retain the exact slim visual treatment of the approved onboarding prototype.
  ($('pass-front') as HTMLButtonElement).setAttribute('aria-label',card.front);
  showCardSide(cardFlipped);
 
- for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
- for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','heading':'heading','intro':'intro','email-label':'email','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
+ for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
+ for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
+ const copy={
+  it:{emailTitle:'Accedi al tuo Digital Pass',emailCopy:'Inserisci la tua email. Ti invieremo un link per verificare l’indirizzo, senza password.',emailHelp:'L’attivazione è facoltativa. Nessuna iscrizione marketing è richiesta.',emailLabel:'Indirizzo email',linkTitle:'Controlla la tua email',linkCopy:'Apri il link ricevuto. Se lo apri su un altro dispositivo, usa la stessa email per completare l’accesso.',linkBack:'Torna indietro',registerTitle:'Associa la tua Saisonkarte',registerCopy:'Tieni a portata di mano la tessera cartacea e il codice consegnato dall’operatore.',manual:'Inserisci numero e codice',passTitle:'La tua tessera digitale',passCopy:'Il fronte conserva la grafica originale; sul retro trovi i dati e il QR di verifica, quando disponibile.'},
+  de:{emailTitle:'Zum Digital Pass anmelden',emailCopy:'Gib deine E-Mail-Adresse ein. Du erhältst einen Anmeldelink, ganz ohne Passwort.',emailHelp:'Die Aktivierung ist freiwillig. Eine Marketing-Einwilligung ist nicht erforderlich.',emailLabel:'E-Mail-Adresse',linkTitle:'Prüfe deine E-Mails',linkCopy:'Öffne den Link in der E-Mail. Auf einem anderen Gerät nutze dieselbe E-Mail-Adresse.',linkBack:'Zurück',registerTitle:'Saisonkarte verknüpfen',registerCopy:'Halte deine gedruckte Saisonkarte und den Aktivierungscode bereit.',manual:'Nummer und Code eingeben',passTitle:'Deine digitale Saisonkarte',passCopy:'Vorne das Originaldesign, hinten deine Angaben und der QR-Code, sofern verfügbar.'},
+  en:{emailTitle:'Sign in to Digital Pass',emailCopy:'Enter your email address to receive a sign-in link. No password needed.',emailHelp:'Activation is optional. No marketing opt-in is required.',emailLabel:'Email address',linkTitle:'Check your email',linkCopy:'Open the link you receive. If you use another device, enter the same email to finish signing in.',linkBack:'Back',registerTitle:'Link your season pass',registerCopy:'Keep your printed card and the activation code provided by staff ready.',manual:'Enter number and code',passTitle:'Your digital season pass',passCopy:'The front retains the original artwork; the reverse contains your details and verification QR when available.'}
+ }[lang];
+ for(const [id,v] of Object.entries({'heading':copy.emailTitle,'intro':copy.emailCopy,'email-help':copy.emailHelp,'email-label':copy.emailLabel,'link-title':copy.linkTitle,'link-copy':copy.linkCopy,'link-back':copy.linkBack,'register-title':copy.registerTitle,'register-copy':copy.registerCopy,'manual-choice':copy.manual,'pass-title':copy.passTitle,'pass-copy':copy.passCopy}))setText(id,v);
+
 }
 const passInstall=setupPassInstall({button:$('install-pass') as HTMLButtonElement,hint:$('home-tip') as HTMLElement,getLang:()=>lang});
 function render(){
@@ -140,7 +147,7 @@ function render(){
  }
  setText('privacy-notice',lang==='de'?'Datenschutzhinweise zum Digital Pass':lang==='en'?'Digital Pass privacy notice':'Informativa privacy del Digital Pass');
  const authorized=passAuth.currentUser?.emailVerified===true&&!hasEmailLink();
- const showScan=passActivationEnabled&&!pass;
+ const showScan=passActivationEnabled&&authorized&&!pass;
  $('scan-entry').classList.toggle('hide',!showScan);
  ($('scan-entry') as HTMLElement).hidden=!showScan;
  if(!showScan&&scanOpen)stopScanner();
@@ -150,7 +157,11 @@ function render(){
  const progress=authorized?'register':(loginLinkRequested||hasEmailLink())?'verify':'email';
  $('pass-onboarding-progress').classList.toggle('hide',Boolean(pass)||!passActivationEnabled);
 
- for(const key of ['email','verify','register'])$('progress-'+key).classList.toggle('is-current',key===progress);
+ for(const [i,key] of ['email','verify','register'].entries())$('progress-'+key).classList.toggle('on',i<=['email','verify','register'].indexOf(progress));
+ const view=pass&&(authorized||offline)?'pass':authorized?'register':loginLinkRequested&&!hasEmailLink()?'link':'email';
+ for(const key of ['email','link','register','pass'])$('screen-'+key).classList.toggle('active',key===view);
+ $('preview-panel').classList.toggle('hide',view==='pass');
+
  const registrationVisible=passActivationEnabled&&authorized&&!pass;
  $('registration').classList.toggle('hide',!registrationVisible);
  $('handoff-hint').classList.toggle('hide',!registrationVisible||Boolean(readPassHandoff(sessionStorage)));
@@ -188,6 +199,8 @@ async function showPass(){
 async function restoreOffline(){const saved=await readOfflinePass();if(saved){pass={...saved,qrPayload:''};offline=true;await showPass();render()}}
 $('scan-start').addEventListener('click',()=>void startScanner());
 $('scan-stop').addEventListener('click',()=>{stopScanner();setText('scan-status','');});
+$('manual-choice').addEventListener('click',()=>($('number') as HTMLInputElement).focus());
+$('link-back').addEventListener('click',()=>{loginLinkRequested=false;render();});
 window.addEventListener('pagehide',stopScanner);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&scanOpen)stopScanner()});
 $('save-offline').addEventListener('click',async()=>{if(!pass||offline)return;try{await saveOfflinePass(pass);setText('status',translations[lang].saved)}catch{setText('status',translations[lang].error)}});
