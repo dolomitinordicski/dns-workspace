@@ -31,6 +31,7 @@
 .dns-pass-back #qr{display:block;width:100%;height:auto;max-width:172px;max-height:172px;margin:0 auto}
 .dns-pass-back #qr[hidden]{display:none}
 .dns-pass-back .pass-status{font:700 10px/1.25 var(--font-alt);color:var(--color-dns-mid);letter-spacing:.02em;text-align:center}
+.pass-sync-time{display:block;min-height:1em;font:9px/1.2 var(--font-alt);color:var(--color-dns-muted);text-align:center}
 .pass-flip-button{width:100%;margin-top:16px}
 #pass-check-notice{margin:11px auto 0;max-width:400px}
 #save-offline{margin:12px auto 8px}
