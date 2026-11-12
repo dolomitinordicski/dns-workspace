@@ -1,5 +1,5 @@
 /* Cache only public app-shell assets; never cache Firebase API responses or holder records. */
-const CACHE='dns-pass-shell-v7';
+const CACHE='dns-pass-shell-v8';
 const ROOT='/dns-workspace/';
 self.addEventListener('install',event=>{event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
