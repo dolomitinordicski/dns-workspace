@@ -27,6 +27,7 @@ function showCardSide(back:boolean){
  cardFlipped=back;
  $('dns-pass-flip').classList.toggle('is-flipped',back);
  $('pass-back').setAttribute('aria-hidden',String(!back));
+ ($('pass-front') as HTMLButtonElement).setAttribute('aria-pressed',String(back));
  ($('pass-front') as HTMLButtonElement).tabIndex=back?-1:0;
  ($('flip-pass') as HTMLButtonElement).setAttribute('aria-expanded',String(back));
  ($('flip-pass') as HTMLButtonElement).textContent=back?flipLabels[lang].back:flipLabels[lang].front;
@@ -123,7 +124,6 @@ const marketing={
 function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
  const card=flipLabels[lang];
  setText('flip-hint',card.hint);setText('pass-holder-label',card.holder);setText('pass-org-label',card.organization);setText('pass-number-label',card.number);setText('pass-check-notice',card.notice);
- for(const [key,value] of Object.entries(({it:['01 · Email','02 · Verifica','03 · Tessera'],de:['01 · E-Mail','02 · Bestätigung','03 · Karte'],en:['01 · Email','02 · Verify','03 · Pass']} as Record<Lang,string[]>)[lang])){void key;void value;}
  (['email','verify','register'] as const).forEach((step,i)=>setText('progress-'+step,({it:['01 · Email','02 · Verifica','03 · Tessera'],de:['01 · E-Mail','02 · Bestätigung','03 · Karte'],en:['01 · Email','02 · Verify','03 · Pass']} as Record<Lang,string[]>)[lang][i]));
  ($('pass-front') as HTMLButtonElement).setAttribute('aria-label',card.front);
  showCardSide(cardFlipped);
@@ -158,7 +158,7 @@ function render(){
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
  passInstall.refresh(Boolean(pass&&(authorized||offline)));
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
- $('save-offline').classList.toggle('hide',!authorized||offline||!navigator.onLine||!pass||pass.status!=='ACTIVE'||!Number.isFinite(pass.validUntil)||pass.validUntil!<=Date.now());
+ $('save-offline').classList.toggle('hide',!authorized||offline||!navigator.onLine||!pass||pass.status!=='ACTIVE'||!Number.isFinite(pass.validUntil)||(pass.validUntil ?? 0)<=Date.now());
  $('logout').classList.toggle('hide',!authorized);
  ($('login-button') as HTMLButtonElement).disabled=loading;
  ($('register-button') as HTMLButtonElement).disabled=loading||!passActivationEnabled;
@@ -174,11 +174,11 @@ async function showPass(){
  if(!pass)return;
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
  setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
- setText('pass-updated',offline&&pass.savedAt?new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
+ setText('pass-updated',offline&&pass.savedAt?(lang==='de'?'Gespeichert: ':lang==='en'?'Saved: ':'Salvata: ')+new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
  if(offline||!navigator.onLine||pass.status!=='ACTIVE'||!/^dns-pass:v2:[A-Za-z0-9_-]{43}$/.test(pass.qrPayload)||!pass.qrExpiresAt||pass.qrExpiresAt<=Date.now()||!passApiConfigured)return;
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
  setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
- setText('pass-updated',offline&&pass.savedAt?new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
+ setText('pass-updated',offline&&pass.savedAt?(lang==='de'?'Gespeichert: ':lang==='en'?'Saved: ':'Salvata: ')+new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
  const base=(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE as string).replace(/\/$/,'');
  const shown=pass,owner=passAuth.currentUser?.uid;
  const encoded=await QRCode.toDataURL(base+'/p/'+shown.qrPayload.slice('dns-pass:v2:'.length),{width:320,margin:3});
