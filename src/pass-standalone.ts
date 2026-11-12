@@ -7,7 +7,7 @@ import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finis
 
 import { setupPassInstall } from './services/passInstall';
 type Lang='it'|'de'|'en';
-type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string};
+type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;validUntil?:number;savedAt?:number};
 // Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
 const privacyUrl = digitalPassPrivacyUrl(import.meta.env.VITE_DNS_DIGITAL_PASS_PRIVACY_URL);
 const passActivationEnabled = passApiConfigured && Boolean(privacyUrl) && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
@@ -123,6 +123,9 @@ const marketing={
 function translate(){const t=translations[lang];const m=marketing[lang];document.documentElement.lang=lang;
  const card=flipLabels[lang];
  setText('flip-hint',card.hint);setText('pass-holder-label',card.holder);setText('pass-org-label',card.organization);setText('pass-number-label',card.number);setText('pass-check-notice',card.notice);
+ for(const [key,value] of Object.entries(({it:['01 · Email','02 · Verifica','03 · Tessera'],de:['01 · E-Mail','02 · Bestätigung','03 · Karte'],en:['01 · Email','02 · Verify','03 · Pass']} as Record<Lang,string[]>)[lang])){void key;void value;}
+ (['email','verify','register'] as const).forEach((step,i)=>setText('progress-'+step,({it:['01 · Email','02 · Verifica','03 · Tessera'],de:['01 · E-Mail','02 · Bestätigung','03 · Karte'],en:['01 · Email','02 · Verify','03 · Pass']} as Record<Lang,string[]>)[lang][i]));
+ ($('pass-front') as HTMLButtonElement).setAttribute('aria-label',card.front);
  showCardSide(cardFlipped);
 
  for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','hero-link':'action','benefit-one':'one','benefit-two':'two','benefit-three':'three','step-label':'step','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
@@ -145,6 +148,8 @@ function render(){
  $('login').classList.toggle('hide', authorized || !passActivationEnabled);
  ($('login') as HTMLFormElement).hidden = authorized || !passActivationEnabled;
  const progress=authorized?'register':(loginLinkRequested||hasEmailLink())?'verify':'email';
+ $('pass-onboarding-progress').classList.toggle('hide',Boolean(pass)||!passActivationEnabled);
+
  for(const key of ['email','verify','register'])$('progress-'+key).classList.toggle('is-current',key===progress);
  const registrationVisible=passActivationEnabled&&authorized&&!pass;
  $('registration').classList.toggle('hide',!registrationVisible);
@@ -153,7 +158,7 @@ function render(){
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
  passInstall.refresh(Boolean(pass&&(authorized||offline)));
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
- $('save-offline').classList.add('hide');
+ $('save-offline').classList.toggle('hide',!authorized||offline||!navigator.onLine||!pass||pass.status!=='ACTIVE'||!Number.isFinite(pass.validUntil)||pass.validUntil!<=Date.now());
  $('logout').classList.toggle('hide',!authorized);
  ($('login-button') as HTMLButtonElement).disabled=loading;
  ($('register-button') as HTMLButtonElement).disabled=loading||!passActivationEnabled;
@@ -169,16 +174,18 @@ async function showPass(){
  if(!pass)return;
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
  setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
+ setText('pass-updated',offline&&pass.savedAt?new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
  if(offline||!navigator.onLine||pass.status!=='ACTIVE'||!/^dns-pass:v2:[A-Za-z0-9_-]{43}$/.test(pass.qrPayload)||!pass.qrExpiresAt||pass.qrExpiresAt<=Date.now()||!passApiConfigured)return;
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
  setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
+ setText('pass-updated',offline&&pass.savedAt?new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
  const base=(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE as string).replace(/\/$/,'');
  const shown=pass,owner=passAuth.currentUser?.uid;
  const encoded=await QRCode.toDataURL(base+'/p/'+shown.qrPayload.slice('dns-pass:v2:'.length),{width:320,margin:3});
  if(pass!==shown||!owner||passAuth.currentUser?.uid!==owner||!navigator.onLine||!shown.qrExpiresAt||shown.qrExpiresAt<=Date.now())return;
  image.src=encoded;image.hidden=false;
 }
-async function restoreOffline(){const saved=await readOfflinePass();if(saved){pass=saved;offline=true;await showPass();render()}}
+async function restoreOffline(){const saved=await readOfflinePass();if(saved){pass={...saved,qrPayload:''};offline=true;await showPass();render()}}
 $('scan-start').addEventListener('click',()=>void startScanner());
 $('scan-stop').addEventListener('click',()=>{stopScanner();setText('scan-status','');});
 window.addEventListener('pagehide',stopScanner);
