@@ -1,42 +1,39 @@
-
-/* DNS Digital Pass 2026/27 — only official Foundation palette and DNS branding.
-   No independent decorative imagery. Front is reserved for the original season artwork
-   once its source asset is committed and reviewed. */
-.pass-preview-mountain{display:none}
+/* DNS Digital Pass: original physical card artwork (2026/27), Foundation tokens.
+   Deliberately no added landscape, decorative icons, new palette or invented motifs. */
 .pass-hero{background:var(--color-dns-deep);border:1px solid var(--color-dns-border)}
 .pass-hero:before{display:none}
-.pass-preview{transform:rotate(3deg)}
+.pass-preview{display:flex;align-items:center;justify-content:center;background:none;box-shadow:none;padding:0;border-radius:0;transform:none;overflow:hidden}
+.pass-preview img{display:block;width:auto;height:100%;max-width:100%;object-fit:contain}
 .pass-onboarding-progress{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0 18px}
 .pass-onboarding-progress span{font:600 11px/1.3 var(--font-alt);padding:8px 10px;border:1px solid var(--color-dns-border);border-radius:var(--dns-control-radius);color:var(--color-dns-muted)}
-.pass-onboarding-progress span.is-current{background:var(--color-dns-deep);border-color:var(--color-dns-deep);color:white}
+.pass-onboarding-progress span.is-current{background:var(--color-dns-deep);border-color:var(--color-dns-deep);color:#fff}
 .dns-pass-stage{max-width:430px;margin:0 auto;text-align:center}
 .pass-flip-instruction{font:600 12px/1.5 var(--font-alt);color:var(--color-dns-mid);margin:8px 0}
 .dns-pass-flip{position:relative;width:100%;aspect-ratio:851 / 662;transform-style:preserve-3d;transition:transform .55s ease}
 .dns-pass-flip.is-flipped{transform:rotateY(180deg)}
-.dns-pass-side{position:absolute;inset:0;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--color-dns-border);box-shadow:0 10px 22px rgba(13,77,94,.12);font-family:var(--font-display)}
-.dns-pass-front{width:100%;padding:18px;border:1px solid var(--color-dns-border);background:var(--color-dns-light);color:var(--color-dns-deep);text-align:left;cursor:pointer}
-.pass-original-heading img{max-width:55%;height:auto;max-height:70px;object-fit:contain;object-position:left}
-.pass-original-season{margin-top:3px;margin-left:auto;display:flex;gap:12px;align-items:flex-start}
-.pass-original-season>span{font:700 clamp(9px,2.8vw,13px)/1.35 var(--font-alt)}
-.pass-original-season strong{font:800 clamp(58px,16vw,95px)/.78 var(--font-display);letter-spacing:-.07em}
-.pass-original-number{margin-top:auto;font:600 13px var(--font-alt)}
-.pass-original-number strong{font:800 clamp(16px,5vw,24px) var(--font-display)}
-.pass-original-footer{font:600 10px var(--font-alt);margin-left:auto}
-.dns-pass-back{transform:rotateY(180deg);padding:14px;background:var(--color-dns-surface);color:var(--color-dns-deep);align-items:stretch}
-.pass-back-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.pass-back-head img{width:120px;max-height:45px;object-fit:contain}
-.pass-back-head span{font:700 10px var(--font-alt)}
-.pass-back-data{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;row-gap:1px;text-align:left;margin-top:7px}
-.pass-back-data span{font:600 9px var(--font-alt);color:var(--color-dns-mid)}
-.pass-back-data strong{font:700 12px/1.2 var(--font-display);overflow-wrap:anywhere}
-.pass-back-data span:nth-of-type(1),.pass-back-data strong:nth-of-type(1){grid-column:1}
-.pass-back-data span:nth-of-type(2),.pass-back-data strong:nth-of-type(2){grid-column:2}
-.pass-back-data span:nth-of-type(3),.pass-back-data strong:nth-of-type(3){grid-column:1 / -1}
-.dns-pass-back .pass-qr-wrap{border:0;padding:0;margin:4px auto 0;max-height:128px}
-.dns-pass-back #qr{width:min(128px,30vw);max-height:128px;margin:0 auto}
-.dns-pass-back .pass-status{font-size:9px;margin-top:auto}
+.dns-pass-side{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--color-dns-border);border-radius:12px;box-shadow:0 10px 22px rgba(13,77,94,.12);font-family:var(--font-display)}
+.dns-pass-front{width:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;padding:0;background:#fff;color:var(--color-dns-deep);text-align:left;cursor:pointer}
+.pass-original-heading{grid-column:1;grid-row:1;padding:22px 14px;display:flex;align-items:flex-start}
+.pass-original-heading img{display:block;width:100%;max-height:120px;object-fit:contain;object-position:top left}
+.pass-original-number{grid-column:1;grid-row:2;display:block;padding:11px 16px;background:var(--color-dns-light);font:600 clamp(10px,2.6vw,13px)/1.1 var(--font-alt)}
+.pass-original-number strong{font:800 clamp(15px,4vw,22px)/1.1 var(--font-display)}
+.pass-season-art{grid-column:2;grid-row:1 / 3;width:100%;height:100%;object-fit:cover}
+.dns-pass-back{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:15px;background:var(--color-dns-surface);color:var(--color-dns-deep);text-align:left}
+.pass-back-head{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--color-dns-border);padding-bottom:9px}
+.pass-back-head img{width:132px;max-height:48px;object-fit:contain;object-position:left}
+.pass-back-head span{font:700 10px var(--font-alt);white-space:nowrap}
+.pass-back-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(125px,44%);gap:8px;align-items:center;min-height:0;flex:1}
+.pass-back-data{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pass-back-data span{font:600 10px/1.2 var(--font-alt);color:var(--color-dns-mid)}
+.pass-back-data strong{font:700 clamp(11px,2.9vw,15px)/1.2 var(--font-display);overflow-wrap:anywhere;margin:0 0 6px}
+.pass-back-data #pass-number{font:800 clamp(15px,3.6vw,22px)/1.1 var(--font-display);margin:0}
+.dns-pass-back .pass-qr-wrap{border:0;padding:0;margin:0;display:flex;justify-content:center;align-items:center;min-width:0;min-height:0;max-width:100%}
+.dns-pass-back #qr{display:block;width:100%;height:auto;max-width:172px;max-height:172px;margin:0 auto}
+.dns-pass-back #qr[hidden]{display:none}
+.dns-pass-back .pass-status{font:700 10px/1.25 var(--font-alt);color:var(--color-dns-mid);letter-spacing:.02em;text-align:center}
 .pass-flip-button{width:100%;margin-top:16px}
 #pass-check-notice{margin:11px auto 0;max-width:400px}
 #save-offline{margin:12px auto 8px}
-@media(max-width:420px){.dns-pass-side{border-radius:10px}.dns-pass-front{padding:12px}.pass-original-heading img{max-height:48px}.dns-pass-back{padding:9px}.pass-back-head img{width:95px}.pass-back-head span{font-size:8px}.pass-back-data strong{font-size:10px}.pass-back-data span{font-size:8px}.dns-pass-back .pass-qr-wrap{max-height:100px}.dns-pass-back #qr{max-height:100px;width:100px}}
+@media(max-width:600px){.pass-preview{height:176px;width:110px;transform:none}.pass-preview img{width:100%;height:100%;object-fit:contain}}
+@media(max-width:420px){.dns-pass-side{border-radius:9px}.pass-original-heading{padding:13px 9px}.pass-original-heading img{max-height:80px}.pass-original-number{padding:9px 10px}.dns-pass-back{padding:9px;gap:5px}.pass-back-head{padding-bottom:4px}.pass-back-head img{width:96px;max-height:35px}.pass-back-head span{font-size:8px}.pass-back-main{grid-template-columns:minmax(0,1fr) minmax(110px,44%);gap:5px}.pass-back-data{gap:2px}.pass-back-data span{font-size:8px}.pass-back-data strong{font-size:10px;margin-bottom:3px}.pass-back-data #pass-number{font-size:16px}.dns-pass-back .pass-status{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.dns-pass-flip{transition:none}}
