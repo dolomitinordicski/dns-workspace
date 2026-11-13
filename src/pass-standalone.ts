@@ -9,11 +9,9 @@ import { setupPassInstall } from './services/passInstall';
 type Lang='it'|'de'|'en';
 type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;productCode?:string;passDesign?:string;validUntil?:number;savedAt?:number};
 type PassDesign='dns-seasonal-v1'|'dns-langlauflehrer-v1';
-type PassDesignSource={productCode?:string;passDesign?:string};
-const LEGACY_PASS_DESIGN_BY_PRODUCT:Record<string,PassDesign>={'sk-dns':'dns-seasonal-v1','sk-instructor':'dns-langlauflehrer-v1'};
+type PassDesignSource={passDesign?:string};
 function resolvePassDesign(value:PassDesignSource):PassDesign {
- if(value.passDesign==='dns-langlauflehrer-v1'||value.passDesign==='dns-seasonal-v1')return value.passDesign;
- return LEGACY_PASS_DESIGN_BY_PRODUCT[value.productCode||'']||'dns-seasonal-v1';
+ return value.passDesign==='dns-langlauflehrer-v1'?'dns-langlauflehrer-v1':'dns-seasonal-v1';
 }
 function applyPassDesign(value:PassDesignSource|null=pass){
  const design=value?resolvePassDesign(value):'dns-seasonal-v1';
