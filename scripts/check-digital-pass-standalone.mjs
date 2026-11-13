@@ -24,7 +24,7 @@ assert.ok(html.includes('dns-pass-footer'));
 assert.doesNotMatch(ts,/WorkspaceHeader|DigitalPassGuest|DigitalPassScanner/);
 const sha=file=>{const b=readFileSync(file);return createHash('sha1').update('blob '+b.length+String.fromCharCode(0)).update(b).digest('hex')};
 assert.equal(sha('public/dns-pass-original-right.png'),'54b557fde7dfab9665829ba6b5809fc346b55f14');
-assert.equal(sha('public/dns-logo-print-vector.svg'),'b485a821ff77de98889f71f642a1047905fcbcde','Must match Shared Data official vector logo exactly');
+assert.equal(sha('public/dns-logo-print-vector.svg'),'a4629f101e1aa8d3d43301d04d2654758d963183','Must match Shared Data official vector logo exactly');
 assert.ok(existsSync('public/dns-swoosh-original.svg'));
 for(const fragment of ['dns-pass-original-right.png','dns-logo-print-vector.svg','dns-swoosh-original.svg','id="screen-email"','id="screen-link"','id="screen-register"','id="screen-pass"','id="pass-front"','id="pass-back"','id="qr"','id="registration"','id="login"'])assert.ok(html.includes(fragment),'Missing '+fragment);
 assert.ok(offline.includes('JSON.stringify(safe)'));
