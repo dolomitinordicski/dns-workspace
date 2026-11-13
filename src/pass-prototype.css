@@ -57,7 +57,7 @@ button[disabled]{opacity:.5;cursor:not-allowed}
 .card-example[data-pass-design="dns-ski-instructor"]>.right-art{display:none}
 .instructor-right-art{display:none;position:relative;grid-column:2;grid-row:1;min-width:0;overflow:hidden}
 .instructor-right-art>img{position:absolute;top:0;left:-100%;width:200%;max-width:none;height:100%;object-fit:fill}
-.card-example[data-pass-design="dns-ski-instructor"]>.instructor-right-art{display:block}
+.card-example[data-pass-design="dns-ski-instructor"]>.instructor-right-art{display:block;height:100%}
 
 /* Instructor front reuses the DNS card shell; only the artwork and area panel vary. */
 .card-example[data-pass-design="dns-ski-instructor"]>.left-art{padding:1.5%;justify-content:space-between}
