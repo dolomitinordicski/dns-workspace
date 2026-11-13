@@ -7,7 +7,21 @@ import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finis
 
 import { setupPassInstall } from './services/passInstall';
 type Lang='it'|'de'|'en';
-type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;validUntil?:number;savedAt?:number};
+type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;productCode?:string;passDesign?:string;purchaseAreaId?:string;validUntil?:number;savedAt?:number};
+type PassDesign='dns-seasonal'|'dns-ski-instructor';
+type PassDesignSource={passDesign?:string;purchaseAreaId?:string};
+function resolvePassDesign(value:PassDesignSource):PassDesign {
+ return value.passDesign==='dns-ski-instructor'?'dns-ski-instructor':'dns-seasonal';
+}
+function applyPassDesign(value:PassDesignSource|null=pass){
+ const design=value?resolvePassDesign(value):'dns-seasonal';
+ for(const id of ['pass-front-card','pass-preview-card'])$(id).dataset.passDesign=design;
+ document.querySelectorAll<HTMLElement>('.instructor-area').forEach(area=>{
+  const active=Boolean(value?.purchaseAreaId)&&area.dataset.areaId===value?.purchaseAreaId;
+  area.classList.toggle('purchase-area-highlight',active);
+  if(active)area.setAttribute('aria-current','location');else area.removeAttribute('aria-current');
+ });
+}
 // Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
 const privacyUrl = digitalPassPrivacyUrl(import.meta.env.VITE_DNS_DIGITAL_PASS_PRIVACY_URL);
 const passActivationEnabled = passApiConfigured && Boolean(privacyUrl) && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
@@ -168,6 +182,7 @@ function render(){
  ($('registration') as HTMLFormElement).hidden=!registrationVisible;
  $('ticket').classList.toggle('hide',!pass||(!authorized&&!offline));
  passInstall.refresh(Boolean(pass&&(authorized||offline)));
+ applyPassDesign(pass);
  $('ticket-status').textContent=offline?translations[lang].offline:translations[lang].online;
  $('save-offline').classList.toggle('hide',!authorized||offline||!navigator.onLine||!pass||pass.status!=='ACTIVE'||!Number.isFinite(pass.validUntil)||(pass.validUntil ?? 0)<=Date.now());
  $('logout').classList.toggle('hide',!authorized);
@@ -182,13 +197,16 @@ async function loadPass(){if(!passApiConfigured||!passAuth.currentUser?.emailVer
 async function showPass(){
  const image=$('qr') as HTMLImageElement;
  image.removeAttribute('src');image.hidden=true;
+ applyPassDesign(pass);
  if(!pass)return;
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
- setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
+ setText('pass-front-number',pass.printedNumber);
+ setText('pass-organization',pass.organizationName||'—');
  setText('pass-updated',offline&&pass.savedAt?(lang==='de'?'Gespeichert: ':lang==='en'?'Saved: ':'Salvata: ')+new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
  if(offline||!navigator.onLine||pass.status!=='ACTIVE'||!/^dns-pass:v2:[A-Za-z0-9_-]{43}$/.test(pass.qrPayload)||!pass.qrExpiresAt||pass.qrExpiresAt<=Date.now()||!passApiConfigured)return;
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
- setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
+ setText('pass-front-number',pass.printedNumber);
+ setText('pass-organization',pass.organizationName||'—');
  setText('pass-updated',offline&&pass.savedAt?(lang==='de'?'Gespeichert: ':lang==='en'?'Saved: ':'Salvata: ')+new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
  const base=(import.meta.env.VITE_DNS_DIGITAL_PASS_API_BASE as string).replace(/\/$/,'');
  const shown=pass,owner=passAuth.currentUser?.uid;

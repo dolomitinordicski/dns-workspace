@@ -50,3 +50,25 @@ button[disabled]{opacity:.5;cursor:not-allowed}
  .back-decoration{width:60%}
 }
 @media(prefers-reduced-motion:reduce){.flip-body{transition:none}}
+
+/* Product-specific card skins. Live identity, validity and QR remain in the shared pass model. */
+.card-example{position:relative}
+.card-example[data-pass-design="dns-ski-instructor"]{grid-template-columns:1fr 1fr}
+.card-example[data-pass-design="dns-ski-instructor"]>.right-art{display:none}
+.instructor-right-art{display:none;position:relative;grid-column:2;grid-row:1;min-width:0;overflow:hidden}
+.instructor-right-art>img{position:absolute;top:0;left:-100%;width:200%;max-width:none;height:100%;object-fit:fill}
+.card-example[data-pass-design="dns-ski-instructor"]>.instructor-right-art{display:block;height:100%}
+
+/* Instructor front reuses the DNS card shell; only the artwork and area panel vary. */
+.card-example[data-pass-design="dns-ski-instructor"]>.left-art{padding:1.5%;justify-content:space-between}
+.card-example[data-pass-design="dns-ski-instructor"]>.left-art>.original-logo{width:88%;height:18%;object-fit:contain;object-position:center top;margin:0 auto}
+.card-example[data-pass-design="dns-ski-instructor"]>.left-art>.hint{display:none}
+.instructor-area-list{display:none;flex:1;min-height:0;margin:1.5% 0;flex-direction:column;justify-content:center;gap:1px}
+.card-example[data-pass-design="dns-ski-instructor"] .instructor-area-list{display:flex}
+.instructor-area{display:grid;grid-template-columns:12% 1fr;align-items:stretch;gap:4px;min-height:0;border-radius:2px;padding:1px 2px;color:#20383d;font:600 clamp(5.2px,1.2vw,8.5px)/1.04 Arial,Helvetica,sans-serif;transition:background-color .25s,box-shadow .25s}
+.instructor-area small{font-size:.92em;font-weight:500}
+.area-code{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1.08em}
+.area-02{background:#78ad2e}.area-03{background:#b7a713}.area-04{background:#e75426}.area-05{background:#df1c2a}.area-06{background:#b94b78}.area-07{background:#00a7df}.area-08{background:#344b9a}.area-09{background:#4b5ba7}
+.instructor-area.purchase-area-highlight{background:#d9eeee;box-shadow:0 0 0 1.5px #417483;animation:purchase-area-pulse 2.2s ease-in-out infinite}
+@keyframes purchase-area-pulse{0%,100%{box-shadow:0 0 0 1px rgba(65,116,131,.45)}50%{box-shadow:0 0 0 2.5px rgba(65,116,131,.12);background:#c7e3e2}}
+@media(prefers-reduced-motion:reduce){.instructor-area{transition:none}.instructor-area.purchase-area-highlight{animation:none}}

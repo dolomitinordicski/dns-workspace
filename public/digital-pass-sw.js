@@ -1,5 +1,5 @@
 /* Cache only public app-shell assets; never cache Firebase API responses or holder records. */
-const CACHE='dns-pass-shell-v9';
+const CACHE='dns-pass-shell-v10';
 const ROOT='/dns-workspace/';
 self.addEventListener('install',event=>{event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
@@ -15,7 +15,7 @@ self.addEventListener('activate',event=>{event.waitUntil((async()=>{for(const ke
 self.addEventListener('fetch',event=>{
  const req=event.request,url=new URL(req.url);
  if(req.method!=='GET'||url.origin!==self.location.origin||!url.pathname.startsWith(ROOT))return;
- if(!(url.pathname===ROOT+'pass.html'||url.pathname.includes('/assets/')||url.pathname===ROOT+'digital-pass.webmanifest'||url.pathname===ROOT+'digital-pass-icon.svg'||url.pathname===ROOT+'dns-season-art-2026-27.webp'||url.pathname===ROOT+'dns-logo-official.png'||url.pathname===ROOT+'dns-pass-original-right.png'||url.pathname===ROOT+'dns-swoosh-original.svg'||url.pathname===ROOT+'dns-logo-print-vector.svg'))return;
+ if(!(url.pathname===ROOT+'pass.html'||url.pathname.includes('/assets/')||url.pathname===ROOT+'digital-pass.webmanifest'||url.pathname===ROOT+'digital-pass-icon.svg'||url.pathname===ROOT+'dns-season-art-2026-27.webp'||url.pathname===ROOT+'dns-logo-official.png'||url.pathname===ROOT+'dns-pass-original-right.png'||url.pathname===ROOT+'dns-swoosh-original.svg'||url.pathname===ROOT+'dns-logo-print-vector.svg'||url.pathname===ROOT+'dns-pass-instructor-front-2026-27.png'))return;
  event.respondWith((async()=>{const cache=await caches.open(CACHE);
  const saved=await cache.match(req,{ignoreSearch:true});
  // Do not cache Workspace staff bundles. Only assets pre-cached from pass.html belong to the pass offline shell.
