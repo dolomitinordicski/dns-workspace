@@ -7,15 +7,20 @@ import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finis
 
 import { setupPassInstall } from './services/passInstall';
 type Lang='it'|'de'|'en';
-type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;productCode?:string;passDesign?:string;validUntil?:number;savedAt?:number};
-type PassDesign='dns-seasonal-v1'|'dns-langlauflehrer-v1';
-type PassDesignSource={passDesign?:string};
+type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;productCode?:string;passDesign?:string;purchaseAreaId?:string;validUntil?:number;savedAt?:number};
+type PassDesign='dns-seasonal'|'dns-ski-instructor';
+type PassDesignSource={passDesign?:string;purchaseAreaId?:string};
 function resolvePassDesign(value:PassDesignSource):PassDesign {
- return value.passDesign==='dns-langlauflehrer-v1'?'dns-langlauflehrer-v1':'dns-seasonal-v1';
+ return value.passDesign==='dns-ski-instructor'?'dns-ski-instructor':'dns-seasonal';
 }
 function applyPassDesign(value:PassDesignSource|null=pass){
- const design=value?resolvePassDesign(value):'dns-seasonal-v1';
+ const design=value?resolvePassDesign(value):'dns-seasonal';
  for(const id of ['pass-front-card','pass-preview-card'])$(id).dataset.passDesign=design;
+ document.querySelectorAll<HTMLElement>('.instructor-area').forEach(area=>{
+  const active=Boolean(value?.purchaseAreaId)&&area.dataset.areaId===value?.purchaseAreaId;
+  area.classList.toggle('purchase-area-highlight',active);
+  if(active)area.setAttribute('aria-current','location');else area.removeAttribute('aria-current');
+ });
 }
 // Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
 const privacyUrl = digitalPassPrivacyUrl(import.meta.env.VITE_DNS_DIGITAL_PASS_PRIVACY_URL);
