@@ -3,14 +3,15 @@
 // Stored status is a snapshot and NEVER guarantees current validity.
 export type OfflinePass = {
  holderName:string; printedNumber:string; seasonId:string; status:'ACTIVE';
- organizationName?:string; productCode?:string; passDesign?:string; validUntil:number; savedAt:number;
+ organizationName?:string; productCode?:string; passDesign?:string; purchaseAreaId?:string; validUntil:number; savedAt:number;
 };
 type SaveCandidate = {
  holderName:string; printedNumber:string; seasonId:string; status:string;
- organizationName?:string; productCode?:string; passDesign?:string; validUntil?:number; qrPayload?:string;
+ organizationName?:string; productCode?:string; passDesign?:string; purchaseAreaId?:string; validUntil?:number; qrPayload?:string;
 };
 const DB='dns-digital-pass-offline-v2';
 const LEGACY_DB='dns-digital-pass-offline-v1';
+const PURCHASE_AREA_IDS=new Set(['antholzertal','gsiesertal-welsberg-taisten','drei-zinnen','osttirol','val-comelico','cortina-d-ampezzo','ahrntal','seiser-alm-dolomites-val-gardena']);
 const open=()=>new Promise<IDBDatabase>((resolve,reject)=>{
  const request=indexedDB.open(DB,1);
  request.onupgradeneeded=()=>{request.result.createObjectStore('data')};
@@ -41,6 +42,7 @@ function isValidRecord(value:unknown):value is OfflinePass{
   (v.organizationName===undefined||typeof v.organizationName==='string') &&
   (v.productCode===undefined||typeof v.productCode==='string') &&
   (v.passDesign===undefined||typeof v.passDesign==='string') &&
+  (v.purchaseAreaId===undefined||typeof v.purchaseAreaId==='string'&&PURCHASE_AREA_IDS.has(v.purchaseAreaId)) &&
   !('qrPayload' in v);
 }
 async function deleteDatabase(name:string){
@@ -58,7 +60,8 @@ export async function saveOfflinePass(pass:SaveCandidate){
   status:'ACTIVE',validUntil:pass.validUntil as number,savedAt,
   ...(pass.organizationName?{organizationName:pass.organizationName}:{}),
   ...(pass.productCode?{productCode:pass.productCode}:{}),
-  ...(pass.passDesign?{passDesign:pass.passDesign}:{})
+  ...(pass.passDesign?{passDesign:pass.passDesign}:{}),
+  ...(pass.purchaseAreaId&&PURCHASE_AREA_IDS.has(pass.purchaseAreaId)?{purchaseAreaId:pass.purchaseAreaId}:{})
  };
  if(pass.status!=='ACTIVE'||!isValidRecord(safe))throw Error('INVALID_PASS');
  let key=await get<CryptoKey>('key');
