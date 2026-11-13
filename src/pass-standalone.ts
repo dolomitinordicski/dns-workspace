@@ -7,7 +7,7 @@ import {passAuth, passApiConfigured, onAuthStateChanged, requestEmailLink, finis
 
 import { setupPassInstall } from './services/passInstall';
 type Lang='it'|'de'|'en';
-type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;qrExpiresAt?:number;organizationName?:string;validUntil?:number;savedAt?:number};
+type Pass={holderName:string;printedNumber:string;seasonId:string;status:string;qrPayload:string;passDesign?:string;productCode?:string;qrExpiresAt?:number;organizationName?:string;validUntil?:number;savedAt?:number};
 // Activation requires a separately reviewed launch flag; API URL alone never enables issuance.
 const privacyUrl = digitalPassPrivacyUrl(import.meta.env.VITE_DNS_DIGITAL_PASS_PRIVACY_URL);
 const passActivationEnabled = passApiConfigured && Boolean(privacyUrl) && import.meta.env.VITE_DNS_PASS_ACTIVATION_ENABLED === 'true';
@@ -35,6 +35,23 @@ function showCardSide(back:boolean){
 $('pass-front').addEventListener('click',()=>showCardSide(true));
 $('flip-pass').addEventListener('click',()=>showCardSide(!cardFlipped));
 
+const avatarAssets={uomo:'/dns-workspace/dns-avatar-male.png',donna:'/dns-workspace/dns-avatar-female.png'} as const;
+type AvatarChoice='uomo'|'donna'|'non-comunicato';
+const avatarKey='dns-pass-avatar-choice';
+const avatarChoice=():AvatarChoice=>{const v=localStorage.getItem(avatarKey);return v==='uomo'||v==='donna'||v==='non-comunicato'?v:'non-comunicato';};
+const randomAvatar=():keyof typeof avatarAssets=>{const stored=sessionStorage.getItem('dns-pass-random-avatar');if(stored==='uomo'||stored==='donna')return stored;const v=Math.random()<.5?'uomo':'donna';sessionStorage.setItem('dns-pass-random-avatar',v);return v;};
+const chosenAvatar=()=>{const c=avatarChoice();return c==='non-comunicato'?randomAvatar():c};
+function setPassHolder(name:string){const el=$('pass-front-holder');el.textContent=name;el.dataset.length=name.length>36?'very-long':name.length>22?'long':'normal';}
+function syncAvatar(){const src=avatarAssets[chosenAvatar()];($('pass-avatar-image') as HTMLImageElement).src=src;document.querySelectorAll('.preview-panel .pass-avatar-img').forEach(img=>(img as HTMLImageElement).src=src)}
+const photoDatabase='dns-pass-photo-local';
+function openPhotoDb():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open(photoDatabase,1);request.onupgradeneeded=()=>{request.result.createObjectStore('photos')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
+async function photoStore(key:string,value?:string|null):Promise<string|null>{const db=await openPhotoDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('photos',value===undefined?'readonly':'readwrite');const store=tx.objectStore('photos');const request=value===undefined?store.get(key):value===null?store.delete(key):store.put(value,key);request.onsuccess=()=>resolve(value===undefined?request.result||null:value);request.onerror=()=>reject(request.error)})}finally{db.close()}}
+const localPhotoKey=()=>passAuth.currentUser?.uid&&pass?passAuth.currentUser.uid+':'+pass.printedNumber:null;
+async function refreshPhoto(){syncAvatar();const key=localPhotoKey();if(!key)return;try{const stored=await photoStore(key);if(key===localPhotoKey()&&stored)($('pass-avatar-image') as HTMLImageElement).src=stored}catch{/* private storage unavailable: avatar remains */}}
+$('pass-photo').addEventListener('change',async()=>{const key=localPhotoKey(),file=($('pass-photo') as HTMLInputElement).files?.[0];if(!key||!file||!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8_000_000)return;try{const bitmap=await createImageBitmap(file);const size=280,canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d');if(!ctx)return;const side=Math.min(bitmap.width,bitmap.height);ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,size,size);bitmap.close();const data=canvas.toDataURL('image/jpeg',.78);await photoStore(key,data);if(key===localPhotoKey())($('pass-avatar-image') as HTMLImageElement).src=data}catch{setText('status',translations[lang].error)}});
+$('remove-photo').addEventListener('click',async()=>{const key=localPhotoKey();if(!key)return;try{await photoStore(key,null)}finally{syncAvatar();($('pass-photo') as HTMLInputElement).value=''}});
+document.querySelectorAll<HTMLInputElement>('input[name="avatar-type"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked){localStorage.setItem(avatarKey,input.value);syncAvatar()}}));
+['given','family'].forEach(id=>$(id).addEventListener('input',()=>setPassHolder([($('given') as HTMLInputElement).value,($('family') as HTMLInputElement).value].filter(Boolean).join(' ')||'Mario Rossi')));
 let currentPassId:string|null=null;
 let lang:Lang='it',pass:Pass|null=null,loading=false,offline=false;
 let loginLinkRequested=false;
@@ -129,6 +146,8 @@ function translate(){const t=translations[lang];const m=marketing[lang];document
  showCardSide(cardFlipped);
 
  for(const [id,key] of Object.entries({'hero-title':'hero','hero-subtitle':'subtitle','ticket-label':'ticket'}))setText(id,m[key as keyof typeof m]);
+ const avatarLabels={it:['Avatar segnaposto','Uomo','Donna','Preferisco non comunicarlo','Foto facoltativa (solo su questo dispositivo)','Rimuovi foto locale'],de:['Avatar-Platzhalter','Mann','Frau','Möchte ich nicht angeben','Freiwilliges Foto (nur auf diesem Gerät)','Lokales Foto entfernen'],en:['Avatar placeholder','Man','Woman','Prefer not to say','Optional photo (only on this device)','Remove local photo']}[lang];
+ ['avatar-legend','avatar-man','avatar-woman','avatar-private','photo-label','remove-photo'].forEach((id,i)=>setText(id,avatarLabels[i]));
  for(const [id,key] of Object.entries({'scan-start':'scan','scan-hint':'scanHint','scan-stop':'scanStop','login-button':hasEmailLink()?'confirm':'send','number-label':'number','code-label':'code','given-label':'given','family-label':'family','privacy-label':'privacy','register-button':'register','logout':'logout','unavailable':'unavailable','foot':'foot','save-offline':'save','handoff-hint':'handoff'}))setText(id,t[key as keyof typeof t]);
  const copy={
   it:{emailTitle:'Accedi al tuo Digital Pass',emailCopy:'Inserisci la tua email. Ti invieremo un link per verificare l’indirizzo, senza password.',emailHelp:'L’attivazione è facoltativa. Nessuna iscrizione marketing è richiesta.',emailLabel:'Indirizzo email',linkTitle:'Controlla la tua email',linkCopy:'Apri il link ricevuto. Se lo apri su un altro dispositivo, usa la stessa email per completare l’accesso.',linkBack:'Torna indietro',registerTitle:'Associa la tua Saisonkarte',registerCopy:'Tieni a portata di mano la tessera cartacea e il codice consegnato dall’operatore.',manual:'Inserisci numero e codice',passTitle:'La tua tessera digitale',passCopy:'Il fronte conserva la grafica originale; sul retro trovi i dati e il QR di verifica, quando disponibile.'},
@@ -183,6 +202,9 @@ async function showPass(){
  const image=$('qr') as HTMLImageElement;
  image.removeAttribute('src');image.hidden=true;
  if(!pass)return;
+ setPassHolder(pass.holderName);
+ ($('pass-front-art') as HTMLImageElement).src=pass.passDesign==='dns-ski-instructor'||pass.productCode==='sk-instructor'?'/dns-workspace/dns-pass-instructor-right.png':'/dns-workspace/dns-pass-original-right.png';
+ void refreshPhoto();
  setText('holder',pass.holderName);setText('pass-number',pass.printedNumber+' · '+pass.seasonId);
  setText('pass-front-number',pass.printedNumber);setText('pass-organization',pass.organizationName||'—');
  setText('pass-updated',offline&&pass.savedAt?(lang==='de'?'Gespeichert: ':lang==='en'?'Saved: ':'Salvata: ')+new Date(pass.savedAt).toLocaleString(lang==='de'?'de-DE':lang==='en'?'en-GB':'it-IT'):'');
@@ -224,7 +246,7 @@ $('registration').addEventListener('submit',async(e)=>{e.preventDefault();loadin
  }catch{setText('status',translations[lang].error)}finally{loading=false;render()}});
 $('logout').addEventListener('click',()=>{stopScanner();clearPassHandoff(sessionStorage);pass=null;currentPassId=null;offline=false;($('qr') as HTMLImageElement).removeAttribute('src');void clearOfflinePass();void signOut(passAuth)});
 onAuthStateChanged(passAuth,(user)=>{if(user?.emailVerified)loginLinkRequested=false;pass=null;currentPassId=null;offline=false;($('qr') as HTMLImageElement).removeAttribute('src');applyHandoff();render();if(user?.emailVerified&&!passActivationEnabled)setText('status',translations[lang].authenticated);if(user?.emailVerified)void claimScannedPass();if(!navigator.onLine)void restoreOffline();else void loadPass()});
-translate();applyHandoff();render();
+document.querySelectorAll<HTMLInputElement>('input[name="avatar-type"]').forEach(input=>input.checked=input.value===avatarChoice());syncAvatar();translate();applyHandoff();render();
 
 if('serviceWorker' in navigator)window.addEventListener('load',()=>{void navigator.serviceWorker.register('/dns-workspace/digital-pass-sw.js',{scope:'/dns-workspace/',updateViaCache:'none'}).catch(()=>{})});
 
