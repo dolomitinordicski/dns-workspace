@@ -50,6 +50,7 @@
     <label class="field"><span id="given-label">Nome</span><input id="given" autocomplete="given-name" maxlength="100" required></label>
     <label class="field"><span id="family-label">Cognome</span><input id="family" autocomplete="family-name" maxlength="100" required></label>
    </div>
+   <fieldset class="avatar-choice"><legend id="avatar-legend">Avatar segnaposto</legend><label><input type="radio" name="avatar-type" value="uomo"><span id="avatar-man">Uomo</span></label><label><input type="radio" name="avatar-type" value="donna"><span id="avatar-woman">Donna</span></label><label><input type="radio" name="avatar-type" value="non-comunicato" checked><span id="avatar-private">Preferisco non comunicarlo</span></label></fieldset>
    <label class="checkbox"><input id="privacy" type="checkbox" required><a id="privacy-label" target="_blank" rel="noopener noreferrer">Ho letto l'informativa privacy del Digital Pass</a></label>
    <button id="register-button" type="submit" class="action">Attiva Digital Pass</button>
   </form>
@@ -62,7 +63,7 @@
    <div class="mini-ticket"><div class="flipper" id="dns-pass-flip">
     <div class="flip-body" id="flip-body">
      <button class="side pass-front-side" id="pass-front" type="button" aria-label="Mostra retro" aria-pressed="false">
-      <span class="card-example"><span class="left-art"><img class="original-logo" src="/dns-workspace/dns-logo-print-vector.svg" alt="Logo DNS originale"><span class="hint">DIGITAL PASS · 2026/27</span><span class="original-number">N° <strong id="pass-front-number"></strong></span></span><img src="/dns-workspace/dns-pass-original-right.png" class="right-art" alt="Grafica originale dello sciatore 2026/27"></span>
+      <span class="card-example"><span class="left-art"><img class="original-logo" src="/dns-workspace/dns-logo-print-vector.svg" alt="Logo DNS originale"><span class="hint">DIGITAL PASS · 2026/27</span><span class="pass-avatar"><span class="pass-avatar-frame"><img id="pass-avatar-image" class="pass-avatar-img" src="/dns-workspace/dns-avatar-male.png" alt="Avatar segnaposto"></span><strong id="pass-front-holder" class="pass-avatar-name"></strong></span><span class="original-number">N° <strong id="pass-front-number"></strong></span></span><img id="pass-front-art" src="/dns-workspace/dns-pass-original-right.png" class="right-art" alt="Grafica originale dello sciatore 2026/27"></span>
      </button>
      <div class="side backside" id="pass-back" aria-hidden="true">
       <div class="back-decoration" aria-hidden="true"><img src="/dns-workspace/dns-swoosh-original.svg" alt=""></div>
@@ -81,6 +82,7 @@
    <p class="helper" id="flip-hint">Tocca la tessera o usa il pulsante per ruotarla.</p>
    <p class="helper" id="pass-check-notice">La verifica in tempo reale richiede una connessione.</p>
    <button id="save-offline" type="button" class="action alt">Salva sul dispositivo per uso offline</button>
+   <div class="pass-photo-controls"><label for="pass-photo" id="photo-label">Foto facoltativa (solo su questo dispositivo)</label><input id="pass-photo" type="file" accept="image/png,image/jpeg,image/webp"><button id="remove-photo" type="button" class="link">Rimuovi foto locale</button></div>
    <div class="pass-install-controls"><button id="install-pass" type="button" class="action hide" hidden>Installa DNS Pass</button><p id="home-tip" class="helper">Dal browser puoi aggiungere questa pagina alla schermata Home.</p></div>
   </section>
  </section>
@@ -90,7 +92,7 @@
  </section>
  <aside class="preview-panel" id="preview-panel">
   <h3 id="aside-title">La tua tessera, riconoscibile a prima vista</h3>
-  <div class="card-example"><div class="left-art"><img src="/dns-workspace/dns-logo-print-vector.svg" alt="Logo ufficiale DNS"><span class="hint">DIGITAL PASS · 2026/27</span><span class="sample-number">N° 123456</span></div><img class="right-art" src="/dns-workspace/dns-pass-original-right.png" alt="Illustrazione originale DNS 2026/27"></div>
+  <div class="card-example"><div class="left-art"><img src="/dns-workspace/dns-logo-print-vector.svg" alt="Logo ufficiale DNS"><span class="hint">DIGITAL PASS · 2026/27</span><span class="pass-avatar"><span class="pass-avatar-frame"><img class="pass-avatar-img" src="/dns-workspace/dns-avatar-male.png" alt="Avatar segnaposto"></span><strong class="pass-avatar-name">Mario Rossi</strong></span><span class="sample-number">N° 123456</span></div><img class="right-art" src="/dns-workspace/dns-pass-original-right.png" alt="Illustrazione originale DNS 2026/27"></div>
   <span class="badge" id="aside-badge">Anteprima grafica della tessera</span>
   <p id="aside-copy">La tessera digitale conserva il design ufficiale DNS della stagione 2026/27.</p>
  </aside>
