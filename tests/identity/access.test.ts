@@ -1,4 +1,8 @@
 import { test } from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { WorkspaceSidebar } from '../../src/components/WorkspaceSidebar.tsx';
+
 import assert from 'node:assert/strict';
 import { adminAreaTools, canUseOrganization, toolsForOrganization } from '../../src/workspace/access.ts';
 const org = { id: 'dns-test-organisation', reportingAreaIds: ['dns-test-area'] } as any;
@@ -99,4 +103,37 @@ test('area matrix: FAIR and Partner Hub require membership and do not confer oth
   assert.deepEqual(toolsForOrganization(user, org, catalog).map(t => t.id), ['fair', 'partner-hub']);
   user.memberships = [];
   assert.deepEqual(toolsForOrganization(user, org, catalog), []);
+});
+
+test('sidebar: organization member never sees DNS Admin navigation', () => {
+  const user = identity('write');
+  const html = renderToStaticMarkup(createElement(WorkspaceSidebar, {
+    language: 'it', identity: user, organization: org, tools: [tool],
+    openTool: null, activeView: 'cockpit', onDashboard: () => {},
+    onOpenTool: () => {}, onAdminView: () => {},
+  }));
+  assert.doesNotMatch(html, /Gestione DNS|System Map|Orbit|workspace-sidebar-section-label">DNS Admin/);
+  assert.match(html, /Dashboard/);
+});
+
+test('sidebar: only a globally authorized DNS Admin sees reserved navigation', () => {
+  const admin = identity('write');
+  admin.profile.globalRoles = ['dns-admin'];
+  const html = renderToStaticMarkup(createElement(WorkspaceSidebar, {
+    language: 'it', identity: admin, organization: org, tools: [tool],
+    openTool: null, activeView: 'cockpit', onDashboard: () => {},
+    onOpenTool: () => {}, onAdminView: () => {},
+  }));
+  assert.match(html, /Gestione DNS/);
+  assert.match(html, /System Map/);
+  assert.match(html, /Orbit/);
+});
+
+test('sidebar: inactive identity never displays admin navigation even with stale profile role', () => {
+  const html = renderToStaticMarkup(createElement(WorkspaceSidebar, {
+    language: 'it', identity: { state: 'inactive', profile: { globalRoles: ['dns-admin'] } } as any,
+    organization: org, tools: [], openTool: null, activeView: 'cockpit',
+    onDashboard: () => {}, onOpenTool: () => {}, onAdminView: () => {},
+  }));
+  assert.doesNotMatch(html, /Gestione DNS|System Map|Orbit/);
 });
