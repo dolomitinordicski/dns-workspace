@@ -5,10 +5,6 @@ import { identityAuth } from './identityFirebase';
 
 export type DNSMatrixLevel = 'none' | 'read' | 'write';
 
-export function isDNSAdmin(identity: DNSIdentity): boolean {
-  return identity.state === 'active' && identity.profile.active === true &&
-    Array.isArray(identity.profile.globalRoles) && identity.profile.globalRoles.includes('dns-admin');
-}
 export type DNSOrganizationToolPolicies = Record<string, Partial<Record<string, DNSMatrixLevel>>>;
 
 export type DNSIdentity =
