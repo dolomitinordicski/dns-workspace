@@ -118,7 +118,7 @@ test('DNS Admin requires the active global role, independent of organization mem
 
 test('admin navigation: sidebar requires an active identity with global dns-admin role', () => {
   const sidebar = readFileSync(new URL('../../src/components/WorkspaceSidebar.tsx', import.meta.url), 'utf8');
-  assert.match(sidebar, /const isAdmin = isDNSAdmin\\(identity\\)/);
+  assert.match(sidebar, /const isAdmin = isDNSAdmin\(identity\)/);
   assert.match(sidebar, /\{isAdmin && <>[\s\S]*Gestione DNS[\s\S]*System Map[\s\S]*Orbit[\s\S]*<\/>\}/);
 });
 
