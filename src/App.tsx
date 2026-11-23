@@ -8,7 +8,7 @@ import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeade
 import { WorkspaceNavigator } from './components/WorkspaceNavigator';
 import { WorkspaceToolView } from './components/WorkspaceToolView';
 import { WorkspaceSidebar } from './components/WorkspaceSidebar';
-import { watchDNSIdentity, type DNSIdentity, type DNSMatrixLevel } from './services/dnsIdentity';
+import { isDNSAdmin, watchDNSIdentity, type DNSIdentity, type DNSMatrixLevel } from './services/dnsIdentity';
 import { identityAuth } from './services/identityFirebase';
 import { getDNSWorkspaceOrganizations, type DNSWorkspaceOrganization } from './services/dnsOrganizations';
 import { getDNSWorkspaceLanguage, setDNSWorkspaceLanguage, subscribeDNSWorkspaceLanguage,
@@ -51,7 +51,7 @@ export default function App() {
     if (!eligible.length) return;
     const current = eligible.some(org => org.id === organizationId);
     if (current) return;
-    if (identity.profile.globalRoles.includes('dns-admin')) {
+    if (isDNSAdmin(identity)) {
       setOrganizationId(eligible.find(org => org.id === 'dolomiti-nordicski')?.id ?? eligible[0].id);
     } else {
       setOrganizationId(eligible[0].id);
@@ -60,8 +60,7 @@ export default function App() {
 
   const organization = organizations.find(org => org.id === organizationId);
   const authorized = Boolean(organization && canUseOrganization(identity, organization));
-  const isAdmin = identity.state === 'active' &&
-    identity.profile.globalRoles.includes('dns-admin');
+  const isAdmin = isDNSAdmin(identity);
   // The admin area selector is a preview, not impersonation. Load the exact
   // organization matrix; do not fall back to global admin tools on missing data.
   // Reload when returning to the cockpit after saving a matrix in DNS Admin.
