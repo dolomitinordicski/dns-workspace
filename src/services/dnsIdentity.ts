@@ -1,5 +1,5 @@
 import { GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
-import { collection, doc, getDocs, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
 import type { DNSAccessGrant, DNSMembership, DNSUserProfile } from '@dolomitinordicski/dns-shared-data';
 import { identityAuth } from './identityFirebase';
 
