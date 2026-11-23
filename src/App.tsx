@@ -8,7 +8,8 @@ import { WorkspaceHeader, type WorkspaceView } from './components/WorkspaceHeade
 import { WorkspaceNavigator } from './components/WorkspaceNavigator';
 import { WorkspaceToolView } from './components/WorkspaceToolView';
 import { WorkspaceSidebar } from './components/WorkspaceSidebar';
-import { isDNSAdmin, watchDNSIdentity, type DNSIdentity, type DNSMatrixLevel } from './services/dnsIdentity';
+import { watchDNSIdentity, type DNSIdentity, type DNSMatrixLevel } from './services/dnsIdentity';
+import { isDNSAdmin } from './identity/admin';
 import { identityAuth } from './services/identityFirebase';
 import { getDNSWorkspaceOrganizations, type DNSWorkspaceOrganization } from './services/dnsOrganizations';
 import { getDNSWorkspaceLanguage, setDNSWorkspaceLanguage, subscribeDNSWorkspaceLanguage,
