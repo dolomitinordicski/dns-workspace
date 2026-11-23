@@ -1,4 +1,5 @@
-import { isDNSAdmin, type DNSIdentity } from '../services/dnsIdentity';
+import type { DNSIdentity } from '../services/dnsIdentity';
+import { isDNSAdmin } from '../identity/admin';
 import { DNS_SHARED_WEB_LOGO_URL, type DNSWorkspaceLanguage } from '../services/foundation';
 import { organizationLogoUrl, organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import type { WorkspaceView } from './WorkspaceHeader';
