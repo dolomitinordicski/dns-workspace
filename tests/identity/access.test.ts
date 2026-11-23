@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { adminAreaTools, canUseOrganization, toolsForOrganization } from '../../src/workspace/access.ts';
-import { isDNSAdmin } from '../../src/services/dnsIdentity.ts';
+import { isDNSAdmin } from '../../src/identity/admin.ts';
 const org = { id: 'dns-test-organisation', reportingAreaIds: ['dns-test-area'] } as any;
 const foreign = { ...org, id: 'dns-test-foreign-organisation' };
 const tool = { id: 'data-entry', lifecycle: 'active' } as any;
