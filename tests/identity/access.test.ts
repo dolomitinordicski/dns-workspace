@@ -1,5 +1,7 @@
 import { test } from 'node:test';
+
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { adminAreaTools, canUseOrganization, toolsForOrganization } from '../../src/workspace/access.ts';
 const org = { id: 'dns-test-organisation', reportingAreaIds: ['dns-test-area'] } as any;
 const foreign = { ...org, id: 'dns-test-foreign-organisation' };
@@ -99,4 +101,17 @@ test('area matrix: FAIR and Partner Hub require membership and do not confer oth
   assert.deepEqual(toolsForOrganization(user, org, catalog).map(t => t.id), ['fair', 'partner-hub']);
   user.memberships = [];
   assert.deepEqual(toolsForOrganization(user, org, catalog), []);
+});
+
+test('admin navigation: sidebar requires an active identity with global dns-admin role', () => {
+  const sidebar = readFileSync(new URL('../../src/components/WorkspaceSidebar.tsx', import.meta.url), 'utf8');
+  assert.match(sidebar, /identity\.state === 'active' && identity\.profile\.globalRoles\.includes\('dns-admin'\)/);
+  assert.match(sidebar, /\{isAdmin && <>[\s\S]*Gestione DNS[\s\S]*System Map[\s\S]*Orbit[\s\S]*<\/>\}/);
+});
+
+test('admin navigation: App gates admin screens independently of sidebar', () => {
+  const app = readFileSync(new URL('../../src/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /activeView === 'organizations-access' && isAdmin/);
+  assert.match(app, /activeView === 'cockpit' \|\| !isAdmin/);
+  assert.match(app, /adminNavigation=\{isAdmin\}/);
 });
