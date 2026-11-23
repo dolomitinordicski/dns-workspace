@@ -6,6 +6,18 @@ export { A, U };
 export const password = 'DNS-Test-Only-2026!';
 export const orgs = [A.organizationId, A.secondaryOrganizationId, A.foreignOrganizationId];
 export const permissions = ['ticketOrders.read', 'ticketOrders.write', 'ticketSales.read', 'ticketSales.write', 'kp.read', 'kp.write'];
+
+export async function setProfile(uid, profile) {
+  requireEmulators();
+  const env = await initializeTestEnvironment({ projectId, firestore: { host: '127.0.0.1', port: 8188 } });
+  try {
+    await env.withSecurityRulesDisabled(async context => {
+      await setDoc(doc(context.firestore(), `users/${uid}`), profile);
+    });
+  } finally {
+    await env.cleanup();
+  }
+}
 export async function seed() {
   requireEmulators();
   const reset = await fetch(`http://127.0.0.1:9199/emulator/v1/projects/${projectId}/accounts`, { method: 'DELETE', headers: { Authorization: 'Bearer owner' } });
