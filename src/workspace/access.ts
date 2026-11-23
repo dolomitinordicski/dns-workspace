@@ -1,4 +1,5 @@
 import type { DNSIdentity } from '../services/dnsIdentity';
+import { isDNSAdmin } from '../identity/admin';
 import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import type { WorkspaceTool } from './registry';
 
@@ -13,7 +14,7 @@ const TOOL_PERMISSIONS: Readonly<Record<string, readonly string[]>> = {
 
 export function canUseOrganization(identity: DNSIdentity, org: DNSWorkspaceOrganization): boolean {
   if (identity.state !== 'active') return false;
-  if (identity.profile.globalRoles.includes('dns-admin')) return true;
+  if (isDNSAdmin(identity)) return true;
   if (identity.memberships.some(m => m.organizationId === org.id)) return true;
   return org.id === 'dolomiti-nordicski' && identity.grants.some(
     g => g.scopeType === 'network' && g.scopeId === 'dolomiti-nordicski');
@@ -40,7 +41,7 @@ export function toolsForOrganization(
   identity: DNSIdentity, org: DNSWorkspaceOrganization, tools: readonly WorkspaceTool[],
 ): WorkspaceTool[] {
   if (!canUseOrganization(identity, org) || identity.state !== 'active') return [];
-  if (identity.profile.globalRoles.includes('dns-admin')) {
+  if (isDNSAdmin(identity)) {
     return tools.filter(t => t.lifecycle !== 'legacy');
   }
   const granted = new Set(identity.grants.filter(g =>

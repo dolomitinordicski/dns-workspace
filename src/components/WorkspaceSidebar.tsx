@@ -1,4 +1,5 @@
 import type { DNSIdentity } from '../services/dnsIdentity';
+import { isDNSAdmin } from '../identity/admin';
 import { DNS_SHARED_WEB_LOGO_URL, type DNSWorkspaceLanguage } from '../services/foundation';
 import { organizationLogoUrl, organizationName, type DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import type { WorkspaceView } from './WorkspaceHeader';
@@ -21,7 +22,7 @@ export function WorkspaceSidebar({
   language, identity, organization, tools, toolViewStatus, openTool, activeView,
   onDashboard, onOpenTool, onAdminView,
 }: Props) {
-  const isAdmin = identity.state === 'active' && identity.profile.globalRoles.includes('dns-admin');
+  const isAdmin = isDNSAdmin(identity);
   const logo = organizationLogoUrl(organization) || DNS_SHARED_WEB_LOGO_URL;
   const name = organizationName(organization, language);
 

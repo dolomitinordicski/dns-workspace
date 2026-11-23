@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { seed, A, U, password } from '../seed.mjs';
+import { seed, setProfile, A, U, password } from '../seed.mjs';
 test.beforeAll(async () => { await seed(); });
 for (const role of ['writer', 'reader', 'outsider', 'admin'] as const) {
   test(`${role}: login resolves organization context and enforces available tools`, async ({ page }) => {
@@ -75,3 +75,36 @@ for (const uid of ['dns-test-inactive', 'dns-test-missing-profile']) {
     await expect(page.getByRole('button', { name: /^(Abmelden|Esci)$/ })).toBeVisible();
   });
 }
+
+test('live DNS Core profile changes revoke admin navigation and deactivate the session', async ({ page }) => {
+  await page.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (!['127.0.0.1', 'localhost'].includes(url.hostname)) {
+      const canonicalSharedAsset = url.hostname === 'raw.githubusercontent.com'
+        && url.pathname.startsWith('/dolomitinordicski/dns-shared-data/');
+      if (canonicalSharedAsset) { await route.continue(); return; }
+      if (!['image', 'font', 'stylesheet'].includes(route.request().resourceType())) throw new Error(`Unexpected external request: ${url.origin}`);
+      await route.abort();
+    } else await route.continue();
+  });
+  await page.goto('./');
+  await page.locator('details > summary').click();
+  await page.getByLabel(/E-Mail|Email/).fill(`${U.admin}@example.test`);
+  await page.getByLabel(/Passwort|Password/).fill(password);
+  await page.getByRole('button', { name: /^(Anmelden|Accedi)$/ }).click();
+
+  const adminNavigation = page.getByRole('button', { name: /Gestione DNS|DNS verwalten/ });
+  await expect(adminNavigation).toBeVisible();
+  await expect(page.getByRole('button', { name: 'System Map' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Orbit' })).toBeVisible();
+
+  await setProfile(U.admin, { active: true, globalRoles: [] });
+  await expect(adminNavigation).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'System Map' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Orbit' })).toHaveCount(0);
+
+  await setProfile(U.admin, { active: false, globalRoles: ['dns-admin'] });
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.locator('.workspace-sidebar')).toHaveCount(0);
+  await expect(adminNavigation).toHaveCount(0);
+});

@@ -3,11 +3,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { adminAreaTools, canUseOrganization, toolsForOrganization } from '../../src/workspace/access.ts';
+import { isDNSAdmin } from '../../src/identity/admin.ts';
 const org = { id: 'dns-test-organisation', reportingAreaIds: ['dns-test-area'] } as any;
 const foreign = { ...org, id: 'dns-test-foreign-organisation' };
 const tool = { id: 'data-entry', lifecycle: 'active' } as any;
 function identity(level: string, permissions = ['ticketOrders.read', 'ticketOrders.write']): any {
-  return { state: 'active', uid: 'dns-test-writer', profile: { globalRoles: [] },
+  return { state: 'active', uid: 'dns-test-writer', profile: { active: true, globalRoles: [] },
     memberships: [{ organizationId: org.id }],
     grants: [{ scopeType: 'organization', scopeId: org.id, permissions }],
     toolPolicies: { [org.id]: { 'data-entry': level } } };
@@ -103,9 +104,21 @@ test('area matrix: FAIR and Partner Hub require membership and do not confer oth
   assert.deepEqual(toolsForOrganization(user, org, catalog), []);
 });
 
+test('DNS Admin requires the active global role, independent of organization membership or grants', () => {
+  const user = identity('write');
+  assert.equal(isDNSAdmin(user), false);
+  user.memberships.push({ organizationId: 'another-dns-organization' });
+  user.grants.push({ scopeType: 'network', scopeId: 'dolomiti-nordicski', permissions: ['ticketOrders.write'] });
+  assert.equal(isDNSAdmin(user), false);
+  user.profile.globalRoles = ['dns-admin'];
+  assert.equal(isDNSAdmin(user), true);
+  user.profile.active = false;
+  assert.equal(isDNSAdmin(user), false);
+});
+
 test('admin navigation: sidebar requires an active identity with global dns-admin role', () => {
   const sidebar = readFileSync(new URL('../../src/components/WorkspaceSidebar.tsx', import.meta.url), 'utf8');
-  assert.match(sidebar, /identity\.state === 'active' && identity\.profile\.globalRoles\.includes\('dns-admin'\)/);
+  assert.match(sidebar, /const isAdmin = isDNSAdmin\(identity\)/);
   assert.match(sidebar, /\{isAdmin && <>[\s\S]*Gestione DNS[\s\S]*System Map[\s\S]*Orbit[\s\S]*<\/>\}/);
 });
 
