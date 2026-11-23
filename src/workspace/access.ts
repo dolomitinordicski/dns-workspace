@@ -1,4 +1,5 @@
-import { isDNSAdmin, type DNSIdentity } from '../services/dnsIdentity';
+import type { DNSIdentity } from '../services/dnsIdentity';
+import { isDNSAdmin } from '../identity/admin';
 import type { DNSWorkspaceOrganization } from '../services/dnsOrganizations';
 import type { WorkspaceTool } from './registry';
 
